@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'owner', 'officer' ])->default('officer');
+            $table->enum('role', ['admin', 'owner', 'officer', 'user' ])->default('user');
             $table->string('profile_photo_path', 2048)->nullable();
             $table->string('rfid_uid')->nullable();
             $table->timestamp('email_verified_at')->nullable();

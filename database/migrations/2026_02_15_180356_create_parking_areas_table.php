@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedBigInteger('parking_location_id');
-            $table->string('capacity');
-            $table->string('occupied')->default(0);
+            $table->integer('capacity');
+            $table->integer('occupied')->default(0);
             $table->timestamps();
             $table->softDeletes();
 
