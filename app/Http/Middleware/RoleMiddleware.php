@@ -23,8 +23,12 @@ class RoleMiddleware
             abort(401, 'Unauthorized');
         }
 
-         if ($user->role !== 'admin') {
+        if ($user->role !== 'admin') {
             abort(403, 'Forbidden');
+        }
+        
+        if (!$user->is_active) {
+            abort(403, 'Your account is inactive. Please contact the administrator.');
         }
 
         return $next($request);
