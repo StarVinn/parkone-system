@@ -21,7 +21,7 @@ return new class extends Migration
             $table->datetime('exit_time')->nullable();
             $table->decimal('total_hours', 8, 2)->nullable();
             $table->decimal('total_fee', 8, 2)->nullable();
-            $table->enum('payment_status', ['paid', 'unpaid'])->default('unpaid');
+            $table->enum('status', ['active', 'completed'])->default('active');
             $table->timestamps();
             $table->softDeletes();
 
