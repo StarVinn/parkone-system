@@ -6,5 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ParkingLocation extends Model
 {
-    //
+    protected $fillable = [
+        'name',
+        'latitude',
+        'longitude',
+        'description',
+    ];
 }
