@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return view('welcome');
@@ -27,7 +28,7 @@ Route::post('/register', [App\Http\Controllers\Web\AuthController::class, 'regis
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/', function () {
-            return view('admin.dashboard');
+            return Inertia::render('Admin/Dashboard');
         });
     });
 });
@@ -41,7 +42,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'role:officer'])->group(function () {
     Route::prefix('officer')->group(function () {
         Route::get('/', function () {
-            return view('officer.dashboard');
+            return Inertia::render('Officer/Dashboard');
         });
     });
 });
@@ -55,7 +56,7 @@ Route::middleware(['auth', 'role:officer'])->group(function () {
 Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::prefix('owner')->group(function () {
         Route::get('/', function () {
-            return view('owner.dashboard');
+            return Inertia::render('Owner/Dashboard');
         });
     });
 });
