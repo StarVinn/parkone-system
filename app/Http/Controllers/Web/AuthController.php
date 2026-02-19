@@ -7,19 +7,20 @@ use App\Http\Requests\PostLoginRequest;
 use App\Http\Requests\StoreUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class AuthController extends Controller
 {
     public function showLoginForm()
     {
         abort_if(Auth::check(), 403, 'Anda sudah login.');
-        return view('auth.login');
+        return Inertia::render('Auth/Login');
     }
 
     public function showRegisterForm()
     {
         abort_if(Auth::check(), 403, 'Anda sudah login.');
-        return view('auth.register');
+        return Inertia::render('Auth/Register');
     }
 
     public function login(PostLoginRequest $request)
