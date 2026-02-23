@@ -16,6 +16,7 @@
     "dependencies": {
         "@inertiajs/react": "^2.3.15",
         "@vitejs/plugin-react": "^5.1.4",
+        "lucide-react": "^0.575.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
         "ziggy-js": "^2.6.1"
