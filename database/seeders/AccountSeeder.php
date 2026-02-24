@@ -14,7 +14,8 @@ class AccountSeeder extends Seeder
     public function run(): void
     {
         // Create default accounts for admin, officer, and owner
-        User::create([
+        $users = [
+        [
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('admin123'),
@@ -35,6 +36,13 @@ class AccountSeeder extends Seeder
             'role' => 'owner',
             'is_active' => true,
         ],
-        );
+        ];
+
+        foreach ($users as $user) {
+            User::updateOrCreate(
+                ['email' => $user['email']],
+                $user
+            );
+        }
     }
 }
