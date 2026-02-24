@@ -73,6 +73,7 @@ export default function AdminLayout({ children }) {
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             className="flex items-center gap-2 text-sm font-medium hover:text-[#1FD1A5] transition cursor-pointer"
                         >
+                            
                             {auth?.user?.name}
                             <span className="text-xs">
                                 {dropdownOpen ? "▲" : "▼"}
@@ -137,24 +138,24 @@ export default function AdminLayout({ children }) {
                 <h2
                     className="text-lg font-semibold font-['Poppins'] mb-10 
             bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] 
-            bg-clip-text text-transparent"
+            bg-clip-text text-transparent text-center"
                 >
                     PARKONE
                 </h2>
 
                 <nav className="space-y-4 text-sm">
                     <Link
-                        href="/dashboard"
+                        href="/admin"
                         className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
                     >
                         Dashboard
                     </Link>
 
                     <Link
-                        href="/users"
+                        href="/admin/vehicle-types"
                         className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
                     >
-                        Manage Users
+                        Manage Vehicle Types
                     </Link>
 
                     <Link
