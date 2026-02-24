@@ -1,6 +1,6 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info } from "lucide-react";
+import { Plus, Edit3, Trash2, Info, MapPinned } from "lucide-react";
 
 export default function Index({ parkingLocations = [] }) {
     const { flash } = usePage().props;
@@ -9,6 +9,13 @@ export default function Index({ parkingLocations = [] }) {
         if (confirm("Yakin ingin menghapus lokasi parkir ini?")) {
             router.delete(route("admin.parking-locations.destroy", id));
         }
+    };
+
+    const getGoogleMapsUrl = (latitude, longitude) => {
+        if (!latitude || !longitude) return "#";
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${latitude},${longitude}`,
+        )}`;
     };
 
     return (
@@ -105,6 +112,28 @@ export default function Index({ parkingLocations = [] }) {
                                                 >
                                                     <Edit3 size={18} />
                                                 </Link>
+                                                {item.latitude &&
+                                                item.longitude ? (
+                                                    <a
+                                                        href={getGoogleMapsUrl(
+                                                            item.latitude,
+                                                            item.longitude,
+                                                        )}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                                                        title="Go to GMaps"
+                                                    >
+                                                        <MapPinned size={18} />
+                                                    </a>
+                                                ) : (
+                                                    <span
+                                                        className="p-2 rounded-lg text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                                        title="Koordinat belum tersedia"
+                                                    >
+                                                        <MapPinned size={18} />
+                                                    </span>
+                                                )}
                                                 <button
                                                     onClick={() =>
                                                         handleDelete(item.id)
