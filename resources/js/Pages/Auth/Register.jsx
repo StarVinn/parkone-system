@@ -1,4 +1,5 @@
 import { Head, useForm, Link } from "@inertiajs/react";
+import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function Register() {
     const { data, setData, post, processing, errors } = useForm({
@@ -10,7 +11,7 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("register"));
+        post(route("register.store"));
     };
 
     return (
@@ -21,7 +22,12 @@ export default function Register() {
                 <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
                     {/* TITLE */}
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-blue-600">
+                        <img
+                            src={logo}
+                            alt="PARKONE Logo"
+                            className="mx-auto w-16 h-16 mb-4"
+                        />
+                        <h1 className="text-3xl font-extrabold tracking-wider font-['Poppins'] bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] bg-clip-text text-transparent">
                             PARKONE
                         </h1>
                         <p className="text-sm text-slate-500 mt-2">
