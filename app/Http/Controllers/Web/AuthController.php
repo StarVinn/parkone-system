@@ -18,14 +18,32 @@ class AuthController extends Controller
 
     public function showLoginForm()
     {
-        abort_if(Auth::check(), 403, 'Anda sudah login.');
-        return Inertia::render('Auth/Login');
+        Auth::check();
+        if (Auth::check()) {
+            return match (Auth::user()->role) {
+                'admin'   => redirect('/admin'),
+                'officer' => redirect('/officer'),
+                'owner'   => redirect('/owner'),
+            };
+        } else {
+            return Inertia::render('Auth/Login');
+        }
     }
 
     public function showRegisterForm()
     {
-        abort_if(Auth::check(), 403, 'Anda sudah login.');
-        return Inertia::render('Auth/Register');
+        Auth::check();
+        if (Auth::check()) {
+            return match (Auth::user()->role) {
+                'admin'   => redirect('/admin'),
+                'officer' => redirect('/officer'),
+                'owner'   => redirect('/owner'),
+            };
+        } else {
+            return Inertia::render('Auth/Register');
+        }
+
+        
     }
 
     public function login(PostLoginRequest $request)
@@ -43,13 +61,13 @@ class AuthController extends Controller
         };
     }
 
-    public function register(StoreUserRequest $request)
+    public function register(StoreUserRequest $request, AuthService $authService)
     {
-        $this->authService->register(
+        $authService->register(
             $request->validated()
         );
 
-        return redirect('/login')
+        return redirect()->route('login')
             ->with('success', 'Registrasi berhasil. Silakan login.');
     }
 
@@ -60,6 +78,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return redirect()->route('login');
     }
 }

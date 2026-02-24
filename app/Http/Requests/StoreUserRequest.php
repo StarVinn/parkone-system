@@ -25,7 +25,7 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:2|confirmed',
-            'role' => 'required|in:admin,user',
+            'role' => 'in:admin,user',
             'profile_photo' => 'nullable|image|mimes:png,jpg,heic',
             'rfid_uid' => 'nullable|string|max:255|unique:users',
             'is_active' => 'boolean',
@@ -50,9 +50,6 @@ class StoreUserRequest extends FormRequest
             'password.string' => 'Password harus berupa teks.',
             'password.min' => 'Password minimal 2 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
-            
-            'role.required' => 'Role wajib diisi.',
-            'role.in' => 'Role harus salah satu dari: admin, user.',
 
             'profile_photo.image' => 'Profile photo harus berupa gambar.',
             'profile_photo.mimes' => 'Profile photo harus berformat png, jpg, atau heic.',
