@@ -62,16 +62,15 @@ export default function AdminLayout({ children }) {
                                 }`}
                             />
                         </button>
-
                     </div>
 
                     {/* RIGHT */}
                     <div className="relative">
                         <button
                             onClick={() => setDropdownOpen(!dropdownOpen)}
-                            className="flex items-center gap-2 text-sm font-medium hover:text-[#1FD1A5] transition cursor-pointer"
+                            className="flex items-center gap-2 text-sm font-medium hover:text-[#1FD1A5] font-['Poppins'] transition cursor-pointer"
                         >
-                            
+
                             {auth?.user?.name}
                             <span className="text-xs">
                                 {dropdownOpen ? "▲" : "▼"}
@@ -133,7 +132,11 @@ export default function AdminLayout({ children }) {
             p-6 transform transition-transform duration-300
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
-                <img src={logo} alt="Logo ParkOne" className="w-16 h-16 mx-auto mb-4" />
+                <img
+                    src={logo}
+                    alt="Logo ParkOne"
+                    className="w-16 h-16 mx-auto mb-4"
+                />
                 <h2
                     className="text-lg font-semibold font-['Poppins'] mb-10 
             bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] 
