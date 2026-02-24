@@ -59,6 +59,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::put('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'update'])->name('admin.parking-locations.update');
             Route::delete('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'destroy'])->name('admin.parking-locations.destroy');
         });
+
+        Route::prefix('parking-areas')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Web\ParkingAreaController::class, 'index'])->name('admin.parking-areas.index');
+            Route::get('/create', [\App\Http\Controllers\Web\ParkingAreaController::class, 'showCreate'])->name('admin.parking-areas.create');
+            Route::post('/', [\App\Http\Controllers\Web\ParkingAreaController::class, 'store'])->name('admin.parking-areas.store');
+            Route::get('/{id}/edit', [\App\Http\Controllers\Web\ParkingAreaController::class, 'showEdit'])->name('admin.parking-areas.edit');
+            Route::put('/{id}', [\App\Http\Controllers\Web\ParkingAreaController::class, 'update'])->name('admin.parking-areas.update');
+            Route::delete('/{id}', [\App\Http\Controllers\Web\ParkingAreaController::class, 'destroy'])->name('admin.parking-areas.destroy');
+        });
         
     });
 });

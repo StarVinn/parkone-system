@@ -166,6 +166,12 @@ export default function AdminLayout({ children }) {
                     >
                         Parking Locations
                     </Link>
+                    <Link
+                        href="/admin/parking-areas"
+                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                    >
+                        Parking Areas
+                    </Link>
                 </nav>
             </aside>
 

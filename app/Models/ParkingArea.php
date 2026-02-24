@@ -8,13 +8,13 @@ class ParkingArea extends Model
 {
     protected $fillable = [
         'name',
-        'location_id',
+        'parking_location_id',
         'capacity',
-        'description',
+        'occupied',
     ];
 
     public function location()
     {
-        return $this->belongsTo(ParkingLocation::class, 'location_id');
+        return $this->belongsTo(ParkingLocation::class, 'parking_location_id');
     }
 }
