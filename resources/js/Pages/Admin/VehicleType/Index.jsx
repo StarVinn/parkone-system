@@ -102,7 +102,7 @@ export default function Index({ vehicleTypes }) {
                                                     onClick={() =>
                                                         handleDelete(item.id)
                                                     }
-                                                    className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                    className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 size={18} />

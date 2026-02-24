@@ -39,7 +39,7 @@ export default function Create() {
                     {/* Name Input */}
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                            Vehicle Name
+                            Vehicle Type Name
                         </label>
                         <input
                             type="text"
@@ -94,7 +94,7 @@ export default function Create() {
                             disabled={processing}
                             className="flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold text-white transition-all
                                 bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] 
-                                hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+                                hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 cursor-pointer"
                         >
                             {processing ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
