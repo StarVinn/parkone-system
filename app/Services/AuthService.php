@@ -50,7 +50,7 @@ class AuthService
             'email'     => $data['email'],
             'password'  => bcrypt($data['password']),
             'role'      => 'user',
-            'is_active' => $data['is_active'] ?? true,
+            'is_active' => true,
         ]);
     }
 
