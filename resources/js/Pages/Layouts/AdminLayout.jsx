@@ -158,10 +158,10 @@ export default function AdminLayout({ children }) {
                     </Link>
 
                     <Link
-                        href="/parking-rates"
+                        href="/admin/parking-locations"
                         className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
                     >
-                        Parking Rates
+                        Parking Locations
                     </Link>
                 </nav>
             </aside>
