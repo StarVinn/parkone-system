@@ -50,6 +50,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::put('/{id}', [VehicleTypeController::class, 'update'])->name('admin.vehicle-types.update');
             Route::delete('/{id}', [VehicleTypeController::class, 'destroy'])->name('admin.vehicle-types.destroy');
         });
+
+        Route::prefix('parking-locations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Web\ParkingLocationController::class, 'index'])->name('admin.parking-locations.index');
+            Route::get('/create', [\App\Http\Controllers\Web\ParkingLocationController::class, 'showCreate'])->name('admin.parking-locations.create');
+            Route::post('/', [\App\Http\Controllers\Web\ParkingLocationController::class, 'store'])->name('admin.parking-locations.store');
+            Route::get('/{id}/edit', [\App\Http\Controllers\Web\ParkingLocationController::class, 'showEdit'])->name('admin.parking-locations.edit');
+            Route::put('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'update'])->name('admin.parking-locations.update');
+            Route::delete('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'destroy'])->name('admin.parking-locations.destroy');
+        });
         
     });
 });
