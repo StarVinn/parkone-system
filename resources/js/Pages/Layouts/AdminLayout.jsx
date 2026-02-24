@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, usePage, useForm } from "@inertiajs/react";
 import useTheme from "../../hooks/useTheme";
+import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
@@ -62,9 +63,6 @@ export default function AdminLayout({ children }) {
                             />
                         </button>
 
-                        <h1 className="text-lg lg:text-xl font-semibold font-['Poppins'] tracking-wide">
-                            Admin Dashboard
-                        </h1>
                     </div>
 
                     {/* RIGHT */}
@@ -135,6 +133,7 @@ export default function AdminLayout({ children }) {
             p-6 transform transition-transform duration-300
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
+                <img src={logo} alt="Logo ParkOne" className="w-16 h-16 mx-auto mb-4" />
                 <h2
                     className="text-lg font-semibold font-['Poppins'] mb-10 
             bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] 
