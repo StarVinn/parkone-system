@@ -9,7 +9,9 @@ class ParkingRate extends Model
     protected $fillable = [
         'location_id',
         'vehicle_type_id',
+        'rate_type',
         'rate_per_hour',
+        'flat_rate',
     ];
 
     public function location()
