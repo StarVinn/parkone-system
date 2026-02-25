@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -39,6 +40,12 @@ class AuthService
                 'email' => 'Akun Anda tidak memiliki akses ke sistem.',
             ]);
         }
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'activity' => 'User login',
+            'activity_time' => now(),
+        ]);
 
         return $user;
     }

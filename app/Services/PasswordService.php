@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -28,6 +29,12 @@ class PasswordService
                 ])->save();
 
                 event(new PasswordReset($user));
+
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'activity' => 'Reset password',
+                    'activity_time' => now(),
+                ]);
             }
         );
     }
