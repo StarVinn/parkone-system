@@ -15,7 +15,8 @@ export default function AdminLayout({ children }) {
         { label: "Manage Vehicle Types", href: "/admin/vehicle-types" },
         { label: "Parking Locations", href: "/admin/parking-locations" },
         { label: "Parking Areas", href: "/admin/parking-areas" },
-        { label: "Vehicle Rates", href: "/admin/vehicle-rates" }, // Tambahin dibawah ini
+        { label: "Vehicle Rates", href: "/admin/vehicle-rates" },
+        { label: "Activity Logs", href: "/admin/activity-logs" },
     ];
 
     // Auto open sidebar on desktop
