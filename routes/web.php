@@ -1,9 +1,15 @@
 <?php
 
+use App\Http\Controllers\Web\ParkingAreaController;
+use App\Http\Controllers\Web\ParkingLocationController;
 use App\Http\Controllers\Web\PasswordController;
+use App\Http\Controllers\Web\VehicleRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+
+
 
 
 
@@ -52,21 +58,30 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         });
 
         Route::prefix('parking-locations')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Web\ParkingLocationController::class, 'index'])->name('admin.parking-locations.index');
-            Route::get('/create', [\App\Http\Controllers\Web\ParkingLocationController::class, 'showCreate'])->name('admin.parking-locations.create');
-            Route::post('/', [\App\Http\Controllers\Web\ParkingLocationController::class, 'store'])->name('admin.parking-locations.store');
-            Route::get('/{id}/edit', [\App\Http\Controllers\Web\ParkingLocationController::class, 'showEdit'])->name('admin.parking-locations.edit');
-            Route::put('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'update'])->name('admin.parking-locations.update');
-            Route::delete('/{id}', [\App\Http\Controllers\Web\ParkingLocationController::class, 'destroy'])->name('admin.parking-locations.destroy');
+            Route::get('/', [ParkingLocationController::class, 'index'])->name('admin.parking-locations.index');
+            Route::get('/create', [ParkingLocationController::class, 'showCreate'])->name('admin.parking-locations.create');
+            Route::post('/', [ParkingLocationController::class, 'store'])->name('admin.parking-locations.store');
+            Route::get('/{id}/edit', [ParkingLocationController::class, 'showEdit'])->name('admin.parking-locations.edit');
+            Route::put('/{id}', [ParkingLocationController::class, 'update'])->name('admin.parking-locations.update');
+            Route::delete('/{id}', [ParkingLocationController::class, 'destroy'])->name('admin.parking-locations.destroy');
         });
 
         Route::prefix('parking-areas')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Web\ParkingAreaController::class, 'index'])->name('admin.parking-areas.index');
-            Route::get('/create', [\App\Http\Controllers\Web\ParkingAreaController::class, 'showCreate'])->name('admin.parking-areas.create');
-            Route::post('/', [\App\Http\Controllers\Web\ParkingAreaController::class, 'store'])->name('admin.parking-areas.store');
-            Route::get('/{id}/edit', [\App\Http\Controllers\Web\ParkingAreaController::class, 'showEdit'])->name('admin.parking-areas.edit');
-            Route::put('/{id}', [\App\Http\Controllers\Web\ParkingAreaController::class, 'update'])->name('admin.parking-areas.update');
-            Route::delete('/{id}', [\App\Http\Controllers\Web\ParkingAreaController::class, 'destroy'])->name('admin.parking-areas.destroy');
+            Route::get('/', [ParkingAreaController::class, 'index'])->name('admin.parking-areas.index');
+            Route::get('/create', [ParkingAreaController::class, 'showCreate'])->name('admin.parking-areas.create');
+            Route::post('/', [ParkingAreaController::class, 'store'])->name('admin.parking-areas.store');
+            Route::get('/{id}/edit', [ParkingAreaController::class, 'showEdit'])->name('admin.parking-areas.edit');
+            Route::put('/{id}', [ParkingAreaController::class, 'update'])->name('admin.parking-areas.update');
+            Route::delete('/{id}', [ParkingAreaController::class, 'destroy'])->name('admin.parking-areas.destroy');
+        });
+
+        Route::prefix('vehicle-rates')->group(function () {
+            Route::get('/', [VehicleRateController::class, 'index'])->name('admin.vehicle-rates.index');
+            Route::get('/create', [VehicleRateController::class, 'showCreate'])->name('admin.vehicle-rates.create');
+            Route::post('/', [VehicleRateController::class, 'store'])->name('admin.vehicle-rates.store');
+            Route::get('/{id}/edit', [VehicleRateController::class, 'showEdit'])->name('admin.vehicle-rates.edit');
+            Route::put('/{id}', [VehicleRateController::class, 'update'])->name('admin.vehicle-rates.update');
+            Route::delete('/{id}', [VehicleRateController::class, 'destroy'])->name('admin.vehicle-rates.destroy');
         });
         
     });
