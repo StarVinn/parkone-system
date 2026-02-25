@@ -54,10 +54,10 @@ class VehicleRateController extends Controller
             ->with('success', 'Tarif kendaraan berhasil diperbarui.');
     }
 
-    public function destroy($id)
+    public function destroy($id, VehicleRateService $vehicleRateService)
     {
         $vehicleRate = ParkingRate::findOrFail($id);
-        $vehicleRate->delete();
+        $vehicleRateService->deleteVehicleRate($vehicleRate);
 
         return redirect('/admin/vehicle-rates')
             ->with('success', 'Tarif kendaraan berhasil dihapus.');

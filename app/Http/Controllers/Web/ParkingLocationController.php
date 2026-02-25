@@ -44,10 +44,10 @@ class ParkingLocationController extends Controller
             ->route('admin.parking-locations.index')
             ->with('success', 'Lokasi parkir berhasil diperbarui.');
     }
-    public function destroy($id){
+    public function destroy($id, ParkingLocationService $parkingLocationService){
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         $parkingLocation = ParkingLocation::findOrFail($id);
-        $parkingLocation->delete();
+        $parkingLocationService->deleteParkingLocation($parkingLocation);
         return redirect('/admin/parking-locations')
             ->with('success', 'Lokasi parkir berhasil dihapus.');
     }

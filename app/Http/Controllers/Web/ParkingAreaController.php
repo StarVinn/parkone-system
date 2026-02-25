@@ -55,11 +55,11 @@ class ParkingAreaController extends Controller
             ->with('success', 'Area parkir berhasil diperbarui.');
     }
 
-    public function destroy($id){
+    public function destroy($id, ParkingAreaService $parkingAreaService){
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         
         $parkingArea = \App\Models\ParkingArea::findOrFail($id);
-        $parkingArea->delete();
+        $parkingAreaService->deleteParkingArea($parkingArea);
 
         return redirect('/admin/parking-areas')
             ->with('success', 'Area parkir berhasil dihapus.');

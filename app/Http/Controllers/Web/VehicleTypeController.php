@@ -50,11 +50,11 @@ class VehicleTypeController extends Controller
             ->with('success', 'Tipe kendaraan berhasil diperbarui.');
     }
 
-    public function destroy($id){
+    public function destroy($id, VehicleTypeService $vehicleTypeService){
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         
         $vehicleType = \App\Models\VehicleType::findOrFail($id);
-        $vehicleType->delete();
+        $vehicleTypeService->deleteVehicleType($vehicleType);
 
         return redirect('/admin/vehicle-types')
             ->with('success', 'Tipe kendaraan berhasil dihapus.');
