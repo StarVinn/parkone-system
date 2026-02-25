@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('parking_rates', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('vehicle_type_id');
+            $table->unsignedBigInteger('location_id');
             $table->enum('rate_type', ['hourly', 'flat']);
             $table->decimal('flat_rate', 8, 2)->nullable();
             $table->decimal('rate_per_hour', 8, 2)->nullable();
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->foreign('vehicle_type_id')->references('id')->on('vehicle_types')->onDelete('cascade');
+            $table->foreign('location_id')->references('id')->on('parking_locations')->onDelete('cascade');
         });
     }
 
