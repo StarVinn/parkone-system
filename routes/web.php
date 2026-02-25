@@ -3,6 +3,7 @@
 use App\Http\Controllers\Web\ParkingAreaController;
 use App\Http\Controllers\Web\ParkingLocationController;
 use App\Http\Controllers\Web\PasswordController;
+use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\VehicleRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/{id}/edit', [VehicleRateController::class, 'showEdit'])->name('admin.vehicle-rates.edit');
             Route::put('/{id}', [VehicleRateController::class, 'update'])->name('admin.vehicle-rates.update');
             Route::delete('/{id}', [VehicleRateController::class, 'destroy'])->name('admin.vehicle-rates.destroy');
+        });
+
+        Route::prefix('activity-logs')->group(function () {
+            Route::get('/', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
+            Route::delete('/{id}', [ActivityLogController::class, 'destroy'])->name('admin.activity-logs.destroy');
         });
         
     });
