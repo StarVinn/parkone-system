@@ -10,6 +10,13 @@ export default function AdminLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const { darkMode, setDarkMode } = useTheme();
+    const navLinks = [
+        { label: "Dashboard", href: "/admin" },
+        { label: "Manage Vehicle Types", href: "/admin/vehicle-types" },
+        { label: "Parking Locations", href: "/admin/parking-locations" },
+        { label: "Parking Areas", href: "/admin/parking-areas" },
+        { label: "Vehicle Rates", href: "/admin/vehicle-rates" }, // Tambahin dibawah ini
+    ];
 
     // Auto open sidebar on desktop
     useEffect(() => {
@@ -70,7 +77,6 @@ export default function AdminLayout({ children }) {
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             className="flex items-center gap-2 text-sm font-medium hover:text-[#1FD1A5] font-['Poppins'] transition cursor-pointer"
                         >
-
                             {auth?.user?.name}
                             <span className="text-xs">
                                 {dropdownOpen ? "▲" : "▼"}
@@ -146,32 +152,15 @@ export default function AdminLayout({ children }) {
                 </h2>
 
                 <nav className="space-y-4 text-sm">
-                    <Link
-                        href="/admin"
-                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
-                    >
-                        Dashboard
-                    </Link>
-
-                    <Link
-                        href="/admin/vehicle-types"
-                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
-                    >
-                        Manage Vehicle Types
-                    </Link>
-
-                    <Link
-                        href="/admin/parking-locations"
-                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
-                    >
-                        Parking Locations
-                    </Link>
-                    <Link
-                        href="/admin/parking-areas"
-                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
-                    >
-                        Parking Areas
-                    </Link>
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
                 </nav>
             </aside>
 
