@@ -17,7 +17,7 @@ class VehicleRateService
         if (Auth::id()) {
             ActivityLog::create([
                 'user_id' => Auth::id(),
-                'activity' => 'Menambah tarif kendaraan untuk lokasi ID ' . $parkingRate->parking_location_id,
+                'activity' => 'Menambah tarif kendaraan untuk lokasi ID ' . $parkingRate->location_id,
                 'activity_time' => now(),
             ]);
         }
