@@ -15,7 +15,7 @@ export default function AdminLayout({ children }) {
         { label: "Manage Vehicle Types", href: "/admin/vehicle-types" },
         { label: "Parking Locations", href: "/admin/parking-locations" },
         { label: "Parking Areas", href: "/admin/parking-areas" },
-        { label: "Vehicle Rates", href: "/admin/vehicle-rates" },
+        { label: "Parking Rates", href: "/admin/parking-rates" },
         { label: "Activity Logs", href: "/admin/activity-logs" },
     ];
 

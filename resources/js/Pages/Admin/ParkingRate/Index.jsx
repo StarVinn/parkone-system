@@ -9,12 +9,12 @@ const formatCurrency = (value) =>
         maximumFractionDigits: 0,
     }).format(Number(value || 0));
 
-export default function Index({ vehicleRates = [] }) {
+export default function Index({ parkingRates = [] }) {
     const { flash } = usePage().props;
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus tarif parkir ini?")) {
-            router.delete(route("admin.vehicle-rates.destroy", id));
+            router.delete(route("admin.parking-rates.destroy", id));
         }
     };
 
@@ -23,7 +23,7 @@ export default function Index({ vehicleRates = [] }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Vehicle Rates
+                        Parking Rates
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Kelola tarif parkir berdasarkan tipe kendaraan dan area parkir.
@@ -31,7 +31,7 @@ export default function Index({ vehicleRates = [] }) {
                 </div>
 
                 <Link
-                    href={route("admin.vehicle-rates.create")}
+                    href={route("admin.parking-rates.create")}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
@@ -71,7 +71,7 @@ export default function Index({ vehicleRates = [] }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {vehicleRates.length === 0 ? (
+                            {parkingRates.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan="5"
@@ -81,7 +81,7 @@ export default function Index({ vehicleRates = [] }) {
                                     </td>
                                 </tr>
                             ) : (
-                                vehicleRates.map((item) => {
+                                parkingRates.map((item) => {
                                     const isHourly = item.rate_type === "hourly";
                                     const amount = isHourly
                                         ? `${formatCurrency(item.rate_per_hour)} / jam`
@@ -110,7 +110,7 @@ export default function Index({ vehicleRates = [] }) {
                                                 <div className="flex items-center justify-center gap-3">
                                                     <Link
                                                         href={route(
-                                                            "admin.vehicle-rates.edit",
+                                                            "admin.parking-rates.edit",
                                                             item.id,
                                                         )}
                                                         className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"

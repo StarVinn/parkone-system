@@ -10,13 +10,13 @@ const formatRupiahInput = (value) => {
     return `Rp ${Number(numeric).toLocaleString("id-ID")}`;
 };
 
-export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
-    const { data, setData, post, errors, processing } = useForm({
-        vehicle_type_id: "",
-        location_id: "",
-        rate_type: "hourly",
-        rate_per_hour: "",
-        flat_rate: "",
+export default function Edit({ parkingRate, parkingLocations = [], vehicleTypes = [] }) {
+    const { data, setData, put, errors, processing } = useForm({
+        vehicle_type_id: parkingRate.vehicle_type_id?.toString() ?? "",
+        location_id: parkingRate.location_id?.toString() ?? "",
+        rate_type: parkingRate.rate_type ?? "hourly",
+        rate_per_hour: parkingRate.rate_per_hour ?? "",
+        flat_rate: parkingRate.flat_rate ?? "",
     });
 
     const isHourly = data.rate_type === "hourly";
@@ -35,24 +35,24 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("admin.vehicle-rates.store"));
+        put(route("admin.parking-rates.update", parkingRate.id));
     };
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4 mb-8">
                 <Link
-                    href={route("admin.vehicle-rates.index")}
+                    href={route("admin.parking-rates.index")}
                     className="group p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Create Vehicle Rate
+                        Edit Parking Rate
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Tambahkan tarif baru untuk kendaraan.
+                        Perbarui tarif kendaraan yang sudah ada.
                     </p>
                 </div>
             </div>
@@ -177,7 +177,7 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
 
                     <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">
                         <Link
-                            href={route("admin.vehicle-rates.index")}
+                            href={route("admin.parking-rates.index")}
                             className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                         >
                             Batal
@@ -194,7 +194,7 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
                             ) : (
                                 <Save size={18} />
                             )}
-                            {processing ? "Menyimpan..." : "Simpan Data"}
+                            {processing ? "Menyimpan..." : "Update Data"}
                         </button>
                     </div>
                 </form>
@@ -203,4 +203,4 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
     );
 }
 
-Create.layout = (page) => <AdminLayout children={page} />;
+Edit.layout = (page) => <AdminLayout children={page} />;

@@ -6,12 +6,12 @@ use App\Models\ActivityLog;
 use App\Models\ParkingRate;
 use Illuminate\Support\Facades\Auth;
 
-class VehicleRateService
+class ParkingRateService
 {
     /**
      * Create a new class instance.
      */
-    public function createVehicleRate(array $data){
+    public function createParkingRate(array $data){
         $parkingRate = ParkingRate::create($data);
 
         if (Auth::id()) {
@@ -24,7 +24,7 @@ class VehicleRateService
 
         return $parkingRate;
     }
-    public function updateVehicleRate(ParkingRate $parkingRate, array $data){
+    public function updateParkingRate(ParkingRate $parkingRate, array $data){
         $parkingRate->update($data);
 
         if (Auth::id()) {
@@ -38,7 +38,7 @@ class VehicleRateService
         return $parkingRate;
     }
 
-    public function deleteVehicleRate(ParkingRate $parkingRate): void
+    public function deleteParkingRate(ParkingRate $parkingRate): void
     {
         $rateId = $parkingRate->id;
         $parkingRate->delete();

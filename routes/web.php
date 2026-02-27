@@ -4,7 +4,7 @@ use App\Http\Controllers\Web\ParkingAreaController;
 use App\Http\Controllers\Web\ParkingLocationController;
 use App\Http\Controllers\Web\PasswordController;
 use App\Http\Controllers\Web\ActivityLogController;
-use App\Http\Controllers\Web\VehicleRateController;
+use App\Http\Controllers\Web\ParkingRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -76,13 +76,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::delete('/{id}', [ParkingAreaController::class, 'destroy'])->name('admin.parking-areas.destroy');
         });
 
-        Route::prefix('vehicle-rates')->group(function () {
-            Route::get('/', [VehicleRateController::class, 'index'])->name('admin.vehicle-rates.index');
-            Route::get('/create', [VehicleRateController::class, 'showCreate'])->name('admin.vehicle-rates.create');
-            Route::post('/', [VehicleRateController::class, 'store'])->name('admin.vehicle-rates.store');
-            Route::get('/{id}/edit', [VehicleRateController::class, 'showEdit'])->name('admin.vehicle-rates.edit');
-            Route::put('/{id}', [VehicleRateController::class, 'update'])->name('admin.vehicle-rates.update');
-            Route::delete('/{id}', [VehicleRateController::class, 'destroy'])->name('admin.vehicle-rates.destroy');
+        Route::prefix('parking-rates')->group(function () {
+            Route::get('/', [ParkingRateController::class, 'index'])->name('admin.parking-rates.index');
+            Route::get('/create', [ParkingRateController::class, 'showCreate'])->name('admin.parking-rates.create');
+            Route::post('/', [ParkingRateController::class, 'store'])->name('admin.parking-rates.store');
+            Route::get('/{id}/edit', [ParkingRateController::class, 'showEdit'])->name('admin.parking-rates.edit');
+            Route::put('/{id}', [ParkingRateController::class, 'update'])->name('admin.parking-rates.update');
+            Route::delete('/{id}', [ParkingRateController::class, 'destroy'])->name('admin.parking-rates.destroy');
         });
 
         Route::prefix('activity-logs')->group(function () {
