@@ -1,6 +1,6 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info } from "lucide-react";
+import { Plus, Edit3, Trash2, Info, ArrowLeft } from "lucide-react";
 
 const formatCurrency = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -10,7 +10,9 @@ const formatCurrency = (value) =>
     }).format(Number(value || 0));
 
 export default function Index({ parkingRates = [] }) {
-    const { flash } = usePage().props;
+    const page = usePage();
+    const { flash } = page.props;
+    const showBackToOverview = (page.url || "").includes("from=overview");
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus tarif parkir ini?")) {
@@ -22,6 +24,15 @@ export default function Index({ parkingRates = [] }) {
         <div className="p-4 sm:p-6 transition-colors duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
+                    {showBackToOverview && (
+                        <Link
+                            href="/admin/parking"
+                            className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition mb-2"
+                        >
+                            <ArrowLeft size={14} />
+                            Back to Overview
+                        </Link>
+                    )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
                         Parking Rates
                     </h1>

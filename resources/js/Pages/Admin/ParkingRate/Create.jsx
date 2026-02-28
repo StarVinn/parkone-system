@@ -1,5 +1,5 @@
 import { ArrowLeft, Save } from "lucide-react";
-import { useForm, Link } from "@inertiajs/react";
+import { useForm, Link, usePage } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 
 const getNumericValue = (value) => String(value ?? "").replace(/\D/g, "");
@@ -11,6 +11,15 @@ const formatRupiahInput = (value) => {
 };
 
 export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
+    const page = usePage();
+    const fromOverview = (page.url || "").includes("from=overview");
+    const indexUrl = fromOverview
+        ? `${route("admin.parking-rates.index")}?from=overview`
+        : route("admin.parking-rates.index");
+    const storeUrl = fromOverview
+        ? `${route("admin.parking-rates.store")}?from=overview`
+        : route("admin.parking-rates.store");
+
     const { data, setData, post, errors, processing } = useForm({
         vehicle_type_id: "",
         location_id: "",
@@ -35,14 +44,14 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("admin.parking-rates.store"));
+        post(storeUrl);
     };
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4 mb-8">
                 <Link
-                    href={route("admin.parking-rates.index")}
+                    href={indexUrl}
                     className="group p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -177,7 +186,7 @@ export default function Create({ parkingLocations = [], vehicleTypes = [] }) {
 
                     <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">
                         <Link
-                            href={route("admin.parking-rates.index")}
+                            href={indexUrl}
                             className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                         >
                             Batal

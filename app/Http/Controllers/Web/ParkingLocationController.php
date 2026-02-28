@@ -31,8 +31,12 @@ class ParkingLocationController extends Controller
         
         $parkingLocationService->createParkingLocation($request->validated());
 
+        $redirectParams = $request->query('from') === 'overview'
+            ? ['from' => 'overview']
+            : [];
+
         return redirect()
-            ->route('admin.parking-locations.index')
+            ->route('admin.parking-locations.index', $redirectParams)
             ->with('success', 'Lokasi parkir berhasil ditambahkan.');
     }
     public function update(ParkingLocationRequest $request, ParkingLocationService $parkingLocationService, $id){
