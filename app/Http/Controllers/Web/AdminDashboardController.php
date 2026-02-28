@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\ParkingArea;
+use App\Models\ParkingLocation;
+use App\Models\ParkingRate;
+use App\Models\Vehicle;
 
 class AdminDashboardController extends Controller
 {
@@ -22,11 +26,33 @@ class AdminDashboardController extends Controller
             ->where('activity', 'like', '%(mobile)%')
             ->count();
 
+        $vehicleCreatedThisMonth = Vehicle::query()
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count();
+
+        $parkingCreatedThisMonth = ParkingLocation::query()
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count()
+            + ParkingArea::query()
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count()
+            + ParkingRate::query()
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count();
+
         return inertia('Admin/Dashboard', [
             'loginChart' => [
                 'web' => $webLogins,
                 'mobile' => $mobileLogins,
                 'total' => $webLogins + $mobileLogins,
+            ],
+            'creationChart' => [
+                'vehicle' => $vehicleCreatedThisMonth,
+                'parking' => $parkingCreatedThisMonth,
             ],
         ]);
     }
