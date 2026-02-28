@@ -77,8 +77,12 @@ class VehicleController extends Controller
         $validated = $request->validated();
         $createdCount = $vehicleService->createManyVehicles($validated['vehicles']);
 
+        $redirectParams = $request->query('from') === 'overview'
+            ? ['from' => 'overview']
+            : [];
+
         return redirect()
-            ->route('admin.vehicles.index')
+            ->route('admin.vehicles.index', $redirectParams)
             ->with('success', $createdCount . ' kendaraan berhasil ditambahkan.');
     }
 

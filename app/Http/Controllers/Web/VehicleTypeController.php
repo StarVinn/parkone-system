@@ -35,8 +35,12 @@ class VehicleTypeController extends Controller
         
         $vehicleTypeService->createVehicleType($request->validated());
 
+        $redirectParams = $request->query('from') === 'overview'
+            ? ['from' => 'overview']
+            : [];
+
         return redirect()
-            ->route('admin.vehicle-types.index')
+            ->route('admin.vehicle-types.index', $redirectParams)
             ->with('success', 'Tipe kendaraan berhasil ditambahkan.');
     }
 
