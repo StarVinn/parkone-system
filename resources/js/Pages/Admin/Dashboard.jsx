@@ -1,8 +1,10 @@
-import { Link } from "@inertiajs/react";
 import { Activity, Bike, Car, Warehouse } from "lucide-react";
 import AdminLayout from "../Layouts/AdminLayout";
 
-export default function Dashboard({ loginChart = { web: 0, mobile: 0, total: 0 } }) {
+export default function Dashboard({
+    loginChart = { web: 0, mobile: 0, total: 0 },
+    creationChart = { vehicle: 0, parking: 0 },
+}) {
     const stats = {
         active: {
             title: "Kendaraan Aktif",
@@ -73,24 +75,18 @@ export default function Dashboard({ loginChart = { web: 0, mobile: 0, total: 0 }
     const safeTotal = totalCount > 0 ? totalCount : 1;
     const webPercent = Math.round((webCount / safeTotal) * 100);
     const mobilePercent = Math.round((mobileCount / safeTotal) * 100);
+    const vehicleCreated = Number(creationChart.vehicle || 0);
+    const parkingCreated = Number(creationChart.parking || 0);
+    const maxCreated = Math.max(vehicleCreated, parkingCreated, 1);
+    const vehicleBarHeight = Math.max((vehicleCreated / maxCreated) * 100, vehicleCreated > 0 ? 8 : 0);
+    const parkingBarHeight = Math.max((parkingCreated / maxCreated) * 100, parkingCreated > 0 ? 8 : 0);
 
-    const chartWidth = 640;
-    const chartHeight = 220;
-    const paddingX = 56;
-    const paddingY = 28;
-    const maxValue = Math.max(webCount, mobileCount, 1);
-    const axisBottomY = chartHeight - paddingY;
-    const leftX = paddingX;
-    const rightX = chartWidth - paddingX;
-
-    const toY = (value) => axisBottomY - (value / maxValue) * (axisBottomY - paddingY);
-
-    const linePoints = [
-        { label: "Web", value: webCount, x: leftX, y: toY(webCount), color: "#3B82F6" },
-        { label: "Mobile", value: mobileCount, x: rightX, y: toY(mobileCount), color: "#10B981" },
-    ];
-
-    const linePath = `M ${linePoints[0].x} ${linePoints[0].y} L ${linePoints[1].x} ${linePoints[1].y}`;
+    const pieSize = 220;
+    const center = pieSize / 2;
+    const radius = 72;
+    const circumference = 2 * Math.PI * radius;
+    const webArc = (webCount / safeTotal) * circumference;
+    const mobileArc = (mobileCount / safeTotal) * circumference;
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -158,59 +154,60 @@ export default function Dashboard({ loginChart = { web: 0, mobile: 0, total: 0 }
                         </span>
                     </div>
 
-                    <div className="w-full overflow-x-auto">
+                    <div className="flex items-center justify-center py-2">
                         <svg
-                            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                            className="w-full min-w-[520px] h-52"
+                            viewBox={`0 0 ${pieSize} ${pieSize}`}
+                            className="w-56 h-56"
                             role="img"
-                            aria-label="Line chart login source web dan mobile"
+                            aria-label="Pie chart login source web dan mobile"
                         >
-                            <line
-                                x1={leftX}
-                                y1={axisBottomY}
-                                x2={rightX}
-                                y2={axisBottomY}
-                                stroke="#CBD5E1"
-                                strokeWidth="1"
-                            />
-                            <line
-                                x1={leftX}
-                                y1={paddingY}
-                                x2={leftX}
-                                y2={axisBottomY}
-                                stroke="#CBD5E1"
-                                strokeWidth="1"
-                            />
-
-                            <path
-                                d={linePath}
-                                fill="none"
-                                stroke="#2563EB"
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                            />
-
-                            {linePoints.map((point) => (
-                                <g key={point.label}>
-                                    <circle cx={point.x} cy={point.y} r="6" fill={point.color} />
-                                    <text
-                                        x={point.x}
-                                        y={point.y - 10}
-                                        textAnchor="middle"
-                                        className="fill-slate-500 text-xs"
-                                    >
-                                        {point.value}
-                                    </text>
-                                    <text
-                                        x={point.x}
-                                        y={axisBottomY + 20}
-                                        textAnchor="middle"
-                                        className="fill-slate-500 text-xs"
-                                    >
-                                        {point.label}
-                                    </text>
-                                </g>
-                            ))}
+                            <g transform={`rotate(-90 ${center} ${center})`}>
+                                <circle
+                                    cx={center}
+                                    cy={center}
+                                    r={radius}
+                                    fill="none"
+                                    stroke="#E2E8F0"
+                                    strokeWidth="22"
+                                />
+                                <circle
+                                    cx={center}
+                                    cy={center}
+                                    r={radius}
+                                    fill="none"
+                                    stroke="#3B82F6"
+                                    strokeWidth="22"
+                                    strokeDasharray={`${webArc} ${circumference - webArc}`}
+                                    strokeLinecap="butt"
+                                />
+                                <circle
+                                    cx={center}
+                                    cy={center}
+                                    r={radius}
+                                    fill="none"
+                                    stroke="#10B981"
+                                    strokeWidth="22"
+                                    strokeDasharray={`${mobileArc} ${circumference - mobileArc}`}
+                                    strokeDashoffset={-webArc}
+                                    strokeLinecap="butt"
+                                />
+                            </g>
+                            <text
+                                x={center}
+                                y={center - 6}
+                                textAnchor="middle"
+                                className="fill-slate-900 dark:fill-white text-[11px]"
+                            >
+                                Total
+                            </text>
+                            <text
+                                x={center}
+                                y={center + 16}
+                                textAnchor="middle"
+                                className="fill-slate-900 dark:fill-white text-xl font-semibold"
+                            >
+                                {totalCount}
+                            </text>
                         </svg>
                     </div>
 
@@ -227,71 +224,44 @@ export default function Dashboard({ loginChart = { web: 0, mobile: 0, total: 0 }
                 </div>
 
                 <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins'] mb-4">
-                        Aksi Cepat
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
+                            Statistik Pembuatan
+                        </h2>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Bulan ini
+                        </span>
+                    </div>
 
-                    <div className="space-y-4">
-                        <div className="border border-slate-200 dark:border-white/10 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                    Vehicle
-                                </p>
-                                <Link
-                                    href="/admin/vehicle"
-                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                >
-                                    Buka halaman
-                                </Link>
+                    <div className="h-56 flex items-end justify-center gap-12 border-b border-slate-200 dark:border-white/10 pb-3">
+                        <div className="w-24 text-center">
+                            <div className="h-44 flex items-end justify-center">
+                                <div
+                                    className="w-12 rounded-t-lg bg-blue-500 transition-all duration-500"
+                                    style={{ height: `${vehicleBarHeight}%` }}
+                                />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <Link
-                                    href="/admin/vehicle-types"
-                                    className="px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
-                                >
-                                    Manage Vehicle Types
-                                </Link>
-                                <Link
-                                    href="/admin/vehicles"
-                                    className="px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
-                                >
-                                    Manage Vehicles
-                                </Link>
-                            </div>
+                            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Vehicle
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {vehicleCreated}
+                            </p>
                         </div>
 
-                        <div className="border border-slate-200 dark:border-white/10 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                    Parking
-                                </p>
-                                <Link
-                                    href="/admin/parking"
-                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                >
-                                    Buka halaman
-                                </Link>
+                        <div className="w-24 text-center">
+                            <div className="h-44 flex items-end justify-center">
+                                <div
+                                    className="w-12 rounded-t-lg bg-emerald-500 transition-all duration-500"
+                                    style={{ height: `${parkingBarHeight}%` }}
+                                />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <Link
-                                    href="/admin/parking-locations"
-                                    className="px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
-                                >
-                                    Parking Locations
-                                </Link>
-                                <Link
-                                    href="/admin/parking-areas"
-                                    className="px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
-                                >
-                                    Parking Areas
-                                </Link>
-                                <Link
-                                    href="/admin/parking-rates"
-                                    className="sm:col-span-2 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
-                                >
-                                    Parking Rates
-                                </Link>
-                            </div>
+                            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Parking
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {parkingCreated}
+                            </p>
                         </div>
                     </div>
                 </div>
