@@ -1,0 +1,32 @@
+name: Laravel Basic Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  basic-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Check Laravel files exist
+      run: |
+        ls -la
+        test -f artisan
+        test -f composer.json
+        test -d app/
+
+    - name: Validate composer.json
+      run: |
+        if command -v composer &> /dev/null; then
+          composer validate --no-check-all --strict
+        else
+          echo "Composer not available, skipping validation"
+        fi
+
+    - name: Check PHP syntax
+      run: |
+        find . -name "*.php" -not -path "./vendor/*" -not -path "./storage/*" -exec php -l {} \;
