@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
-    public function login(array $credentials)
+    public function login(array $credentials, string $source = 'web')
     {
         $user = User::where('email', $credentials['email'])->first();
 
@@ -41,9 +41,14 @@ class AuthService
             ]);
         }
 
+        $normalizedSource = strtolower($source);
+        if (!in_array($normalizedSource, ['web', 'mobile'])) {
+            $normalizedSource = 'web';
+        }
+
         ActivityLog::create([
             'user_id' => $user->id,
-            'activity' => 'User login',
+            'activity' => 'User login (' . $normalizedSource . ')',
             'activity_time' => now(),
         ]);
 

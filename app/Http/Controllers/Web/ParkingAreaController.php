@@ -40,8 +40,12 @@ class ParkingAreaController extends Controller
         
         $parkingAreaService->createParkingArea($request->validated());
 
+        $redirectParams = $request->query('from') === 'overview'
+            ? ['from' => 'overview']
+            : [];
+
         return redirect()
-            ->route('admin.parking-areas.index')
+            ->route('admin.parking-areas.index', $redirectParams)
             ->with('success', 'Area parkir berhasil ditambahkan.');
     }
 

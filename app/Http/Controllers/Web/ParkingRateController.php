@@ -39,8 +39,12 @@ class ParkingRateController extends Controller
     {
         $parkingRateService->createParkingRate($request->validated());
 
+        $redirectParams = $request->query('from') === 'overview'
+            ? ['from' => 'overview']
+            : [];
+
         return redirect()
-            ->route('admin.parking-rates.index')
+            ->route('admin.parking-rates.index', $redirectParams)
             ->with('success', 'Tarif kendaraan berhasil ditambahkan.');
     }
 

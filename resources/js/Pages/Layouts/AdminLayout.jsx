@@ -1,25 +1,39 @@
 import { useState, useEffect } from "react";
 import { Link, usePage, useForm } from "@inertiajs/react";
+import { ChevronDown } from "lucide-react";
 import useTheme from "../../hooks/useTheme";
 import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function AdminLayout({ children }) {
-    const { auth } = usePage().props;
+    const page = usePage();
+    const { auth } = page.props;
+    const currentPath = (page.url || "").split("?")[0];
     const { post, processing } = useForm();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [vehicleMenuOpen, setVehicleMenuOpen] = useState(() =>
+        currentPath.startsWith("/admin/vehicle"),
+    );
+    const [parkingMenuOpen, setParkingMenuOpen] = useState(() =>
+        currentPath.startsWith("/admin/parking"),
+    );
+
     const { darkMode, setDarkMode } = useTheme();
-    const navLinks = [
-        { label: "Dashboard", href: "/admin" },
+
+    const vehicleLinks = [
+        { label: "Overview", href: "/admin/vehicle" },
         { label: "Manage Vehicle Types", href: "/admin/vehicle-types" },
+        { label: "Manage Vehicles", href: "/admin/vehicles" },
+    ];
+
+    const parkingLinks = [
+        { label: "Overview", href: "/admin/parking" },
         { label: "Parking Locations", href: "/admin/parking-locations" },
         { label: "Parking Areas", href: "/admin/parking-areas" },
         { label: "Parking Rates", href: "/admin/parking-rates" },
-        { label: "Activity Logs", href: "/admin/activity-logs" },
     ];
 
-    // Auto open sidebar on desktop
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 1024) {
@@ -40,16 +54,13 @@ export default function AdminLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-white dark:bg-[#0B1026] text-slate-900 dark:text-[#F5F7FA] font-['Inter'] transition-colors duration-300">
-            {/* ================= NAVBAR ================= */}
             <header
-                className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md 
-        bg-white/80 dark:bg-[#0B1026]/80 
+                className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md
+        bg-white/80 dark:bg-[#0B1026]/80
         border-b border-slate-200 dark:border-white/5 transition-colors duration-300"
             >
                 <div className="flex items-center justify-between px-6 lg:px-10 py-4">
-                    {/* LEFT */}
                     <div className="flex items-center gap-4">
-                        {/* Toggle Button */}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="relative w-8 h-8 flex items-center justify-center"
@@ -72,69 +83,62 @@ export default function AdminLayout({ children }) {
                         </button>
                     </div>
 
-                    {/* RIGHT */}
                     <div className="relative">
                         <button
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             className="flex items-center gap-2 text-sm font-medium hover:text-[#1FD1A5] font-['Poppins'] transition cursor-pointer"
                         >
                             {auth?.user?.name}
-                            <span className="text-xs">
-                                {dropdownOpen ? "▲" : "▼"}
-                            </span>
+                            <ChevronDown
+                                size={14}
+                                className={`transition-transform duration-300 ${
+                                    dropdownOpen ? "rotate-180" : "rotate-0"
+                                }`}
+                            />
                         </button>
 
-                        {dropdownOpen && (
-                            <div
-                                className="absolute right-0 mt-4 w-48 
-                        bg-white dark:bg-[#111633] 
-                        border border-slate-200 dark:border-white/10 
-                        rounded-xl shadow-2xl py-2 text-sm transition-colors duration-300"
+                        <div
+                            className={`absolute right-0 mt-4 w-48 bg-white dark:bg-[#111633]
+                                border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl py-2 text-sm
+                                transition-all duration-300 origin-top ${
+                                    dropdownOpen
+                                        ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                                        : "opacity-0 -translate-y-1 scale-95 pointer-events-none"
+                                }`}
+                        >
+                            <Link
+                                href="/profile"
+                                className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition"
                             >
-                                <Link
-                                    href="/"
-                                    className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition"
-                                >
-                                    Home
-                                </Link>
+                                Profile
+                            </Link>
 
-                                <Link
-                                    href="/profile"
-                                    className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition"
-                                >
-                                    Profile
-                                </Link>
+                            <hr className="my-2 border-slate-200 dark:border-white/10" />
 
-                                <hr className="my-2 border-slate-200 dark:border-white/10" />
+                            <button
+                                onClick={() => setDarkMode(!darkMode)}
+                                className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
+                            >
+                                {darkMode ? "☀️Light Mode" : "🌙Dark Mode"}
+                            </button>
 
-                                <button
-                                    onClick={() => setDarkMode(!darkMode)}
-                                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
-                                >
-                                    {darkMode
-                                        ? "☀️ Light Mode"
-                                        : "🌙 Dark Mode"}
-                                </button>
+                            <hr className="my-2 border-slate-200 dark:border-white/10" />
 
-                                <hr className="my-2 border-slate-200 dark:border-white/10" />
-
-                                <button
-                                    onClick={handleLogout}
-                                    disabled={processing}
-                                    className="w-full text-left px-4 py-2 text-red-500 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
-                                >
-                                    {processing ? "Logging out..." : "Logout"}
-                                </button>
-                            </div>
-                        )}
+                            <button
+                                onClick={handleLogout}
+                                disabled={processing}
+                                className="w-full text-left px-4 py-2 text-red-500 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
+                            >
+                                {processing ? "Logging out..." : "Logout"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* ================= SIDEBAR ================= */}
             <aside
-                className={`fixed top-20 left-0 z-30 h-[calc(100vh-5rem)] w-64 
-            bg-slate-100 dark:bg-[#111633] 
+                className={`fixed top-20 left-0 z-30 h-[calc(100vh-5rem)] w-64
+            bg-slate-100 dark:bg-[#111633]
             border-r border-slate-200 dark:border-white/5
             p-6 transform transition-transform duration-300
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
@@ -145,27 +149,96 @@ export default function AdminLayout({ children }) {
                     className="w-16 h-16 mx-auto mb-4"
                 />
                 <h2
-                    className="text-lg font-semibold font-['Poppins'] mb-10 
-            bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] 
+                    className="text-lg font-semibold font-['Poppins'] mb-10
+            bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
             bg-clip-text text-transparent text-center"
                 >
                     PARKONE
                 </h2>
 
-                <nav className="space-y-4 text-sm">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                <nav className="space-y-3 text-sm">
+                    <Link
+                        href="/admin"
+                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                    >
+                        Dashboard
+                    </Link>
+
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setVehicleMenuOpen(!vehicleMenuOpen)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition cursor-pointer"
                         >
-                            {link.label}
-                        </Link>
-                    ))}
+                            <span>Vehicle</span>
+                            <ChevronDown
+                                size={14}
+                                className={`transition-transform duration-300 ${
+                                    vehicleMenuOpen ? "rotate-180" : "rotate-0"
+                                }`}
+                            />
+                        </button>
+                        <div
+                            className={`mt-1 pl-3 space-y-1 overflow-hidden transition-all duration-300 ${
+                                vehicleMenuOpen
+                                    ? "max-h-40 opacity-100 translate-y-0"
+                                    : "max-h-0 opacity-0 -translate-y-1"
+                            }`}
+                        >
+                            {vehicleLinks.map((link) => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className="block px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                                >
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setParkingMenuOpen(!parkingMenuOpen)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition cursor-pointer"
+                        >
+                            <span>Parking</span>
+                            <ChevronDown
+                                size={14}
+                                className={`transition-transform duration-300 ${
+                                    parkingMenuOpen ? "rotate-180" : "rotate-0"
+                                }`}
+                            />
+                        </button>
+                        <div
+                            className={`mt-1 pl-3 space-y-1 overflow-hidden transition-all duration-300 ${
+                                parkingMenuOpen
+                                    ? "max-h-52 opacity-100 translate-y-0"
+                                    : "max-h-0 opacity-0 -translate-y-1"
+                            }`}
+                        >
+                            {parkingLinks.map((link) => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className="block px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                                >
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    <Link
+                        href="/admin/activity-logs"
+                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                    >
+                        Activity Logs
+                    </Link>
                 </nav>
             </aside>
 
-            {/* ================= OVERLAY ================= */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/40 z-20 lg:hidden"
@@ -173,7 +246,6 @@ export default function AdminLayout({ children }) {
                 />
             )}
 
-            {/* ================= CONTENT ================= */}
             <main
                 className={`pt-24 px-6 lg:px-10 transition-all duration-300 ${
                     sidebarOpen ? "lg:ml-64" : "lg:ml-0"

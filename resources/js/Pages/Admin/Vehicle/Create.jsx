@@ -1,5 +1,5 @@
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
-import { useForm, Link } from "@inertiajs/react";
+import { useForm, Link, usePage } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 
 const emptyRow = () => ({
@@ -9,6 +9,15 @@ const emptyRow = () => ({
 });
 
 export default function Create({ users = [], vehicleTypes = [] }) {
+    const page = usePage();
+    const fromOverview = (page.url || "").includes("from=overview");
+    const indexUrl = fromOverview
+        ? `${route("admin.vehicles.index")}?from=overview`
+        : route("admin.vehicles.index");
+    const storeUrl = fromOverview
+        ? `${route("admin.vehicles.store")}?from=overview`
+        : route("admin.vehicles.store");
+
     const { data, setData, post, errors, processing } = useForm({
         vehicles: [emptyRow()],
     });
@@ -38,14 +47,14 @@ export default function Create({ users = [], vehicleTypes = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("admin.vehicles.store"));
+        post(storeUrl);
     };
 
     return (
         <div className="max-w-5xl mx-auto p-4 sm:p-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4 mb-8">
                 <Link
-                    href={route("admin.vehicles.index")}
+                    href={indexUrl}
                     className="group p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -190,7 +199,7 @@ export default function Create({ users = [], vehicleTypes = [] }) {
 
                     <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">
                         <Link
-                            href={route("admin.vehicles.index")}
+                            href={indexUrl}
                             className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                         >
                             Batal
