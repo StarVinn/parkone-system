@@ -1,14 +1,16 @@
 <?php
 
+use App\Http\Controllers\Web\AdminDashboardController;
+use App\Http\Controllers\Web\AdminCategoryController;
 use App\Http\Controllers\Web\ParkingAreaController;
 use App\Http\Controllers\Web\ParkingLocationController;
 use App\Http\Controllers\Web\PasswordController;
 use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\ParkingRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
+use App\Http\Controllers\Web\VehicleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
 
 
 
@@ -46,9 +48,9 @@ Route::post('/reset-password', [PasswordController::class, 'reset'])->name('pass
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::prefix('admin')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('Admin/Dashboard');
-        });
+        Route::get('/', [AdminDashboardController::class, 'index']);
+        Route::get('/vehicle', [AdminCategoryController::class, 'vehicle'])->name('admin.category.vehicle');
+        Route::get('/parking', [AdminCategoryController::class, 'parking'])->name('admin.category.parking');
         Route::prefix('vehicle-types')->group(function () {
             Route::get('/', [VehicleTypeController::class, 'index'])->name('admin.vehicle-types.index');
             Route::get('/create', [VehicleTypeController::class, 'showCreate'])->name('admin.vehicle-types.create');
@@ -56,6 +58,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/{id}/edit', [VehicleTypeController::class, 'showEdit'])->name('admin.vehicle-types.edit');
             Route::put('/{id}', [VehicleTypeController::class, 'update'])->name('admin.vehicle-types.update');
             Route::delete('/{id}', [VehicleTypeController::class, 'destroy'])->name('admin.vehicle-types.destroy');
+        });
+
+        Route::prefix('vehicles')->group(function () {
+            Route::get('/', [VehicleController::class, 'index'])->name('admin.vehicles.index');
+            Route::get('/create', [VehicleController::class, 'showCreate'])->name('admin.vehicles.create');
+            Route::post('/', [VehicleController::class, 'store'])->name('admin.vehicles.store');
+            Route::get('/{id}/edit', [VehicleController::class, 'showEdit'])->name('admin.vehicles.edit');
+            Route::put('/{id}', [VehicleController::class, 'update'])->name('admin.vehicles.update');
+            Route::delete('/{id}', [VehicleController::class, 'destroy'])->name('admin.vehicles.destroy');
         });
 
         Route::prefix('parking-locations')->group(function () {
@@ -89,7 +100,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
             Route::delete('/{id}', [ActivityLogController::class, 'destroy'])->name('admin.activity-logs.destroy');
         });
-        
+
     });
 });
 
