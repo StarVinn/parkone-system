@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\ParkingRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
 use App\Http\Controllers\Web\VehicleController;
+use App\Http\Controllers\Web\TransactionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -112,9 +113,18 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 Route::middleware(['auth', 'role:officer'])->group(function () {
     Route::prefix('officer')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('Officer/Dashboard');
-        });
+        Route::get('/', [TransactionController::class, 'index'])->name('officer.dashboard');
+        Route::get('/standby/in', [TransactionController::class, 'standbyIn'])->name('officer.standby.in');
+        Route::get('/standby/out', [TransactionController::class, 'standbyOut'])->name('officer.standby.out');
+        Route::get('/rfid-lookup', [TransactionController::class, 'lookupVehiclesByRfid'])->name('officer.rfid.lookup');
+        Route::post('/transactions', [TransactionController::class, 'store'])->name('officer.transactions.store');
+        Route::get('/visitor-vehicles/create', [TransactionController::class, 'showVisitorVehicleCreate'])->name('officer.visitor-vehicles.create');
+        Route::post('/visitor-vehicles', [TransactionController::class, 'storeVisitorVehicle'])->name('officer.visitor-vehicles.store');
+        Route::get('/transactions/{transaction}/receipt', [TransactionController::class, 'showReceipt'])->name('officer.transactions.receipt');
+        Route::post('/transactions/{transaction}/receipt/confirm', [TransactionController::class, 'confirmReceipt'])->name('officer.transactions.receipt.confirm');
+        Route::get('/dashboard', fn () => redirect()->route('officer.dashboard'));
+        Route::get('/parking', fn () => redirect()->route('officer.dashboard'));
+        Route::get('/{any}', fn () => redirect()->route('officer.dashboard'))->where('any', '.*');
     });
 });
 
