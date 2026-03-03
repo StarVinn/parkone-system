@@ -10,12 +10,31 @@ class Transaction extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'vehicle_id',
         'parking_area_id',
+        'parking_rate_id',
         'entry_time',
         'exit_time',
+        'total_hours',
+        'total_fee',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'entry_time' => 'datetime',
+            'exit_time' => 'datetime',
+            'total_hours' => 'float',
+            'total_fee' => 'float',
+        ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function vehicle()
     {
@@ -25,5 +44,10 @@ class Transaction extends Model
     public function parkingArea()
     {
         return $this->belongsTo(ParkingArea::class, 'parking_area_id');
+    }
+
+    public function parkingRate()
+    {
+        return $this->belongsTo(ParkingRate::class, 'parking_rate_id');
     }
 }
