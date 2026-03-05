@@ -30,6 +30,7 @@ class TransactionRequest extends FormRequest
                 'regex:/^[A-Za-z]{1,2}\s?[0-9]{1,4}\s?[A-Za-z]{1,3}$/',
             ],
             'parking_area_id' => 'required_if:action,entry|nullable|exists:parking_areas,id',
+            'checkout_mode' => 'exclude_unless:action,exit|nullable|in:ticket,rfid',
         ];
     }
 
@@ -44,6 +45,7 @@ class TransactionRequest extends FormRequest
             'license_plate.regex' => 'Format plat harus seperti "D 4512 I" atau "AD 45 ID".',
             'parking_area_id.required_if' => 'Area parkir wajib dipilih untuk kendaraan masuk.',
             'parking_area_id.exists' => 'Area parkir tidak valid.',
+            'checkout_mode.in' => 'Mode checkout tidak valid.',
         ];
     }
 }

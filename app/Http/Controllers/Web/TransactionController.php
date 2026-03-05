@@ -92,6 +92,10 @@ class TransactionController extends Controller
     {
         $validated = $request->validated();
         $action = $validated['action'];
+        $requestedCheckoutMode = $validated['checkout_mode'] ?? 'ticket';
+        $checkoutMode = in_array($requestedCheckoutMode, ['ticket', 'rfid'], true)
+            ? $requestedCheckoutMode
+            : 'ticket';
 
         try {
             if ($action === 'entry') {
@@ -108,6 +112,8 @@ class TransactionController extends Controller
             return redirect()->route('officer.transactions.receipt', [
                 'transaction' => $transaction->id,
                 'type' => 'exit',
+                'checkout_mode' => $checkoutMode,
+                'step' => 'payment',
             ]);
         } catch (VehicleNotRegisteredException $exception) {
             if ($action !== 'entry') {
@@ -252,6 +258,15 @@ class TransactionController extends Controller
 
         $type = $request->query('type', $transaction->status === 'completed' ? 'exit' : 'entry');
         $type = in_array($type, ['entry', 'exit']) ? $type : 'entry';
+        $checkoutMode = in_array($request->query('checkout_mode'), ['ticket', 'rfid'], true)
+            ? $request->query('checkout_mode')
+            : 'ticket';
+        $step = in_array($request->query('step'), ['payment', 'preview'], true)
+            ? $request->query('step')
+            : 'preview';
+        $receivedAmount = $request->query('received_amount');
+        $receivedAmount = is_numeric($receivedAmount) ? (float) $receivedAmount : null;
+        $ticketPenalty = 10000;
 
         $transaction->load([
             'vehicle:id,license_plate,vehicle_type_id',
@@ -266,6 +281,10 @@ class TransactionController extends Controller
             'receiptType' => $type,
             'transaction' => $transaction,
             'nominal' => $nominal,
+            'checkoutMode' => $checkoutMode,
+            'ticketPenalty' => $ticketPenalty,
+            'step' => $step,
+            'receivedAmount' => $receivedAmount,
         ]);
     }
 
@@ -274,9 +293,13 @@ class TransactionController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:entry,exit',
             'received_amount' => 'nullable|numeric|min:0',
+            'checkout_mode' => 'nullable|in:ticket,rfid',
+            'step' => 'nullable|in:payment,preview',
         ], [
             'received_amount.numeric' => 'Nominal uang masuk harus angka.',
             'received_amount.min' => 'Nominal uang masuk tidak boleh minus.',
+            'checkout_mode.in' => 'Mode checkout tidak valid.',
+            'step.in' => 'Langkah konfirmasi tidak valid.',
         ]);
 
         if ($validated['type'] === 'exit') {
@@ -288,14 +311,40 @@ class TransactionController extends Controller
 
             $nominal = (float) ($transaction->total_fee ?? 0);
             $received = (float) $validated['received_amount'];
-            $difference = round($received - $nominal, 2);
+            $differenceInCents = (int) round(($received - $nominal) * 100);
+            $requestedCheckoutMode = $validated['checkout_mode'] ?? 'ticket';
+            $checkoutMode = in_array($requestedCheckoutMode, ['ticket', 'rfid'], true)
+                ? $requestedCheckoutMode
+                : 'ticket';
+            $step = in_array(($validated['step'] ?? 'payment'), ['payment', 'preview'], true)
+                ? $validated['step']
+                : 'payment';
 
-            if ($difference !== 0.0) {
+            $allowedDifferenceInCents = [0];
+            if ($checkoutMode === 'ticket') {
+                $allowedDifferenceInCents[] = 1000000; // Rp 10.000
+            }
+
+            if (!in_array($differenceInCents, $allowedDifferenceInCents, true)) {
+                $difference = $differenceInCents / 100;
                 $label = $difference > 0 ? 'uang lebih' : 'uang kurang';
                 $gap = number_format(abs($difference), 0, ',', '.');
+                $extraInfo = $checkoutMode === 'ticket'
+                    ? ' (boleh pas atau + Rp 10.000 denda struk)'
+                    : ' (harus pas untuk mode RFID)';
 
                 throw ValidationException::withMessages([
-                    'received_amount' => 'Nominal tidak sesuai (' . $label . ' Rp ' . $gap . ').',
+                    'received_amount' => 'Nominal tidak sesuai (' . $label . ' Rp ' . $gap . ')' . $extraInfo . '.',
+                ]);
+            }
+
+            if ($step === 'payment') {
+                return redirect()->route('officer.transactions.receipt', [
+                    'transaction' => $transaction->id,
+                    'type' => 'exit',
+                    'checkout_mode' => $checkoutMode,
+                    'step' => 'preview',
+                    'received_amount' => $received,
                 ]);
             }
         }
