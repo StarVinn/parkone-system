@@ -6,7 +6,7 @@ use App\Models\ActivityLog;
 
 class ActivityLogService
 {
-    public function getAllForAdmin(array $filters = [])
+    public function getAllForAdmin(array $filters = [], int $perPage = 15)
     {
         $search = trim((string) ($filters['search'] ?? ''));
         $userId = (string) ($filters['user_id'] ?? '');
@@ -24,7 +24,8 @@ class ActivityLogService
             ->when($userId, fn($query, $id) => $query->where('user_id', $id))
             ->latest('activity_time')
             ->latest()
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function deleteActivityLog(ActivityLog $activityLog): void

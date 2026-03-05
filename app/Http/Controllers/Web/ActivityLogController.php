@@ -23,7 +23,7 @@ class ActivityLogController extends Controller
         ];
 
         return inertia('Admin/ActivityLog/Index', [
-            'activityLogs' => $activityLogService->getAllForAdmin($filters),
+            'activityLogs' => $activityLogService->getAllForAdmin($filters, 10),
             'filters' => $filters,
             'users' => User::select('id', 'name', 'email')->orderBy('name')->get(),
         ]);
