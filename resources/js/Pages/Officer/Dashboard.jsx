@@ -16,6 +16,11 @@ export default function Dashboard({
     const { flash, errors } = usePage().props;
     const [selectedLocationId, setSelectedLocationId] = useState(scope.location_id || "");
     const [selectedAreaId, setSelectedAreaId] = useState(scope.parking_area_id || "");
+    const hasSelection = Boolean(selectedLocationId && selectedAreaId);
+    const hasFilterChanged =
+        String(selectedLocationId) !== String(scope.location_id || "") ||
+        String(selectedAreaId) !== String(scope.parking_area_id || "");
+    const isApplyDisabled = !hasSelection || (scope.is_selected && !hasFilterChanged);
 
     const applyScope = (event) => {
         event.preventDefault();
@@ -120,7 +125,8 @@ export default function Dashboard({
                     <div className="flex items-end">
                         <button
                             type="submit"
-                            className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 text-white font-semibold hover:bg-[#194FD8] transition cursor-pointer"
+                            disabled={isApplyDisabled}
+                            className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 text-white font-semibold hover:bg-[#194FD8] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#1E5EFF]"
                         >
                             Terapkan Area
                         </button>
