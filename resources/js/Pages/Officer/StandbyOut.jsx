@@ -89,6 +89,7 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
         router.post(route("officer.transactions.store"), {
             action: "exit",
             license_plate: licensePlate,
+            checkout_mode: useRfid ? "rfid" : "ticket",
         });
     };
 
