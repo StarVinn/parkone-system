@@ -1,71 +1,110 @@
-import { Activity, Bike, Car, Warehouse } from "lucide-react";
+import {
+    AlertTriangle,
+    CheckCircle2,
+    ClipboardCheck,
+    Map,
+    MapPinned,
+    ShieldCheck,
+    Tags,
+    Users,
+} from "lucide-react";
 import AdminLayout from "../Layouts/AdminLayout";
 
 export default function Dashboard({
     loginChart = { web: 0, mobile: 0, total: 0 },
     creationChart = { vehicle: 0, parking: 0 },
+    adminCards = {
+        setupReadiness: {
+            rate_coverage_percent: 0,
+            configured_rate_combinations: 0,
+            expected_rate_combinations: 0,
+            areas_without_complete_rates: 0,
+            officer_active: 0,
+            officer_total: 0,
+            data_alert_total: 0,
+        },
+        masterDataHealth: {
+            location_total: 0,
+            area_total: 0,
+            vehicle_type_total: 0,
+            rate_completeness_percent: 0,
+        },
+    },
 }) {
-    const stats = {
-        active: {
-            title: "Kendaraan Aktif",
-            value: 2,
-            percent: 2,
-            icon: Activity,
-        },
-        car: {
-            title: "Mobil",
-            value: 1,
-            percent: 50,
-            icon: Car,
-        },
-        bike: {
-            title: "Motor",
-            value: 1,
-            percent: 50,
-            icon: Bike,
-        },
-        capacity: {
-            title: "Kapasitas Tersedia",
-            value: 98,
-            total: 100,
-            icon: Warehouse,
-        },
-    };
+    const setupReadiness = adminCards.setupReadiness || {};
+    const masterDataHealth = adminCards.masterDataHealth || {};
 
-    const cards = [
+    const setupReadinessCards = [
         {
-            key: "active",
-            title: stats.active.title,
-            value: stats.active.value,
-            subtitle: `${stats.active.percent}% terisi`,
-            icon: stats.active.icon,
-            iconBoxClass: "text-amber-500",
-            progress: stats.active.percent,
-            progressClass: "bg-amber-400",
-        },
-        {
-            key: "car",
-            title: stats.car.title,
-            value: stats.car.value,
-            subtitle: `${stats.car.percent}% dari total`,
-            icon: stats.car.icon,
+            key: "rate-coverage",
+            title: "Cakupan Tarif",
+            value: `${Number(setupReadiness.rate_coverage_percent || 0)}%`,
+            subtitle: `${Number(setupReadiness.configured_rate_combinations || 0)} dari ${Number(setupReadiness.expected_rate_combinations || 0)} kombinasi`,
+            icon: ShieldCheck,
             iconBoxClass: "text-blue-500",
+            progress: Number(setupReadiness.rate_coverage_percent || 0),
+            progressClass: "bg-blue-500",
         },
         {
-            key: "bike",
-            title: stats.bike.title,
-            value: stats.bike.value,
-            subtitle: `${stats.bike.percent}% dari total`,
-            icon: stats.bike.icon,
+            key: "area-incomplete-rate",
+            title: "Area Tanpa Tarif Lengkap",
+            value: Number(setupReadiness.areas_without_complete_rates || 0),
+            subtitle: "Perlu lengkapi tarif per lokasi",
+            icon: ClipboardCheck,
+            iconBoxClass: "text-amber-500",
+        },
+        {
+            key: "officer-active",
+            title: "Officer Aktif",
+            value: Number(setupReadiness.officer_active || 0),
+            subtitle: `${Number(setupReadiness.officer_total || 0)} total officer`,
+            icon: Users,
             iconBoxClass: "text-emerald-500",
         },
         {
-            key: "capacity",
-            title: stats.capacity.title,
-            value: stats.capacity.value,
-            subtitle: `Dari ${stats.capacity.total} slot total`,
-            icon: stats.capacity.icon,
-            iconBoxClass: "text-violet-500",
+            key: "data-alert",
+            title: "Data Alert",
+            value: Number(setupReadiness.data_alert_total || 0),
+            subtitle: "Cek plate duplikat/owner/area invalid",
+            icon: AlertTriangle,
+            iconBoxClass: "text-rose-500",
+        },
+    ];
+
+    const masterDataCards = [
+        {
+            key: "location-total",
+            title: "Parking Location",
+            value: Number(masterDataHealth.location_total || 0),
+            subtitle: "Total lokasi aktif",
+            icon: MapPinned,
+            iconBoxClass: "text-indigo-500",
+        },
+        {
+            key: "area-total",
+            title: "Parking Area",
+            value: Number(masterDataHealth.area_total || 0),
+            subtitle: "Total area terdaftar",
+            icon: Map,
+            iconBoxClass: "text-cyan-500",
+        },
+        {
+            key: "vehicle-type-total",
+            title: "Vehicle Type",
+            value: Number(masterDataHealth.vehicle_type_total || 0),
+            subtitle: "Tipe kendaraan aktif",
+            icon: Tags,
+            iconBoxClass: "text-fuchsia-500",
+        },
+        {
+            key: "rate-completeness",
+            title: "Rate Completeness",
+            value: `${Number(masterDataHealth.rate_completeness_percent || 0)}%`,
+            subtitle: "Kelengkapan tarif lintas lokasi",
+            icon: CheckCircle2,
+            iconBoxClass: "text-green-500",
+            progress: Number(masterDataHealth.rate_completeness_percent || 0),
+            progressClass: "bg-green-500",
         },
     ];
 
@@ -95,12 +134,56 @@ export default function Dashboard({
                     Admin Dashboard
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Ringkasan data parkir dan aktivitas login pengguna.
+                    Ringkasan readiness sistem dan kesehatan master data admin.
                 </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-                {cards.map((card) => (
+                {setupReadinessCards.map((card) => (
+                    <div
+                        key={card.key}
+                        className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl px-4 py-3 shadow-sm"
+                    >
+                        <div className="flex items-start justify-between mb-2">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {card.title}
+                            </p>
+                            <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.iconBoxClass}`}
+                            >
+                                <card.icon size={20} />
+                            </div>
+                        </div>
+
+                        <p className="text-4xl leading-none font-bold text-slate-900 dark:text-white font-['Poppins'] mb-2">
+                            {card.value}
+                        </p>
+
+                        {typeof card.progress === "number" ? (
+                            <div className="pt-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                                        <div
+                                            className={`h-full ${card.progressClass}`}
+                                            style={{ width: `${card.progress}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                        {card.subtitle}
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                {card.subtitle}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                {masterDataCards.map((card) => (
                     <div
                         key={card.key}
                         className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl px-4 py-3 shadow-sm"

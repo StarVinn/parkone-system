@@ -14,6 +14,17 @@ const formatDateTime = (value) => {
 
 export default function Index({ activityLogs = [], filters = {}, users = [] }) {
     const { flash } = usePage().props;
+    const rows = Array.isArray(activityLogs?.data)
+        ? activityLogs.data
+        : Array.isArray(activityLogs)
+          ? activityLogs
+          : [];
+    const paginationLinks = Array.isArray(activityLogs?.links)
+        ? activityLogs.links
+        : [];
+    const from = activityLogs?.from ?? 0;
+    const to = activityLogs?.to ?? 0;
+    const total = activityLogs?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
         user_id: filters.user_id ?? "",
@@ -51,6 +62,16 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
 
         setData(emptyFilters);
         router.get(route("admin.activity-logs.index"), emptyFilters, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.get(url, {}, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -140,7 +161,7 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {activityLogs.length === 0 ? (
+                            {rows.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan="4"
@@ -150,7 +171,7 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                                     </td>
                                 </tr>
                             ) : (
-                                activityLogs.map((item) => (
+                                rows.map((item) => (
                                     <tr
                                         key={item.id}
                                         className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
@@ -181,6 +202,30 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                         </tbody>
                     </table>
                 </div>
+
+                {paginationLinks.length > 3 && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Menampilkan {from} - {to} dari {total} data
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {paginationLinks.map((link, index) => (
+                                <button
+                                    key={`${link.label}-${index}`}
+                                    type="button"
+                                    onClick={() => goToPage(link.url)}
+                                    disabled={!link.url}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                                        link.active
+                                            ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
+                                            : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
