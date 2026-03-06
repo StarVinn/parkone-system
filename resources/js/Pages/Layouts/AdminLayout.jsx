@@ -236,6 +236,12 @@ export default function AdminLayout({ children }) {
                     >
                         Activity Logs
                     </Link>
+                    <Link
+                        href="/admin/accounts"
+                        className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                    >
+                        Manage Accounts
+                    </Link>
                 </nav>
             </aside>
 

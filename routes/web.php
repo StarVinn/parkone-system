@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\ParkingRateController;
 use App\Http\Controllers\Web\VehicleTypeController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\TransactionController;
+use App\Http\Controllers\Web\AdminAccountController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -100,6 +101,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::prefix('activity-logs')->group(function () {
             Route::get('/', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
             Route::delete('/{id}', [ActivityLogController::class, 'destroy'])->name('admin.activity-logs.destroy');
+        });
+
+        Route::prefix('accounts')->group(function () {
+            Route::get('/', [AdminAccountController::class, 'index'])->name('admin.accounts.index');
+            Route::get('/create', [AdminAccountController::class, 'showCreate'])->name('admin.accounts.create');
+            Route::post('/', [AdminAccountController::class, 'store'])->name('admin.accounts.store');
+            Route::post('/{user}/activate', [AdminAccountController::class, 'activate'])->name('admin.accounts.activate');
+            Route::put('/{user}/reset-email', [AdminAccountController::class, 'resetEmail'])->name('admin.accounts.reset-email');
+            Route::put('/{user}/identity', [AdminAccountController::class, 'updateIdentity'])->name('admin.accounts.update-identity');
         });
 
     });
