@@ -337,7 +337,7 @@ export default function Index({ users = [], filters = {} }) {
                             </div>
 
                             <div className="rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
-                                Setelah email diubah, sistem akan mengirim link untuk set password kembali.
+                                Setelah email diubah, sistem akan mengirim link untuk set password awal kembali.
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">

@@ -16,7 +16,7 @@ export default function ResetPassword({ token, email }) {
 
     return (
         <>
-            <Head title="New Password | PARKONE" />
+            <Head title="Reset Password | PARKONE" />
 
             <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
                 <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
@@ -30,7 +30,7 @@ export default function ResetPassword({ token, email }) {
                             PARKONE
                         </h1>
                         <p className="text-sm text-slate-500 mt-2">
-                            Masukkan password baru untuk akun Anda
+                            Masukkan password baru untuk reset akun Anda
                         </p>
                     </div>
 
@@ -44,10 +44,8 @@ export default function ResetPassword({ token, email }) {
                             <input
                                 type="email"
                                 value={data.email}
-                                onChange={(e) =>
-                                    setData("email", e.target.value)
-                                }
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                readOnly
+                                className="w-full px-4 py-2 border rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed"
                                 required
                             />
                         </div>
@@ -95,7 +93,7 @@ export default function ResetPassword({ token, email }) {
                             disabled={processing}
                             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                         >
-                            {processing ? "Processing..." : "Reset Password"}
+                            {processing ? "Processing..." : "Simpan Password Baru"}
                         </button>
                     </form>
                 </div>

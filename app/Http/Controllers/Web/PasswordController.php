@@ -34,4 +34,15 @@ class PasswordController extends Controller
                 ->with('success', 'Password berhasil direset.')
             : back()->withErrors(['email' => [__($status)]]);
     }
+
+    public function setInitialPassword(ResetPasswordRequest $request)
+    {
+        $status = $this->passwordService
+            ->setInitialPassword($request->validated());
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')
+                ->with('success', 'Password awal berhasil diset. Silakan login.')
+            : back()->withErrors(['email' => [__($status)]]);
+    }
 }

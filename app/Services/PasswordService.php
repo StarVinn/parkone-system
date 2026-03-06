@@ -26,6 +26,26 @@ class PasswordService
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),
+                ])->save();
+
+                event(new PasswordReset($user));
+
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'activity' => 'Reset password',
+                    'activity_time' => now(),
+                ]);
+            }
+        );
+    }
+
+    public function setInitialPassword(array $data): string
+    {
+        return Password::reset(
+            $data,
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
                     'is_active' => true,
                     'email_verified_at' => now(),
                 ])->save();
@@ -34,7 +54,7 @@ class PasswordService
 
                 ActivityLog::create([
                     'user_id' => $user->id,
-                    'activity' => 'Reset password',
+                    'activity' => 'Set initial password',
                     'activity_time' => now(),
                 ]);
             }

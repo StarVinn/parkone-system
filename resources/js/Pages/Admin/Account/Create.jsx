@@ -88,6 +88,7 @@ export default function Create() {
                             <option value="officer">Officer</option>
                             <option value="owner">Owner</option>
                             <option value="admin">Admin</option>
+                            <option value="user">User</option>
                         </select>
                         {errors.role && <p className="text-red-500 text-xs mt-1 ml-1">{errors.role}</p>}
                     </div>

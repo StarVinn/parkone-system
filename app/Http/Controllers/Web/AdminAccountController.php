@@ -7,6 +7,7 @@ use App\Http\Requests\AdminResetAccountEmailRequest;
 use App\Http\Requests\AdminStoreAccountRequest;
 use App\Http\Requests\AdminUpdateAccountIdentityRequest;
 use App\Models\User;
+use App\Notifications\AccountActivationSetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -64,8 +65,7 @@ class AdminAccountController extends Controller
             'email_verified_at' => null,
         ]);
 
-        $status = Password::sendResetLink(['email' => $user->email]);
-        if ($status !== Password::RESET_LINK_SENT) {
+        if (!$this->sendActivationLink($user)) {
             return redirect()
                 ->route('admin.accounts.index')
                 ->with('error', 'Akun dibuat, tapi email aktivasi gagal dikirim. Coba "Activate Account".');
@@ -80,8 +80,7 @@ class AdminAccountController extends Controller
     {
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
 
-        $status = Password::sendResetLink(['email' => $user->email]);
-        if ($status !== Password::RESET_LINK_SENT) {
+        if (!$this->sendActivationLink($user)) {
             return back()->with('error', 'Gagal mengirim email aktivasi akun.');
         }
 
@@ -99,12 +98,11 @@ class AdminAccountController extends Controller
             'email_verified_at' => null,
         ])->save();
 
-        $status = Password::sendResetLink(['email' => $user->email]);
-        if ($status !== Password::RESET_LINK_SENT) {
-            return back()->with('error', 'Email diupdate, tapi email reset password gagal dikirim.');
+        if (!$this->sendActivationLink($user)) {
+            return back()->with('error', 'Email diupdate, tapi email aktivasi gagal dikirim.');
         }
 
-        return back()->with('success', 'Email akun diperbarui. Link set password sudah dikirim.');
+        return back()->with('success', 'Email akun diperbarui. Link set password awal sudah dikirim.');
     }
 
     public function updateIdentity(AdminUpdateAccountIdentityRequest $request, User $user)
@@ -137,14 +135,26 @@ class AdminAccountController extends Controller
         $user->forceFill($updates)->save();
 
         if ($emailChanged) {
-            $status = Password::sendResetLink(['email' => $user->email]);
-            if ($status !== Password::RESET_LINK_SENT) {
-                return back()->with('error', 'Data diupdate, tapi email set password gagal dikirim.');
+            if (!$this->sendActivationLink($user)) {
+                return back()->with('error', 'Data diupdate, tapi email set password awal gagal dikirim.');
             }
 
-            return back()->with('success', 'Email/RFID diupdate. Link set password telah dikirim.');
+            return back()->with('success', 'Email/RFID diupdate. Link set password awal telah dikirim.');
         }
 
         return back()->with('success', 'RFID berhasil diperbarui.');
+    }
+
+    private function sendActivationLink(User $user): bool
+    {
+        try {
+            $token = Password::broker()->createToken($user);
+            $user->notify(new AccountActivationSetPassword($token));
+
+            return true;
+        } catch (\Throwable $th) {
+            report($th);
+            return false;
+        }
     }
 }

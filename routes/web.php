@@ -42,6 +42,13 @@ Route::get('/reset-password/{token}', function ($token) {
     ]);
 })->name('password.reset');
 Route::post('/reset-password', [PasswordController::class, 'reset'])->name('password.update');
+Route::get('/set-password/{token}', function ($token) {
+    return Inertia::render('Auth/SetPassword', [
+        'token' => $token,
+        'email' => request('email'),
+    ]);
+})->name('password.set');
+Route::post('/set-password', [PasswordController::class, 'setInitialPassword'])->name('password.set.store');
 /*
 |--------------------------------------------------------------------------
 | ADMIN
