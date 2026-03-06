@@ -1,5 +1,5 @@
-import { Link, router, usePage } from "@inertiajs/react";
-import { useMemo, useState } from "react";
+import { Link, router, useForm, usePage } from "@inertiajs/react";
+import { useEffect, useMemo, useState } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
 
 const formatLicensePlate = (value) => {
@@ -19,7 +19,11 @@ const formatLicensePlate = (value) => {
     return [match[1], match[2], match[3]].filter(Boolean).join(" ");
 };
 
-export default function StandbyIn({ selectedParkingArea = null, scope = { parking_area_id: "" } }) {
+export default function StandbyIn({
+    selectedParkingArea = null,
+    scope = { parking_area_id: "" },
+    entryVehicleTypes = [],
+}) {
     const { flash, errors } = usePage().props;
     const [useRfid, setUseRfid] = useState(false);
     const [rfidUid, setRfidUid] = useState("");
@@ -28,11 +32,41 @@ export default function StandbyIn({ selectedParkingArea = null, scope = { parkin
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [showVisitorModal, setShowVisitorModal] = useState(false);
+    const {
+        data: visitorData,
+        setData: setVisitorData,
+        post: postVisitorVehicle,
+        processing: visitorProcessing,
+        errors: visitorErrors,
+    } = useForm({
+        license_plate: "",
+        vehicle_type_id: "",
+        next_action: "entry",
+        parking_area_id: scope.parking_area_id || "",
+    });
 
     const selectedVehicle = useMemo(
         () => rfidVehicles.find((item) => String(item.id) === String(selectedVehicleId)),
         [rfidVehicles, selectedVehicleId],
     );
+
+    useEffect(() => {
+        setVisitorData("parking_area_id", scope.parking_area_id || "");
+    }, [scope.parking_area_id]);
+
+    useEffect(() => {
+        const payload = flash?.visitor_vehicle;
+        if (!payload?.license_plate) {
+            return;
+        }
+
+        setVisitorData("license_plate", formatLicensePlate(payload.license_plate));
+        setVisitorData("vehicle_type_id", "");
+        setVisitorData("next_action", payload.next_action || "entry");
+        setVisitorData("parking_area_id", payload.parking_area_id || scope.parking_area_id || "");
+        setShowVisitorModal(true);
+    }, [flash?.visitor_vehicle]);
 
     const handleLookupRfid = async () => {
         if (!rfidUid.trim()) {
@@ -90,6 +124,15 @@ export default function StandbyIn({ selectedParkingArea = null, scope = { parkin
             action: "entry",
             license_plate: licensePlate,
             parking_area_id: scope.parking_area_id,
+        });
+    };
+
+    const submitVisitorVehicle = (event) => {
+        event.preventDefault();
+
+        postVisitorVehicle(route("officer.visitor-vehicles.store"), {
+            preserveScroll: true,
+            onSuccess: () => setShowVisitorModal(false),
         });
     };
 
@@ -238,6 +281,87 @@ export default function StandbyIn({ selectedParkingArea = null, scope = { parkin
                     Proses Kendaraan Masuk
                 </button>
             </form>
+
+            {showVisitorModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-xl rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                                    Kendaraan Belum Terdaftar
+                                </h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                                    Lengkapi data kendaraan, lalu sistem akan lanjutkan transaksi masuk.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowVisitorModal(false)}
+                                className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+
+                        <form onSubmit={submitVisitorVehicle} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                    Plat Nomor
+                                </label>
+                                <input
+                                    value={visitorData.license_plate}
+                                    onChange={(event) =>
+                                        setVisitorData("license_plate", formatLicensePlate(event.target.value))
+                                    }
+                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                                    required
+                                />
+                                {visitorErrors.license_plate && (
+                                    <p className="mt-1 text-sm text-red-600">{visitorErrors.license_plate}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                    Tipe Kendaraan
+                                </label>
+                                <select
+                                    value={visitorData.vehicle_type_id}
+                                    onChange={(event) => setVisitorData("vehicle_type_id", event.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                                    required
+                                >
+                                    <option value="">Pilih tipe kendaraan</option>
+                                    {entryVehicleTypes.map((type) => (
+                                        <option key={type.id} value={type.id}>
+                                            {type.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {visitorErrors.vehicle_type_id && (
+                                    <p className="mt-1 text-sm text-red-600">{visitorErrors.vehicle_type_id}</p>
+                                )}
+                                {entryVehicleTypes.length === 0 && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        Belum ada tipe kendaraan yang punya tarif di area ini.
+                                    </p>
+                                )}
+                            </div>
+
+                            <input type="hidden" name="next_action" value={visitorData.next_action} />
+                            <input type="hidden" name="parking_area_id" value={visitorData.parking_area_id} />
+
+                            <button
+                                type="submit"
+                                disabled={visitorProcessing || entryVehicleTypes.length === 0}
+                                className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 font-semibold text-white hover:bg-[#194FD8] transition disabled:opacity-60 cursor-pointer"
+                            >
+                                {visitorProcessing ? "Menyimpan..." : "Simpan & Lanjutkan Masuk"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

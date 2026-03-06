@@ -33,6 +33,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
+                'visitor_vehicle' => fn () => $request->session()->get('visitor_vehicle'),
             ],
             'auth' => [
                 'user' => $request->user(), // Ini yang bikin {auth.user.name} bisa jalan

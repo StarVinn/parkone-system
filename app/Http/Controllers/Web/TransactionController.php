@@ -8,7 +8,6 @@ use App\Http\Requests\TransactionRequest;
 use App\Models\ParkingArea;
 use App\Models\ParkingRate;
 use App\Models\Transaction;
-use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\TransactionService;
@@ -122,7 +121,7 @@ class TransactionController extends Controller
                 ]);
             }
 
-            return redirect()->route('officer.visitor-vehicles.create', [
+            return back()->with('visitor_vehicle', [
                 'license_plate' => $exception->normalizedPlate,
                 'next_action' => $action,
                 'parking_area_id' => $validated['parking_area_id'] ?? null,
@@ -199,20 +198,10 @@ class TransactionController extends Controller
             ->first();
 
         if (!$existingVehicle) {
-            $visitorOwner = User::query()->firstOrCreate(
-                ['email' => 'pendatangbaru@parkone.local'],
-                [
-                    'name' => 'Pendatang Baru',
-                    'password' => bcrypt(str()->random(24)),
-                    'role' => 'user',
-                    'is_active' => true,
-                ],
-            );
-
             Vehicle::create([
                 'license_plate' => $plate,
                 'vehicle_type_id' => $validated['vehicle_type_id'],
-                'user_id' => $visitorOwner->id,
+                'user_id' => null,
             ]);
         }
 

@@ -61,6 +61,23 @@ class TransactionService
             ->where('exit_time', '>=', $today)
             ->when($selectedArea, fn($query) => $query->where('parking_area_id', $selectedArea->id));
 
+        $entryVehicleTypes = collect();
+        if ($selectedArea) {
+            $entryVehicleTypes = ParkingRate::query()
+                ->with('vehicleType:id,name')
+                ->where('location_id', $selectedArea->parking_location_id)
+                ->get(['id', 'vehicle_type_id', 'location_id'])
+                ->pluck('vehicleType')
+                ->filter()
+                ->unique('id')
+                ->sortBy('name')
+                ->values()
+                ->map(fn($type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                ]);
+        }
+
         return [
             'parkingLocations' => ParkingLocation::query()
                 ->select('id', 'name')
@@ -90,6 +107,7 @@ class TransactionService
                 'completed_today' => (clone $completedTodayQuery)->count(),
                 'revenue_today' => (float) (clone $completedTodayQuery)->sum('total_fee'),
             ],
+            'entryVehicleTypes' => $entryVehicleTypes,
         ];
     }
 
