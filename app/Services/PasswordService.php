@@ -26,6 +26,8 @@ class PasswordService
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
                 ])->save();
 
                 event(new PasswordReset($user));

@@ -13,7 +13,7 @@ class UserObserver
     public function created(User $user): void
     {
         // Avoid sending welcome emails during seeding/CLI maintenance commands.
-        if (app()->runningInConsole()) {
+        if (app()->runningInConsole() || !$user->is_active) {
             return;
         }
 
