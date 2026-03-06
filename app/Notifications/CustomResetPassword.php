@@ -37,11 +37,11 @@ class CustomResetPassword extends Notification
         $url = url('/reset-password/' . $this->token . '?email=' . urlencode($notifiable->email));
 
         return (new MailMessage)
-            ->subject(Lang::get('Reset Password Notifikasi - PARKONE')) // Subject email
-            ->line(Lang::get('Kamu menerima email ini karena kami menerima permintaan reset password untuk akun kamu.'))
-            ->action(Lang::get('Reset Password'), $url) // Tombol action ke URL tadi
-            ->line(Lang::get('Link reset password ini akan kedaluwarsa dalam :count menit.', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]))
-            ->line(Lang::get('Jika kamu tidak merasa melakukan permintaan ini, abaikan saja email ini.'));
+            ->subject(Lang::get('Aktivasi / Reset Password - PARKONE')) // Subject email
+            ->line(Lang::get('Gunakan link berikut untuk membuat atau mengganti password akun kamu.'))
+            ->action(Lang::get('Atur Password'), $url) // Tombol action ke URL tadi
+            ->line(Lang::get('Link ini akan kedaluwarsa dalam :count menit.', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]))
+            ->line(Lang::get('Jika kamu tidak merasa melakukan permintaan ini, abaikan email ini.'));
     }
 
     public function toArray(object $notifiable): array
