@@ -36,7 +36,8 @@ class VehicleController extends Controller
             ->when($filters['user_id'], fn($query, $userId) => $query->where('user_id', $userId))
             ->when($filters['vehicle_type_id'], fn($query, $typeId) => $query->where('vehicle_type_id', $typeId))
             ->latest()
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return inertia('Admin/Vehicle/Index', [
             'vehicles' => $vehicles,

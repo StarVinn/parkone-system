@@ -1,5 +1,4 @@
 import { Link, usePage, router, useForm } from "@inertiajs/react";
-import { useEffect, useRef } from "react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, RotateCcw, ArrowLeft } from "lucide-react";
 
@@ -7,29 +6,30 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+    const rows = Array.isArray(vehicles?.data)
+        ? vehicles.data
+        : Array.isArray(vehicles)
+          ? vehicles
+          : [];
+    const paginationLinks = Array.isArray(vehicles?.links) ? vehicles.links : [];
+    const from = vehicles?.from ?? 0;
+    const to = vehicles?.to ?? rows.length;
+    const total = vehicles?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
         user_id: filters.user_id ?? "",
         vehicle_type_id: filters.vehicle_type_id ?? "",
     });
-    const initialized = useRef(false);
 
-    useEffect(() => {
-        if (!initialized.current) {
-            initialized.current = true;
-            return;
-        }
-
-        const timer = setTimeout(() => {
-            router.get(route("admin.vehicles.index"), data, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }, 350);
-
-        return () => clearTimeout(timer);
-    }, [data.search, data.user_id, data.vehicle_type_id]);
+    const applyFilters = (event) => {
+        event.preventDefault();
+        router.get(route("admin.vehicles.index"), data, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["vehicles", "filters", "flash", "errors"],
+        });
+    };
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus kendaraan ini?")) {
@@ -49,8 +49,26 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            only: ["vehicles", "filters", "flash", "errors"],
         });
     };
+
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.get(url, {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["vehicles", "filters", "flash", "errors"],
+        });
+    };
+
+    const paginationLabel = (label) =>
+        String(label || "")
+            .replace(/&laquo;/g, "«")
+            .replace(/&raquo;/g, "»")
+            .replace(/<[^>]*>/g, "");
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -91,7 +109,10 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                 </div>
             )}
 
-            <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
+            <form
+                onSubmit={applyFilters}
+                className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
+            >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="lg:col-span-2">
                         <input
@@ -135,19 +156,27 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
 
                     <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter realtime aktif.
+                            Filter dijalankan saat klik Apply.
                         </p>
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                        >
-                            <RotateCcw size={16} />
-                            Reset
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            >
+                                <RotateCcw size={16} />
+                                Reset
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
+                            >
+                                Apply
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -169,7 +198,7 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {vehicles.length === 0 ? (
+                            {rows.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan="4"
@@ -179,7 +208,7 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                                     </td>
                                 </tr>
                             ) : (
-                                vehicles.map((item) => (
+                                rows.map((item) => (
                                     <tr
                                         key={item.id}
                                         className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
@@ -223,6 +252,31 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                         </tbody>
                     </table>
                 </div>
+
+                {paginationLinks.length > 3 && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Menampilkan {from} - {to} dari {total} data
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {paginationLinks.map((link, index) => (
+                                <button
+                                    key={`${link.label}-${index}`}
+                                    type="button"
+                                    onClick={() => goToPage(link.url)}
+                                    disabled={!link.url}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                                        link.active
+                                            ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
+                                            : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {paginationLabel(link.label)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

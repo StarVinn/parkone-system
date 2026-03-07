@@ -1,5 +1,4 @@
 import { usePage, router, useForm } from "@inertiajs/react";
-import { useEffect, useRef } from "react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Trash2, Info, RotateCcw } from "lucide-react";
 
@@ -29,24 +28,16 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
         search: filters.search ?? "",
         user_id: filters.user_id ?? "",
     });
-    const initialized = useRef(false);
 
-    useEffect(() => {
-        if (!initialized.current) {
-            initialized.current = true;
-            return;
-        }
-
-        const timer = setTimeout(() => {
-            router.get(route("admin.activity-logs.index"), data, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }, 350);
-
-        return () => clearTimeout(timer);
-    }, [data.search, data.user_id, data.date_from, data.date_to]);
+    const applyFilters = (event) => {
+        event.preventDefault();
+        router.get(route("admin.activity-logs.index"), data, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["activityLogs", "filters", "flash", "errors"],
+        });
+    };
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus activity log ini?")) {
@@ -65,6 +56,7 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            only: ["activityLogs", "filters", "flash", "errors"],
         });
     };
 
@@ -75,8 +67,15 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            only: ["activityLogs", "filters", "flash", "errors"],
         });
     };
+
+    const paginationLabel = (label) =>
+        String(label || "")
+            .replace(/&laquo;/g, "«")
+            .replace(/&raquo;/g, "»")
+            .replace(/<[^>]*>/g, "");
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -98,7 +97,10 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
+            <form
+                onSubmit={applyFilters}
+                className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
+            >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="lg:col-span-2">
                         <input
@@ -127,19 +129,27 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
 
                     <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter realtime aktif.
+                            Filter dijalankan saat klik Apply.
                         </p>
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                        >
-                            <RotateCcw size={16} />
-                            Reset
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            >
+                                <RotateCcw size={16} />
+                                Reset
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
+                            >
+                                Apply
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -220,8 +230,9 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                                             ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
                                             : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
                                     } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
+                                >
+                                    {paginationLabel(link.label)}
+                                </button>
                             ))}
                         </div>
                     </div>

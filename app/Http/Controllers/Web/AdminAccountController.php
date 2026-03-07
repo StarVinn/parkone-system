@@ -32,7 +32,8 @@ class AdminAccountController extends Controller
                 });
             })
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'email', 'role', 'rfid_uid', 'is_active', 'created_at']);
+            ->paginate(15, ['id', 'name', 'email', 'role', 'rfid_uid', 'is_active', 'created_at'])
+            ->withQueryString();
 
         return inertia('Admin/Account/Index', [
             'users' => $users,

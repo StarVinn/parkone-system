@@ -1,6 +1,6 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Info, MailCheck, MailPlus, Plus, Search, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Info, MailCheck, MailPlus, Plus, RotateCcw, Search, ShieldCheck } from "lucide-react";
 import AdminLayout from "../../Layouts/AdminLayout";
 
 export default function Index({ users = [], filters = {} }) {
@@ -9,6 +9,15 @@ export default function Index({ users = [], filters = {} }) {
     const [openActionId, setOpenActionId] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
+    const rows = Array.isArray(users?.data)
+        ? users.data
+        : Array.isArray(users)
+          ? users
+          : [];
+    const paginationLinks = Array.isArray(users?.links) ? users.links : [];
+    const from = users?.from ?? 0;
+    const to = users?.to ?? rows.length;
+    const total = users?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
     });
@@ -32,24 +41,47 @@ export default function Index({ users = [], filters = {} }) {
     } = useForm({
         rfid_uid: "",
     });
-    const initialized = useRef(false);
 
-    useEffect(() => {
-        if (!initialized.current) {
-            initialized.current = true;
-            return;
-        }
+    const applyFilters = (event) => {
+        event.preventDefault();
+        router.get(route("admin.accounts.index"), data, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["users", "filters", "flash", "errors"],
+        });
+    };
 
-        const timer = setTimeout(() => {
-            router.get(route("admin.accounts.index"), data, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }, 300);
+    const resetFilters = () => {
+        const emptyFilters = {
+            search: "",
+        };
 
-        return () => clearTimeout(timer);
-    }, [data.search]);
+        setData(emptyFilters);
+        router.get(route("admin.accounts.index"), emptyFilters, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["users", "filters", "flash", "errors"],
+        });
+    };
+
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.get(url, {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ["users", "filters", "flash", "errors"],
+        });
+    };
+
+    const paginationLabel = (label) =>
+        String(label || "")
+            .replace(/&laquo;/g, "«")
+            .replace(/&raquo;/g, "»")
+            .replace(/<[^>]*>/g, "");
 
     const handleActivate = (userId) => {
         router.post(route("admin.accounts.activate", userId));
@@ -137,8 +169,11 @@ export default function Index({ users = [], filters = {} }) {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
-                <div className="relative">
+            <form
+                onSubmit={applyFilters}
+                className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
+            >
+                <div className="relative mb-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
@@ -148,7 +183,28 @@ export default function Index({ users = [], filters = {} }) {
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                     />
                 </div>
-            </div>
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Filter dijalankan saat klik Apply.
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={resetFilters}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                        >
+                            <RotateCcw size={16} />
+                            Reset
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
+                        >
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </form>
 
             <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -164,14 +220,14 @@ export default function Index({ users = [], filters = {} }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {users.length === 0 ? (
+                            {rows.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic">
                                         Belum ada akun yang cocok.
                                     </td>
                                 </tr>
                             ) : (
-                                users.map((user) => (
+                                rows.map((user) => (
                                     <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">{user.name}</td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">{user.email}</td>
@@ -243,6 +299,31 @@ export default function Index({ users = [], filters = {} }) {
                         </tbody>
                     </table>
                 </div>
+
+                {paginationLinks.length > 3 && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Menampilkan {from} - {to} dari {total} data
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {paginationLinks.map((link, index) => (
+                                <button
+                                    key={`${link.label}-${index}`}
+                                    type="button"
+                                    onClick={() => goToPage(link.url)}
+                                    disabled={!link.url}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                                        link.active
+                                            ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
+                                            : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {paginationLabel(link.label)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {rfidTargetUser && (
