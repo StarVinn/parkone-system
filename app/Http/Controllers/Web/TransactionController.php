@@ -8,6 +8,7 @@ use App\Http\Requests\TransactionRequest;
 use App\Models\ParkingArea;
 use App\Models\ParkingRate;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\TransactionService;
@@ -186,11 +187,16 @@ class TransactionController extends Controller
             'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
             'next_action' => ['nullable', 'in:entry,exit'],
             'parking_area_id' => ['nullable', 'exists:parking_areas,id'],
+            'vehicle_photo' => ['required_if:next_action,entry', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ], [
             'license_plate.regex' => 'Format plat harus seperti "D 4512 I" atau "AD 45 ID".',
             'vehicle_type_id.required' => 'Tipe kendaraan wajib dipilih.',
             'vehicle_type_id.exists' => 'Tipe kendaraan tidak valid.',
             'parking_area_id.exists' => 'Area parkir tidak valid.',
+            'vehicle_photo.required_if' => 'Foto kendaraan wajib diambil untuk kendaraan masuk.',
+            'vehicle_photo.image' => 'Foto kendaraan harus berupa gambar.',
+            'vehicle_photo.mimes' => 'Format foto kendaraan harus JPG, PNG, atau WEBP.',
+            'vehicle_photo.max' => 'Ukuran foto kendaraan maksimal 4 MB.',
         ]);
 
         $plate = $transactionService->formatPlate($validated['license_plate']);
@@ -230,6 +236,7 @@ class TransactionController extends Controller
             $transaction = $transactionService->processEntry([
                 'license_plate' => $plate,
                 'parking_area_id' => (int) $validated['parking_area_id'],
+                'vehicle_photo' => $request->file('vehicle_photo'),
             ], Auth::id());
 
             return redirect()->route('officer.transactions.receipt', [
@@ -256,16 +263,16 @@ class TransactionController extends Controller
             : 'preview';
         $receivedAmount = $request->query('received_amount');
         $receivedAmount = is_numeric($receivedAmount) ? (float) $receivedAmount : null;
-        $ticketPenalty = 10000;
 
         $transaction->load([
             'vehicle:id,license_plate,vehicle_type_id',
             'vehicle.vehicleType:id,name',
-            'parkingArea:id,name',
+            'parkingArea:id,name,ticket_penalty',
             'parkingRate:id,rate_type,rate_per_hour,flat_rate',
         ]);
 
         $nominal = $type === 'exit' ? (float) ($transaction->total_fee ?? 0) : 0.0;
+        $ticketPenalty = (float) ($transaction->parkingArea?->ticket_penalty ?? 10000);
 
         return inertia('Officer/Receipt', [
             'receiptType' => $type,
@@ -302,6 +309,7 @@ class TransactionController extends Controller
             $nominal = (float) ($transaction->total_fee ?? 0);
             $received = (float) $validated['received_amount'];
             $differenceInCents = (int) round(($received - $nominal) * 100);
+            $ticketPenalty = (float) ($transaction->parkingArea?->ticket_penalty ?? 10000);
             $requestedCheckoutMode = $validated['checkout_mode'] ?? 'ticket';
             $checkoutMode = in_array($requestedCheckoutMode, ['ticket', 'rfid'], true)
                 ? $requestedCheckoutMode
@@ -312,7 +320,7 @@ class TransactionController extends Controller
 
             $allowedDifferenceInCents = [0];
             if ($checkoutMode === 'ticket') {
-                $allowedDifferenceInCents[] = 1000000; // Rp 10.000
+                $allowedDifferenceInCents[] = (int) round($ticketPenalty * 100);
             }
 
             if (!in_array($differenceInCents, $allowedDifferenceInCents, true)) {
@@ -320,7 +328,7 @@ class TransactionController extends Controller
                 $label = $difference > 0 ? 'uang lebih' : 'uang kurang';
                 $gap = number_format(abs($difference), 0, ',', '.');
                 $extraInfo = $checkoutMode === 'ticket'
-                    ? ' (boleh pas atau + Rp 10.000 denda struk)'
+                    ? ' (boleh pas atau + Rp ' . number_format($ticketPenalty, 0, ',', '.') . ' denda struk)'
                     : ' (harus pas untuk mode RFID)';
 
                 throw ValidationException::withMessages([

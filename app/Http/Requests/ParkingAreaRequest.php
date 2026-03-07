@@ -25,6 +25,7 @@ class ParkingAreaRequest extends FormRequest
             'name' => 'required|string|min:2|max:255',
             'parking_location_id' => 'required|exists:parking_locations,id',
             'capacity' => 'required|integer|min:1',
+            'ticket_penalty' => 'required|integer|min:0',
         ];
     }
     public function messages(): array
@@ -41,6 +42,10 @@ class ParkingAreaRequest extends FormRequest
             'capacity.required' => 'Kapasitas wajib diisi.',
             'capacity.integer' => 'Kapasitas harus berupa angka.',
             'capacity.min' => 'Kapasitas minimal 1.',
+
+            'ticket_penalty.required' => 'Denda tiket wajib diisi.',
+            'ticket_penalty.integer' => 'Denda tiket harus berupa angka.',
+            'ticket_penalty.min' => 'Denda tiket tidak boleh minus.',
         ];
     }
 }

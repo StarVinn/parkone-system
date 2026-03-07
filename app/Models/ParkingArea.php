@@ -14,7 +14,17 @@ class ParkingArea extends Model
         'parking_location_id',
         'capacity',
         'occupied',
+        'ticket_penalty',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'capacity' => 'integer',
+            'occupied' => 'integer',
+            'ticket_penalty' => 'integer',
+        ];
+    }
 
     public function location()
     {

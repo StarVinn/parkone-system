@@ -15,21 +15,25 @@ class ParkingAreaSeeder extends Seeder
                 'location_name' => 'ParkOne Pusat',
                 'name' => 'Basement A',
                 'capacity' => 120,
+                'ticket_penalty' => 10000,
             ],
             [
                 'location_name' => 'ParkOne Pusat',
                 'name' => 'Basement B',
                 'capacity' => 100,
+                'ticket_penalty' => 12000,
             ],
             [
                 'location_name' => 'ParkOne Utara',
                 'name' => 'Outdoor A',
                 'capacity' => 80,
+                'ticket_penalty' => 8000,
             ],
             [
                 'location_name' => 'ParkOne Utara',
                 'name' => 'Outdoor B',
                 'capacity' => 60,
+                'ticket_penalty' => 9000,
             ],
         ];
 
@@ -50,6 +54,7 @@ class ParkingAreaSeeder extends Seeder
                 [
                     'capacity' => $area['capacity'],
                     'occupied' => 0,
+                    'ticket_penalty' => $area['ticket_penalty'] ?? 10000,
                 ]
             );
         }
