@@ -35,7 +35,7 @@ class CustomResetPassword extends Notification implements ShouldQueue
     {
         // Buat URL yang mengarah ke route reset-password kamu
         // Kita juga tambahkan email sebagai query string agar otomatis terisi di form
-        $url = url('/reset-password/' . $this->token . '?email=' . urlencode($notifiable->email));
+        $url = config('app.url') . '/reset-password/' . $this->token . '?email=' . urlencode($notifiable->email);
 
         return (new MailMessage)
             ->subject(Lang::get('Reset Password PARKONE')) // Subject email

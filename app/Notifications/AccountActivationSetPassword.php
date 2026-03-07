@@ -23,7 +23,7 @@ class AccountActivationSetPassword extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $url = url('/set-password/' . $this->token . '?email=' . urlencode($notifiable->email));
+        $url = config('app.url') . '/set-password/' . $this->token . '?email=' . urlencode($notifiable->email);
 
         return (new MailMessage)
             ->subject(Lang::get('Aktivasi Akun PARKONE - Atur Password Pertama'))

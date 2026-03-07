@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Notifications\WelcomeToParkone;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -44,11 +45,17 @@ class PasswordService
         return Password::reset(
             $data,
             function ($user, $password) {
+                $wasInactive = !$user->is_active;
+
                 $user->forceFill([
                     'password' => Hash::make($password),
                     'is_active' => true,
                     'email_verified_at' => now(),
                 ])->save();
+
+                if ($wasInactive) {
+                    $user->notify(new WelcomeToParkone());
+                }
 
                 event(new PasswordReset($user));
 
