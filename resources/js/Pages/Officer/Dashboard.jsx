@@ -12,6 +12,7 @@ export default function Dashboard({
     scope = { location_id: "", parking_area_id: "", is_selected: false },
     activeTransactions = [],
     recentTransactions = [],
+    readiness = { entry_ready: false, entry_blockers: [] },
 }) {
     const { flash, errors } = usePage().props;
     const [selectedLocationId, setSelectedLocationId] = useState(scope.location_id || "");
@@ -37,6 +38,10 @@ export default function Dashboard({
     const capacityPercent = selectedParkingArea?.capacity
         ? Math.round((selectedParkingArea.occupied / selectedParkingArea.capacity) * 100)
         : 0;
+    const entryReady = Boolean(readiness?.entry_ready);
+    const entryBlockers = Array.isArray(readiness?.entry_blockers)
+        ? readiness.entry_blockers
+        : [];
 
     return (
         <div className="space-y-6">
@@ -197,8 +202,12 @@ export default function Dashboard({
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <Link
-                                href={route("officer.standby.in")}
-                                className="rounded-xl bg-[#1FD1A5] px-4 py-3 text-white text-center font-semibold hover:bg-[#14A886] transition"
+                                href={entryReady ? route("officer.standby.in") : "#"}
+                                className={`rounded-xl px-4 py-3 text-white text-center font-semibold transition ${
+                                    entryReady
+                                        ? "bg-[#1FD1A5] hover:bg-[#14A886]"
+                                        : "bg-slate-400 cursor-not-allowed pointer-events-none"
+                                }`}
                             >
                                 Buka Standby IN
                             </Link>
@@ -209,6 +218,29 @@ export default function Dashboard({
                                 Buka Standby OUT
                             </Link>
                         </div>
+                        {!entryReady && entryBlockers.length > 0 && (
+                            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                <p className="font-semibold mb-1">
+                                    Standby IN dikunci sementara.
+                                </p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    {entryBlockers.map((item, index) => (
+                                        <li key={`entry-blocker-${index}`}>{item}</li>
+                                    ))}
+                                </ul>
+                                <p className="mt-2">
+                                    Lengkapi dari menu admin:{" "}
+                                    <Link href="/admin/parking-rates" className="underline">
+                                        Parking Rates
+                                    </Link>{" "}
+                                    /{" "}
+                                    <Link href="/admin/parking-areas" className="underline">
+                                        Parking Areas
+                                    </Link>
+                                    .
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

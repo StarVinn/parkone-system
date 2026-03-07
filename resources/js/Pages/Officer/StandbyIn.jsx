@@ -23,6 +23,7 @@ export default function StandbyIn({
     selectedParkingArea = null,
     scope = { parking_area_id: "" },
     entryVehicleTypes = [],
+    readiness = { entry_ready: false, entry_blockers: [] },
 }) {
     const { flash, errors } = usePage().props;
     const [useRfid, setUseRfid] = useState(false);
@@ -36,6 +37,10 @@ export default function StandbyIn({
     const [cameraError, setCameraError] = useState("");
     const [cameraReady, setCameraReady] = useState(false);
     const [photoError, setPhotoError] = useState("");
+    const entryReady = Boolean(readiness?.entry_ready);
+    const entryBlockers = Array.isArray(readiness?.entry_blockers)
+        ? readiness.entry_blockers
+        : [];
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
@@ -153,6 +158,10 @@ export default function StandbyIn({
             setRfidError("Pilih kendaraan dari hasil RFID terlebih dahulu.");
             return;
         }
+        if (!entryReady) {
+            setPhotoError(entryBlockers[0] || "Area belum siap untuk transaksi masuk.");
+            return;
+        }
 
         const photoBlob = await capturePhotoBlob();
         if (!photoBlob) {
@@ -267,6 +276,16 @@ export default function StandbyIn({
             {(errors.license_plate || errors.parking_area_id || errors.action) && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {errors.license_plate || errors.parking_area_id || errors.action}
+                </div>
+            )}
+            {!entryReady && entryBlockers.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <p className="font-semibold mb-1">Transaksi masuk belum bisa diproses.</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        {entryBlockers.map((item, index) => (
+                            <li key={`standbyin-blocker-${index}`}>{item}</li>
+                        ))}
+                    </ul>
                 </div>
             )}
 
@@ -413,7 +432,8 @@ export default function StandbyIn({
 
                 <button
                     type="submit"
-                    className="w-full rounded-xl bg-[#1FD1A5] px-4 py-2.5 text-white font-semibold hover:bg-[#14A886] transition cursor-pointer"
+                    disabled={!entryReady}
+                    className="w-full rounded-xl bg-[#1FD1A5] px-4 py-2.5 text-white font-semibold hover:bg-[#14A886] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     Proses Kendaraan Masuk
                 </button>

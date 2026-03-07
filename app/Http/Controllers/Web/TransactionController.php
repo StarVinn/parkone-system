@@ -33,6 +33,12 @@ class TransactionController extends Controller
                 ->with('error', 'Pilih lokasi dan area parkir terlebih dahulu.');
         }
 
+        $readiness = $transactionService->getAreaReadiness($areaId);
+        if (!($readiness['entry_ready'] ?? false)) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'Area belum siap untuk transaksi masuk: ' . implode(' ', $readiness['entry_blockers'] ?? []));
+        }
+
         return inertia('Officer/StandbyIn', $transactionService->getOfficerDashboardData($locationId, $areaId));
     }
 
@@ -99,6 +105,13 @@ class TransactionController extends Controller
 
         try {
             if ($action === 'entry') {
+                $readiness = $transactionService->getAreaReadiness((int) ($validated['parking_area_id'] ?? 0));
+                if (!($readiness['entry_ready'] ?? false)) {
+                    throw ValidationException::withMessages([
+                        'parking_area_id' => 'Area belum siap untuk transaksi masuk: ' . implode(' ', $readiness['entry_blockers'] ?? []),
+                    ]);
+                }
+
                 $validated['vehicle_photo'] = $request->file('vehicle_photo');
                 $transaction = $transactionService->processEntry($validated, Auth::id());
 

@@ -17,6 +17,47 @@ use Illuminate\Validation\ValidationException;
 
 class TransactionService
 {
+    public function getAreaReadiness(?int $areaId = null): array
+    {
+        if (!$areaId) {
+            return [
+                'entry_ready' => false,
+                'entry_blockers' => ['Pilih area parkir terlebih dahulu.'],
+            ];
+        }
+
+        $area = ParkingArea::query()->find($areaId);
+        if (!$area) {
+            return [
+                'entry_ready' => false,
+                'entry_blockers' => ['Area parkir tidak ditemukan. Pilih area lain.'],
+            ];
+        }
+
+        $entryBlockers = [];
+
+        if ((int) $area->capacity <= 0) {
+            $entryBlockers[] = 'Kapasitas area belum valid (harus lebih dari 0).';
+        }
+
+        if ((int) $area->occupied > (int) $area->capacity) {
+            $entryBlockers[] = 'Data okupansi area tidak valid (occupied melebihi capacity).';
+        }
+
+        $hasRates = ParkingRate::query()
+            ->where('location_id', $area->parking_location_id)
+            ->exists();
+
+        if (!$hasRates) {
+            $entryBlockers[] = 'Tarif parkir untuk lokasi area ini belum tersedia.';
+        }
+
+        return [
+            'entry_ready' => empty($entryBlockers),
+            'entry_blockers' => $entryBlockers,
+        ];
+    }
+
     public function getOfficerDashboardData(?int $locationId = null, ?int $areaId = null): array
     {
         $today = now()->startOfDay();
@@ -80,6 +121,8 @@ class TransactionService
                 ]);
         }
 
+        $readiness = $this->getAreaReadiness($selectedArea?->id);
+
         return [
             'parkingLocations' => ParkingLocation::query()
                 ->select('id', 'name')
@@ -110,6 +153,10 @@ class TransactionService
                 'revenue_today' => (float) (clone $completedTodayQuery)->sum('total_fee'),
             ],
             'entryVehicleTypes' => $entryVehicleTypes,
+            'readiness' => [
+                'entry_ready' => (bool) ($readiness['entry_ready'] ?? false),
+                'entry_blockers' => $readiness['entry_blockers'] ?? [],
+            ],
         ];
     }
 
