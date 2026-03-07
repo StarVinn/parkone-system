@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Transaction extends Model
 {
@@ -15,10 +16,15 @@ class Transaction extends Model
         'parking_area_id',
         'parking_rate_id',
         'entry_time',
+        'entry_vehicle_photo_path',
         'exit_time',
         'total_hours',
         'total_fee',
         'status',
+    ];
+
+    protected $appends = [
+        'entry_vehicle_photo_url',
     ];
 
     protected function casts(): array
@@ -49,5 +55,14 @@ class Transaction extends Model
     public function parkingRate()
     {
         return $this->belongsTo(ParkingRate::class, 'parking_rate_id');
+    }
+
+    public function getEntryVehiclePhotoUrlAttribute(): ?string
+    {
+        if (!$this->entry_vehicle_photo_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->entry_vehicle_photo_path);
     }
 }

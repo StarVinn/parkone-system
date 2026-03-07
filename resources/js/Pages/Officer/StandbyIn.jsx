@@ -1,5 +1,5 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
 
 const formatLicensePlate = (value) => {
@@ -33,6 +33,14 @@ export default function StandbyIn({
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
     const [showVisitorModal, setShowVisitorModal] = useState(false);
+    const [cameraError, setCameraError] = useState("");
+    const [cameraReady, setCameraReady] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState("");
+    const [photoBlob, setPhotoBlob] = useState(null);
+    const [photoError, setPhotoError] = useState("");
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
     const {
         data: visitorData,
         setData: setVisitorData,
@@ -67,6 +75,90 @@ export default function StandbyIn({
         setVisitorData("parking_area_id", payload.parking_area_id || scope.parking_area_id || "");
         setShowVisitorModal(true);
     }, [flash?.visitor_vehicle]);
+
+    useEffect(() => {
+        const startCamera = async () => {
+            if (!navigator?.mediaDevices?.getUserMedia) {
+                setCameraError("Browser tidak mendukung akses kamera.");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false,
+                });
+                streamRef.current = stream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play();
+                }
+
+                setCameraReady(true);
+                setCameraError("");
+            } catch {
+                setCameraReady(false);
+                setCameraError("Izin kamera ditolak atau kamera tidak tersedia.");
+            }
+        };
+
+        startCamera();
+
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+            }
+        };
+    }, []);
+
+    const capturePhoto = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+
+        if (!video || !canvas || !cameraReady) {
+            setPhotoError("Kamera belum siap.");
+            return;
+        }
+
+        const width = video.videoWidth || 1280;
+        const height = video.videoHeight || 720;
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+            setPhotoError("Gagal memproses gambar kamera.");
+            return;
+        }
+
+        context.drawImage(video, 0, 0, width, height);
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    setPhotoError("Gagal mengambil foto kendaraan.");
+                    return;
+                }
+
+                setPhotoBlob(blob);
+                setPhotoPreview(canvas.toDataURL("image/jpeg", 0.92));
+                setPhotoError("");
+            },
+            "image/jpeg",
+            0.92,
+        );
+    };
+
+    const resetPhoto = () => {
+        setPhotoBlob(null);
+        setPhotoPreview("");
+        setPhotoError("");
+
+        if (videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+            videoRef.current.play().catch(() => {});
+        }
+    };
 
     const handleLookupRfid = async () => {
         if (!rfidUid.trim()) {
@@ -120,11 +212,23 @@ export default function StandbyIn({
             return;
         }
 
-        router.post(route("officer.transactions.store"), {
-            action: "entry",
-            license_plate: licensePlate,
-            parking_area_id: scope.parking_area_id,
-        });
+        if (!photoBlob) {
+            setPhotoError("Ambil foto kendaraan terlebih dahulu.");
+            return;
+        }
+
+        router.post(
+            route("officer.transactions.store"),
+            {
+                action: "entry",
+                license_plate: String(licensePlate || ""),
+                parking_area_id: String(scope.parking_area_id || ""),
+                vehicle_photo: new File([photoBlob], `entry-${Date.now()}.jpg`, {
+                    type: "image/jpeg",
+                }),
+            },
+            { forceFormData: true },
+        );
     };
 
     const submitVisitorVehicle = (event) => {
@@ -272,6 +376,58 @@ export default function StandbyIn({
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Area ditentukan dari dashboard officer.
                     </p>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="block text-sm text-slate-600 dark:text-slate-300">
+                            Foto Kendaraan Masuk
+                        </label>
+                        <div className="flex items-center gap-2">
+                            {!photoPreview ? (
+                                <button
+                                    type="button"
+                                    onClick={capturePhoto}
+                                    className="rounded-xl bg-slate-900 dark:bg-slate-700 px-4 py-2 text-sm text-white font-medium hover:bg-slate-800 dark:hover:bg-slate-600 cursor-pointer"
+                                >
+                                    Capture
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={resetPhoto}
+                                    className="rounded-xl border border-slate-300 dark:border-white/20 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer"
+                                >
+                                    Ambil Ulang
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="relative rounded-xl border border-slate-300 dark:border-white/15 overflow-hidden bg-slate-100 dark:bg-[#0B1026]">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="h-64 w-full object-cover"
+                        />
+                        {!!photoPreview && (
+                            <img
+                                src={photoPreview}
+                                alt="Preview kendaraan masuk"
+                                className="absolute inset-0 h-64 w-full object-cover"
+                            />
+                        )}
+                        <canvas ref={canvasRef} className="hidden" />
+                    </div>
+
+                    {cameraError && (
+                        <p className="text-sm text-red-600">{cameraError}</p>
+                    )}
+                    {photoError && (
+                        <p className="text-sm text-red-600">{photoError}</p>
+                    )}
                 </div>
 
                 <button

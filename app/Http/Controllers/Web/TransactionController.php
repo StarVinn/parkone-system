@@ -98,6 +98,7 @@ class TransactionController extends Controller
 
         try {
             if ($action === 'entry') {
+                $validated['vehicle_photo'] = $request->file('vehicle_photo');
                 $transaction = $transactionService->processEntry($validated, Auth::id());
 
                 return redirect()->route('officer.transactions.receipt', [

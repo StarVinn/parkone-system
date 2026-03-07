@@ -30,6 +30,7 @@ class TransactionRequest extends FormRequest
                 'regex:/^[A-Za-z]{1,2}\s?[0-9]{1,4}\s?[A-Za-z]{1,3}$/',
             ],
             'parking_area_id' => 'required_if:action,entry|nullable|exists:parking_areas,id',
+            'vehicle_photo' => 'exclude_unless:action,entry|required_if:action,entry|image|mimes:jpg,jpeg,png,webp|max:4096',
             'checkout_mode' => 'exclude_unless:action,exit|nullable|in:ticket,rfid',
         ];
     }
@@ -45,6 +46,10 @@ class TransactionRequest extends FormRequest
             'license_plate.regex' => 'Format plat harus seperti "D 4512 I" atau "AD 45 ID".',
             'parking_area_id.required_if' => 'Area parkir wajib dipilih untuk kendaraan masuk.',
             'parking_area_id.exists' => 'Area parkir tidak valid.',
+            'vehicle_photo.required_if' => 'Foto kendaraan wajib diambil untuk kendaraan masuk.',
+            'vehicle_photo.image' => 'Foto kendaraan harus berupa gambar.',
+            'vehicle_photo.mimes' => 'Format foto kendaraan harus JPG, PNG, atau WEBP.',
+            'vehicle_photo.max' => 'Ukuran foto kendaraan maksimal 4 MB.',
             'checkout_mode.in' => 'Mode checkout tidak valid.',
         ];
     }

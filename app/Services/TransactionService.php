@@ -9,8 +9,10 @@ use App\Models\ParkingLocation;
 use App\Models\ParkingRate;
 use App\Models\Transaction;
 use App\Models\Vehicle;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class TransactionService
@@ -158,12 +160,18 @@ class TransactionService
                 ]);
             }
 
+            $photoPath = null;
+            if (($data['vehicle_photo'] ?? null) instanceof UploadedFile) {
+                $photoPath = Storage::disk('public')->putFile('vehicle-entry-photos', $data['vehicle_photo']);
+            }
+
             $transaction = Transaction::create([
                 'user_id' => $officerId,
                 'vehicle_id' => $vehicle->id,
                 'parking_area_id' => $parkingArea->id,
                 'parking_rate_id' => $parkingRate->id,
                 'entry_time' => now(),
+                'entry_vehicle_photo_path' => $photoPath,
                 'status' => 'active',
             ]);
 

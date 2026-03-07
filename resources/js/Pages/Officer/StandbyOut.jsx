@@ -28,6 +28,7 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [selectedActiveTransaction, setSelectedActiveTransaction] = useState(null);
 
     const selectedVehicle = useMemo(
         () => rfidVehicles.find((item) => String(item.id) === String(selectedVehicleId)),
@@ -233,7 +234,12 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                         <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada transaksi aktif.</p>
                     )}
                     {activeTransactions.map((item) => (
-                        <div key={item.id} className="rounded-lg border border-slate-200 dark:border-white/10 p-3">
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSelectedActiveTransaction(item)}
+                            className="w-full text-left rounded-lg border border-slate-200 dark:border-white/10 p-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"
+                        >
                             <p className="text-sm font-semibold text-slate-900 dark:text-white uppercase">
                                 {item.vehicle?.license_plate}
                             </p>
@@ -243,10 +249,74 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Masuk: {item.entry_time ? new Date(item.entry_time).toLocaleString("id-ID") : "-"}
                             </p>
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
+
+            {selectedActiveTransaction && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-2xl rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                                    Detail Kendaraan Aktif
+                                </h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                                    Preview foto kendaraan masuk dan data transaksi.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedActiveTransaction(null)}
+                                className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden bg-slate-100 dark:bg-[#0B1026]">
+                                {selectedActiveTransaction.entry_vehicle_photo_url ? (
+                                    <img
+                                        src={selectedActiveTransaction.entry_vehicle_photo_url}
+                                        alt={`Foto ${selectedActiveTransaction.vehicle?.license_plate || "kendaraan"}`}
+                                        className="h-64 w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="h-64 w-full flex items-center justify-center text-sm text-slate-500 dark:text-slate-400 px-4 text-center">
+                                        Foto kendaraan masuk belum tersedia.
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-2">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Plat Nomor</p>
+                                <p className="text-lg font-semibold text-slate-900 dark:text-white uppercase">
+                                    {selectedActiveTransaction.vehicle?.license_plate || "-"}
+                                </p>
+
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Tipe Kendaraan</p>
+                                <p className="text-sm text-slate-800 dark:text-slate-200">
+                                    {selectedActiveTransaction.vehicle?.vehicle_type?.name || "-"}
+                                </p>
+
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Area Parkir</p>
+                                <p className="text-sm text-slate-800 dark:text-slate-200">
+                                    {selectedActiveTransaction.parking_area?.name || "-"}
+                                </p>
+
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Waktu Masuk</p>
+                                <p className="text-sm text-slate-800 dark:text-slate-200">
+                                    {selectedActiveTransaction.entry_time
+                                        ? new Date(selectedActiveTransaction.entry_time).toLocaleString("id-ID")
+                                        : "-"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
