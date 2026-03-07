@@ -30,11 +30,14 @@ ParkOne dirancang dengan arsitektur **single gate system** yang sederhana, stabi
 git clone https://github.com/your-username/parkone-backend.git
 cd parkone-backend
 composer install
+npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
 php artisan storage:link
 php artisan serve
+npm run build
+npm run dev
 ```
 
 Aplikasi dapat diakses di:
