@@ -6,6 +6,12 @@ export default function Index({ parkingAreas = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+    const formatCurrency = (amount) =>
+        new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0,
+        }).format(Number(amount || 0));
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus area parkir ini?")) {
@@ -69,6 +75,9 @@ export default function Index({ parkingAreas = [] }) {
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     Occupied
                                 </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Denda Tiket
+                                </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
                                     Action
                                 </th>
@@ -78,7 +87,7 @@ export default function Index({ parkingAreas = [] }) {
                             {parkingAreas.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan="5"
+                                        colSpan="6"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
                                         Belum ada data area parkir...
@@ -103,6 +112,9 @@ export default function Index({ parkingAreas = [] }) {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                             {item.occupied ?? 0}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                            {formatCurrency(item.ticket_penalty)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-3">

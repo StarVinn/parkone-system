@@ -2,6 +2,15 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useForm, Link } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 
+const formatRupiahInput = (value) => {
+    const digits = String(value ?? "").replace(/\D/g, "");
+    if (!digits) {
+        return "";
+    }
+
+    return `Rp ${new Intl.NumberFormat("id-ID").format(Number(digits))}`;
+};
+
 export default function Edit({ parkingArea, parkingLocations = [] }) {
     const { data, setData, put, errors, processing } = useForm({
         name: parkingArea.name ?? "",
@@ -9,6 +18,7 @@ export default function Edit({ parkingArea, parkingLocations = [] }) {
             parkingArea.parking_location_id?.toString() ??
             "",
         capacity: parkingArea.capacity ?? "",
+        ticket_penalty: String(parkingArea.ticket_penalty ?? 10000),
     });
 
     const submit = (e) => {
@@ -62,7 +72,7 @@ export default function Edit({ parkingArea, parkingLocations = [] }) {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                 Parking Location
@@ -122,6 +132,37 @@ export default function Edit({ parkingArea, parkingLocations = [] }) {
                             {errors.capacity && (
                                 <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
                                     {errors.capacity}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                Denda Tiket (Rp)
+                            </label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Contoh: Rp 10.000"
+                                value={formatRupiahInput(data.ticket_penalty)}
+                                onChange={(e) =>
+                                    setData(
+                                        "ticket_penalty",
+                                        e.target.value.replace(/\D/g, ""),
+                                    )
+                                }
+                                className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                    bg-slate-50 dark:bg-[#0B1026]
+                                    text-slate-900 dark:text-white
+                                    ${
+                                        errors.ticket_penalty
+                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                    }`}
+                            />
+                            {errors.ticket_penalty && (
+                                <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                    {errors.ticket_penalty}
                                 </p>
                             )}
                         </div>

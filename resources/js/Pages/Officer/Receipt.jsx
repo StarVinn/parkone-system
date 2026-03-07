@@ -194,7 +194,7 @@ export default function Receipt({
                                 <>
                                     <p className="text-center">SELAMAT DATANG</p>
                                     <p className="mt-1 text-center text-[11px] text-slate-500">
-                                        Denda 10.000 jika struk/tiket hilang
+                                        Denda Rp {currency.format(Number(ticketPenalty || 0))} jika tiket hilang
                                     </p>
                                 </>
                             )}
