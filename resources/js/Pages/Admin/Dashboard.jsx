@@ -8,7 +8,26 @@ import {
     Tags,
     Users,
 } from "lucide-react";
+import {
+    ArcElement,
+    BarElement,
+    CategoryScale,
+    Chart as ChartJS,
+    Legend,
+    LinearScale,
+    Tooltip,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
 import AdminLayout from "../Layouts/AdminLayout";
+
+ChartJS.register(
+    ArcElement,
+    BarElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend,
+);
 
 export default function Dashboard({
     loginChart = { web: 0, mobile: 0, total: 0 },
@@ -116,16 +135,100 @@ export default function Dashboard({
     const mobilePercent = Math.round((mobileCount / safeTotal) * 100);
     const vehicleCreated = Number(creationChart.vehicle || 0);
     const parkingCreated = Number(creationChart.parking || 0);
-    const maxCreated = Math.max(vehicleCreated, parkingCreated, 1);
-    const vehicleBarHeight = Math.max((vehicleCreated / maxCreated) * 100, vehicleCreated > 0 ? 8 : 0);
-    const parkingBarHeight = Math.max((parkingCreated / maxCreated) * 100, parkingCreated > 0 ? 8 : 0);
 
-    const pieSize = 220;
-    const center = pieSize / 2;
-    const radius = 72;
-    const circumference = 2 * Math.PI * radius;
-    const webArc = (webCount / safeTotal) * circumference;
-    const mobileArc = (mobileCount / safeTotal) * circumference;
+    const loginChartData = {
+        labels: ["Web", "Mobile"],
+        datasets: [
+            {
+                data: [webCount, mobileCount],
+                backgroundColor: ["#3B82F6", "#10B981"],
+                borderColor: ["#3B82F6", "#10B981"],
+                borderWidth: 0,
+            },
+        ],
+    };
+
+    const loginChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const value = Number(context.raw || 0);
+                        const percent = Math.round((value / safeTotal) * 100);
+                        return `${context.label}: ${value} (${percent}%)`;
+                    },
+                },
+            },
+        },
+    };
+
+    const creationChartData = {
+        labels: ["Vehicle", "Parking"],
+        datasets: [
+            {
+                label: "Jumlah Data",
+                data: [vehicleCreated, parkingCreated],
+                backgroundColor: ["#3B82F6", "#10B981"],
+                borderRadius: 10,
+                borderSkipped: false,
+                maxBarThickness: 54,
+            },
+        ],
+    };
+
+    const creationChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    label: (context) =>
+                        `${context.label}: ${Number(context.raw || 0)}`,
+                },
+            },
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false,
+                },
+                ticks: {
+                    color: "#64748B",
+                    font: {
+                        size: 12,
+                    },
+                },
+                border: {
+                    display: false,
+                },
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0,
+                    color: "#94A3B8",
+                    font: {
+                        size: 11,
+                    },
+                },
+                grid: {
+                    color: "rgba(148, 163, 184, 0.2)",
+                },
+                border: {
+                    display: false,
+                },
+            },
+        },
+    };
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -238,60 +341,20 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex items-center justify-center py-2">
-                        <svg
-                            viewBox={`0 0 ${pieSize} ${pieSize}`}
-                            className="w-56 h-56"
-                            role="img"
-                            aria-label="Pie chart login source web dan mobile"
-                        >
-                            <g transform={`rotate(-90 ${center} ${center})`}>
-                                <circle
-                                    cx={center}
-                                    cy={center}
-                                    r={radius}
-                                    fill="none"
-                                    stroke="#E2E8F0"
-                                    strokeWidth="22"
-                                />
-                                <circle
-                                    cx={center}
-                                    cy={center}
-                                    r={radius}
-                                    fill="none"
-                                    stroke="#3B82F6"
-                                    strokeWidth="22"
-                                    strokeDasharray={`${webArc} ${circumference - webArc}`}
-                                    strokeLinecap="butt"
-                                />
-                                <circle
-                                    cx={center}
-                                    cy={center}
-                                    r={radius}
-                                    fill="none"
-                                    stroke="#10B981"
-                                    strokeWidth="22"
-                                    strokeDasharray={`${mobileArc} ${circumference - mobileArc}`}
-                                    strokeDashoffset={-webArc}
-                                    strokeLinecap="butt"
-                                />
-                            </g>
-                            <text
-                                x={center}
-                                y={center - 6}
-                                textAnchor="middle"
-                                className="fill-slate-900 dark:fill-white text-[11px]"
-                            >
-                                Total
-                            </text>
-                            <text
-                                x={center}
-                                y={center + 16}
-                                textAnchor="middle"
-                                className="fill-slate-900 dark:fill-white text-xl font-semibold"
-                            >
-                                {totalCount}
-                            </text>
-                        </svg>
+                        <div className="relative h-56 w-56" aria-label="Pie chart login source web dan mobile">
+                            <Doughnut
+                                data={loginChartData}
+                                options={loginChartOptions}
+                            />
+                            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-[11px] text-slate-500 dark:text-slate-300">
+                                    Total
+                                </span>
+                                <span className="text-xl font-semibold text-slate-900 dark:text-white">
+                                    {totalCount}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-600 dark:text-slate-300">
@@ -316,36 +379,8 @@ export default function Dashboard({
                         </span>
                     </div>
 
-                    <div className="h-56 flex items-end justify-center gap-12 border-b border-slate-200 dark:border-white/10 pb-3">
-                        <div className="w-24 text-center">
-                            <div className="h-44 flex items-end justify-center">
-                                <div
-                                    className="w-12 rounded-t-lg bg-blue-500 transition-all duration-500"
-                                    style={{ height: `${vehicleBarHeight}%` }}
-                                />
-                            </div>
-                            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                Vehicle
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {vehicleCreated}
-                            </p>
-                        </div>
-
-                        <div className="w-24 text-center">
-                            <div className="h-44 flex items-end justify-center">
-                                <div
-                                    className="w-12 rounded-t-lg bg-emerald-500 transition-all duration-500"
-                                    style={{ height: `${parkingBarHeight}%` }}
-                                />
-                            </div>
-                            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                Parking
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {parkingCreated}
-                            </p>
-                        </div>
+                    <div className="h-56 border-b border-slate-200 dark:border-white/10 pb-3">
+                        <Bar data={creationChartData} options={creationChartOptions} />
                     </div>
                 </div>
             </div>
