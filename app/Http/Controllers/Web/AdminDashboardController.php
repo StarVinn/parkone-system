@@ -86,7 +86,6 @@ class AdminDashboardController extends Controller
             ->get()
             ->sum(fn ($item) => max(0, ((int) $item->total) - 1));
 
-        $vehiclesWithoutOwner = Vehicle::query()->whereDoesntHave('user')->count();
         $vehiclesWithInactiveOwner = Vehicle::query()
             ->whereHas('user', fn ($query) => $query->where('is_active', false))
             ->count();
@@ -98,7 +97,7 @@ class AdminDashboardController extends Controller
                     ->orWhereColumn('occupied', '>', 'capacity');
             })
             ->count();
-        $dataAlertTotal = $duplicatePlateUnits + $vehiclesWithoutOwner + $vehiclesWithInactiveOwner + $invalidAreaCount;
+        $dataAlertTotal = $duplicatePlateUnits + $vehiclesWithInactiveOwner + $invalidAreaCount;
 
         return inertia('Admin/Dashboard', [
             'loginChart' => [
