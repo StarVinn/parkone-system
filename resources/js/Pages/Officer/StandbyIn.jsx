@@ -35,8 +35,6 @@ export default function StandbyIn({
     const [showVisitorModal, setShowVisitorModal] = useState(false);
     const [cameraError, setCameraError] = useState("");
     const [cameraReady, setCameraReady] = useState(false);
-    const [photoPreview, setPhotoPreview] = useState("");
-    const [photoBlob, setPhotoBlob] = useState(null);
     const [photoError, setPhotoError] = useState("");
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -44,6 +42,7 @@ export default function StandbyIn({
     const {
         data: visitorData,
         setData: setVisitorData,
+        transform: transformVisitorData,
         post: postVisitorVehicle,
         processing: visitorProcessing,
         errors: visitorErrors,
@@ -52,6 +51,7 @@ export default function StandbyIn({
         vehicle_type_id: "",
         next_action: "entry",
         parking_area_id: scope.parking_area_id || "",
+        vehicle_photo: null,
     });
 
     const selectedVehicle = useMemo(
@@ -112,52 +112,67 @@ export default function StandbyIn({
         };
     }, []);
 
-    const capturePhoto = () => {
+    const capturePhotoBlob = () => {
         const video = videoRef.current;
         const canvas = canvasRef.current;
 
-        if (!video || !canvas || !cameraReady) {
-            setPhotoError("Kamera belum siap.");
-            return;
-        }
+        return new Promise((resolve) => {
+            if (!video || !canvas || !cameraReady) {
+                resolve(null);
+                return;
+            }
 
-        const width = video.videoWidth || 1280;
-        const height = video.videoHeight || 720;
-        canvas.width = width;
-        canvas.height = height;
+            const width = video.videoWidth || 1280;
+            const height = video.videoHeight || 720;
+            canvas.width = width;
+            canvas.height = height;
 
-        const context = canvas.getContext("2d");
-        if (!context) {
-            setPhotoError("Gagal memproses gambar kamera.");
-            return;
-        }
+            const context = canvas.getContext("2d");
+            if (!context) {
+                resolve(null);
+                return;
+            }
 
-        context.drawImage(video, 0, 0, width, height);
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    setPhotoError("Gagal mengambil foto kendaraan.");
-                    return;
-                }
-
-                setPhotoBlob(blob);
-                setPhotoPreview(canvas.toDataURL("image/jpeg", 0.92));
-                setPhotoError("");
-            },
-            "image/jpeg",
-            0.92,
-        );
+            context.drawImage(video, 0, 0, width, height);
+            canvas.toBlob(
+                (blob) => resolve(blob),
+                "image/jpeg",
+                0.92,
+            );
+        });
     };
 
-    const resetPhoto = () => {
-        setPhotoBlob(null);
-        setPhotoPreview("");
+    const submit = async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const licensePlate = useRfid
+            ? selectedVehicle?.license_plate || ""
+            : formData.get("license_plate");
+
+        if (useRfid && !licensePlate) {
+            setRfidError("Pilih kendaraan dari hasil RFID terlebih dahulu.");
+            return;
+        }
+
+        const photoBlob = await capturePhotoBlob();
+        if (!photoBlob) {
+            setPhotoError("Kamera belum siap, tunggu sebentar lalu coba lagi.");
+            return;
+        }
         setPhotoError("");
 
-        if (videoRef.current && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
-            videoRef.current.play().catch(() => {});
-        }
+        router.post(
+            route("officer.transactions.store"),
+            {
+                action: "entry",
+                license_plate: String(licensePlate || ""),
+                parking_area_id: String(scope.parking_area_id || ""),
+                vehicle_photo: new File([photoBlob], `entry-${Date.now()}.jpg`, {
+                    type: "image/jpeg",
+                }),
+            },
+            { forceFormData: true },
+        );
     };
 
     const handleLookupRfid = async () => {
@@ -200,43 +215,32 @@ export default function StandbyIn({
         }
     };
 
-    const submit = (event) => {
+    const submitVisitorVehicle = async (event) => {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const licensePlate = useRfid
-            ? selectedVehicle?.license_plate || ""
-            : formData.get("license_plate");
 
-        if (useRfid && !licensePlate) {
-            setRfidError("Pilih kendaraan dari hasil RFID terlebih dahulu.");
-            return;
-        }
-
+        const photoBlob = await capturePhotoBlob();
         if (!photoBlob) {
-            setPhotoError("Ambil foto kendaraan terlebih dahulu.");
+            setPhotoError("Kamera belum siap, tunggu sebentar lalu coba lagi.");
             return;
         }
+        setPhotoError("");
+        const visitorPhotoFile = new File([photoBlob], `entry-visitor-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+        });
 
-        router.post(
-            route("officer.transactions.store"),
-            {
-                action: "entry",
-                license_plate: String(licensePlate || ""),
-                parking_area_id: String(scope.parking_area_id || ""),
-                vehicle_photo: new File([photoBlob], `entry-${Date.now()}.jpg`, {
-                    type: "image/jpeg",
-                }),
-            },
-            { forceFormData: true },
-        );
-    };
-
-    const submitVisitorVehicle = (event) => {
-        event.preventDefault();
+        transformVisitorData((data) => ({
+            ...data,
+            vehicle_photo: visitorPhotoFile,
+        }));
 
         postVisitorVehicle(route("officer.visitor-vehicles.store"), {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: () => setShowVisitorModal(false),
+            onFinish: () => {
+                transformVisitorData((data) => data);
+                setVisitorData("vehicle_photo", null);
+            },
         });
     };
 
@@ -383,25 +387,9 @@ export default function StandbyIn({
                         <label className="block text-sm text-slate-600 dark:text-slate-300">
                             Foto Kendaraan Masuk
                         </label>
-                        <div className="flex items-center gap-2">
-                            {!photoPreview ? (
-                                <button
-                                    type="button"
-                                    onClick={capturePhoto}
-                                    className="rounded-xl bg-slate-900 dark:bg-slate-700 px-4 py-2 text-sm text-white font-medium hover:bg-slate-800 dark:hover:bg-slate-600 cursor-pointer"
-                                >
-                                    Capture
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={resetPhoto}
-                                    className="rounded-xl border border-slate-300 dark:border-white/20 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer"
-                                >
-                                    Ambil Ulang
-                                </button>
-                            )}
-                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Otomatis capture saat proses masuk
+                        </span>
                     </div>
 
                     <div className="relative rounded-xl border border-slate-300 dark:border-white/15 overflow-hidden bg-slate-100 dark:bg-[#0B1026]">
@@ -412,13 +400,6 @@ export default function StandbyIn({
                             playsInline
                             className="h-64 w-full object-cover"
                         />
-                        {!!photoPreview && (
-                            <img
-                                src={photoPreview}
-                                alt="Preview kendaraan masuk"
-                                className="absolute inset-0 h-64 w-full object-cover"
-                            />
-                        )}
                         <canvas ref={canvasRef} className="hidden" />
                     </div>
 

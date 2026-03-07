@@ -29,11 +29,28 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
     const [selectedActiveTransaction, setSelectedActiveTransaction] = useState(null);
+    const [activePlateSearch, setActivePlateSearch] = useState("");
 
     const selectedVehicle = useMemo(
         () => rfidVehicles.find((item) => String(item.id) === String(selectedVehicleId)),
         [rfidVehicles, selectedVehicleId],
     );
+    const filteredActiveTransactions = useMemo(() => {
+        const keyword = activePlateSearch
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, "");
+
+        if (!keyword) {
+            return activeTransactions;
+        }
+
+        return activeTransactions.filter((item) => {
+            const plate = String(item.vehicle?.license_plate || "")
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "");
+            return plate.includes(keyword);
+        });
+    }, [activeTransactions, activePlateSearch]);
 
     const handleLookupRfid = async () => {
         if (!rfidUid.trim()) {
@@ -228,12 +245,20 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             </form>
 
             <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] p-5">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Transaksi Aktif</h2>
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Transaksi Aktif</h2>
+                    <input
+                        value={activePlateSearch}
+                        onChange={(event) => setActivePlateSearch(formatLicensePlate(event.target.value))}
+                        placeholder="Cari plat: B 1234 XYZ"
+                        className="w-full sm:w-64 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                    />
+                </div>
                 <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                    {activeTransactions.length === 0 && (
+                    {filteredActiveTransactions.length === 0 && (
                         <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada transaksi aktif.</p>
                     )}
-                    {activeTransactions.map((item) => (
+                    {filteredActiveTransactions.map((item) => (
                         <button
                             key={item.id}
                             type="button"
