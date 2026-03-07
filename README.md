@@ -27,7 +27,7 @@ ParkOne dirancang dengan arsitektur **single gate system** yang sederhana, stabi
 > Pastikan **PHP 8.2+**, **Composer**, **Node.js**, dan **Database** sudah terpasang.
 
 ```bash
-git clone https://github.com/your-username/parkone-backend.git
+git clone https://github.com/StarVinn/parkone-system.git
 cd parkone-backend
 composer install
 npm install
