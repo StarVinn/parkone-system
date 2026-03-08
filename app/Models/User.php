@@ -59,4 +59,16 @@ class User extends Authenticatable
             new \App\Notifications\CustomResetPassword($token)
         );
     }
+
+    public function rfidCards()
+    {
+        return $this->hasMany(RfidCard::class);
+    }
+
+    public function primaryRfidCard()
+    {
+        return $this->hasOne(RfidCard::class)
+            ->where('is_active', true)
+            ->latestOfMany();
+    }
 }
