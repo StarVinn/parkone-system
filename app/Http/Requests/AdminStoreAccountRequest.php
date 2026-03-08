@@ -17,7 +17,7 @@ class AdminStoreAccountRequest extends FormRequest
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'role' => 'required|in:admin,officer,owner,user',
-            'rfid_uid' => 'nullable|string|max:255|unique:users,rfid_uid',
+            'rfid_uid' => 'nullable|string|max:255|unique:rfid_cards,uid',
         ];
     }
 

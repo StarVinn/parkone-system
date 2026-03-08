@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminResetAccountEmailRequest;
 use App\Http\Requests\AdminStoreAccountRequest;
 use App\Http\Requests\AdminUpdateAccountIdentityRequest;
+use App\Models\RfidCard;
 use App\Models\User;
 use App\Notifications\AccountActivationSetPassword;
 use Illuminate\Http\Request;
@@ -23,16 +24,42 @@ class AdminAccountController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $users = User::query()
+            ->with([
+                'primaryRfidCard' => fn($query) => $query->select([
+                    'rfid_cards.id',
+                    'rfid_cards.user_id',
+                    'rfid_cards.uid',
+                ]),
+            ])
+            ->withCount([
+                'rfidCards as rfid_count' => fn($query) => $query->where('is_active', true),
+            ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', '%' . $search . '%')
                         ->orWhere('email', 'like', '%' . $search . '%')
                         ->orWhere('role', 'like', '%' . $search . '%')
-                        ->orWhere('rfid_uid', 'like', '%' . $search . '%');
+                        ->orWhereHas('rfidCards', function ($rfidQuery) use ($search) {
+                            $rfidQuery->where('uid', 'like', '%' . $search . '%');
+                        });
                 });
             })
             ->orderByDesc('created_at')
-            ->paginate(15, ['id', 'name', 'email', 'role', 'rfid_uid', 'is_active', 'created_at'])
+            ->paginate(15, ['id', 'name', 'email', 'role', 'is_active', 'created_at'])
+            ->through(function (User $user) {
+                $primaryRfid = $user->primaryRfidCard?->uid;
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'is_active' => $user->is_active,
+                    'created_at' => $user->created_at,
+                    'rfid_uid' => $primaryRfid ?? $user->rfid_uid,
+                    'rfid_count' => (int) ($user->rfid_count ?? 0),
+                ];
+            })
             ->withQueryString();
 
         return inertia('Admin/Account/Index', [
@@ -61,10 +88,19 @@ class AdminAccountController extends Controller
             'email' => $data['email'],
             'password' => Hash::make(Str::random(40)),
             'role' => $data['role'],
-            'rfid_uid' => $data['rfid_uid'] ?? null,
+            'rfid_uid' => null,
             'is_active' => false,
             'email_verified_at' => null,
         ]);
+
+        $newRfid = trim((string) ($data['rfid_uid'] ?? ''));
+        if ($newRfid !== '') {
+            RfidCard::create([
+                'user_id' => $user->id,
+                'uid' => $newRfid,
+                'is_active' => true,
+            ]);
+        }
 
         if (!$this->sendActivationLink($user)) {
             return redirect()
@@ -115,7 +151,7 @@ class AdminAccountController extends Controller
         $newRfid = trim((string) ($data['rfid_uid'] ?? ''));
 
         $emailChanged = $newEmail !== '' && $newEmail !== $user->email;
-        $rfidChanged = $request->has('rfid_uid') && $newRfid !== (string) ($user->rfid_uid ?? '');
+        $rfidChanged = $request->has('rfid_uid') && $newRfid !== '';
 
         if (!$emailChanged && !$rfidChanged) {
             return back()->with('error', 'Tidak ada perubahan email atau RFID.');
@@ -130,7 +166,13 @@ class AdminAccountController extends Controller
         }
 
         if ($rfidChanged) {
-            $updates['rfid_uid'] = $newRfid !== '' ? $newRfid : null;
+            RfidCard::firstOrCreate(
+                ['uid' => $newRfid],
+                [
+                    'user_id' => $user->id,
+                    'is_active' => true,
+                ],
+            );
         }
 
         $user->forceFill($updates)->save();

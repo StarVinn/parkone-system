@@ -86,9 +86,7 @@ class AdminDashboardController extends Controller
             ->get()
             ->sum(fn ($item) => max(0, ((int) $item->total) - 1));
 
-        $vehiclesWithInactiveOwner = Vehicle::query()
-            ->whereHas('user', fn ($query) => $query->where('is_active', false))
-            ->count();
+        $vehiclesWithInactiveOwner = 0;
         $invalidAreaCount = ParkingArea::query()
             ->where(function ($query) {
                 $query->whereDoesntHave('location')
