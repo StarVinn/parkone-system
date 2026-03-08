@@ -2,7 +2,7 @@ import { Link, usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, RotateCcw, ArrowLeft } from "lucide-react";
 
-export default function Index({ vehicles = [], filters = {}, users = [], vehicleTypes = [] }) {
+export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
@@ -17,7 +17,6 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
     const total = vehicles?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
-        user_id: filters.user_id ?? "",
         vehicle_type_id: filters.vehicle_type_id ?? "",
     });
 
@@ -40,7 +39,6 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
     const resetFilters = () => {
         const emptyFilters = {
             search: "",
-            user_id: "",
             vehicle_type_id: "",
         };
 
@@ -87,7 +85,7 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                         Vehicles
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola data kendaraan, pemilik, dan tipe kendaraan.
+                        Kelola data kendaraan dan tipe kendaraan.
                     </p>
                 </div>
 
@@ -113,30 +111,15 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                 onSubmit={applyFilters}
                 className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
             >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div className="lg:col-span-2">
                         <input
                             type="text"
                             value={data.search}
                             onChange={(e) => setData("search", e.target.value)}
-                            placeholder="Cari plat, nama owner, email, atau tipe..."
+                            placeholder="Cari plat atau tipe kendaraan..."
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         />
-                    </div>
-
-                    <div>
-                        <select
-                            value={data.user_id}
-                            onChange={(e) => setData("user_id", e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
-                        >
-                            <option value="">Semua owner</option>
-                            {users.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
                     </div>
 
                     <div>
@@ -154,7 +137,7 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                         </select>
                     </div>
 
-                    <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 pt-1">
+                    <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                             Filter dijalankan saat klik Apply.
                         </p>
@@ -187,9 +170,6 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                                     License Plate
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Owner
-                                </th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     Vehicle Type
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
@@ -201,7 +181,7 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                             {rows.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan="4"
+                                        colSpan="3"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
                                         Tidak ada data kendaraan yang cocok dengan filter.
@@ -216,11 +196,6 @@ export default function Index({ vehicles = [], filters = {}, users = [], vehicle
                                         <td className="px-6 py-4">
                                             <span className="font-medium text-slate-900 dark:text-slate-200 uppercase">
                                                 {item.license_plate}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-slate-600 dark:text-slate-400 text-sm">
-                                                {item.user?.name || "-"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">

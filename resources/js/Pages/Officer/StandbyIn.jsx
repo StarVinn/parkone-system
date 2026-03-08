@@ -1,5 +1,5 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
 
 const formatLicensePlate = (value) => {
@@ -26,11 +26,8 @@ export default function StandbyIn({
     readiness = { entry_ready: false, entry_blockers: [] },
 }) {
     const { flash, errors } = usePage().props;
-    const [useRfid, setUseRfid] = useState(false);
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
-    const [rfidVehicles, setRfidVehicles] = useState([]);
-    const [selectedVehicleId, setSelectedVehicleId] = useState("");
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
     const [showVisitorModal, setShowVisitorModal] = useState(false);
@@ -57,13 +54,9 @@ export default function StandbyIn({
         vehicle_type_id: "",
         next_action: "entry",
         parking_area_id: scope.parking_area_id || "",
+        rfid_uid: "",
         vehicle_photo: null,
     });
-
-    const selectedVehicle = useMemo(
-        () => rfidVehicles.find((item) => String(item.id) === String(selectedVehicleId)),
-        [rfidVehicles, selectedVehicleId],
-    );
 
     useEffect(() => {
         setVisitorData("parking_area_id", scope.parking_area_id || "");
@@ -79,6 +72,7 @@ export default function StandbyIn({
         setVisitorData("vehicle_type_id", "");
         setVisitorData("next_action", payload.next_action || "entry");
         setVisitorData("parking_area_id", payload.parking_area_id || scope.parking_area_id || "");
+        setVisitorData("rfid_uid", payload.rfid_uid || "");
         setShowVisitorModal(true);
     }, [flash?.visitor_vehicle]);
 
@@ -151,12 +145,10 @@ export default function StandbyIn({
     const submit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const licensePlate = useRfid
-            ? selectedVehicle?.license_plate || ""
-            : formData.get("license_plate");
+        const licensePlate = formData.get("license_plate");
 
-        if (useRfid && !licensePlate) {
-            setRfidError("Pilih kendaraan dari hasil RFID terlebih dahulu.");
+        if (rfidUid.trim() && !rfidUser) {
+            setRfidError("RFID belum terverifikasi.");
             return;
         }
         if (!entryReady) {
@@ -177,6 +169,7 @@ export default function StandbyIn({
                 action: "entry",
                 license_plate: String(licensePlate || ""),
                 parking_area_id: String(scope.parking_area_id || ""),
+                rfid_uid: String(rfidUid || "").trim(),
                 vehicle_photo: new File([photoBlob], `entry-${Date.now()}.jpg`, {
                     type: "image/jpeg",
                 }),
@@ -191,8 +184,6 @@ export default function StandbyIn({
             setLookupLoading(false);
             setRfidError("");
             setRfidUser(null);
-            setRfidVehicles([]);
-            setSelectedVehicleId("");
             return;
         }
 
@@ -202,8 +193,6 @@ export default function StandbyIn({
         setLookupLoading(true);
         setRfidError("");
         setRfidUser(null);
-        setRfidVehicles([]);
-        setSelectedVehicleId("");
 
         try {
             const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(normalizedUid)}`;
@@ -224,11 +213,6 @@ export default function StandbyIn({
             }
 
             setRfidUser(payload.user);
-            setRfidVehicles(payload.vehicles || []);
-
-            if (!payload.vehicles?.length) {
-                setRfidError("User ditemukan, tapi belum punya data kendaraan.");
-            }
         } catch {
             if (latestLookupRef.current !== lookupId) {
                 return;
@@ -242,16 +226,12 @@ export default function StandbyIn({
     };
 
     useEffect(() => {
-        if (!useRfid) {
-            return undefined;
-        }
-
         const timeoutId = setTimeout(() => {
             handleLookupRfid(rfidUid);
         }, 450);
 
         return () => clearTimeout(timeoutId);
-    }, [useRfid, rfidUid]);
+    }, [rfidUid]);
 
     const submitVisitorVehicle = async (event) => {
         event.preventDefault();
@@ -302,9 +282,9 @@ export default function StandbyIn({
                 </div>
             )}
 
-            {(errors.license_plate || errors.parking_area_id || errors.action) && (
+            {(errors.license_plate || errors.parking_area_id || errors.action || errors.rfid_uid) && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {errors.license_plate || errors.parking_area_id || errors.action}
+                    {errors.license_plate || errors.parking_area_id || errors.action || errors.rfid_uid}
                 </div>
             )}
             {!entryReady && entryBlockers.length > 0 && (
@@ -322,97 +302,52 @@ export default function StandbyIn({
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 px-4 py-3">
-                    <div>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Mode Input</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {useRfid ? "Pakai RFID" : "Input Normal Plat Nomor"}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setUseRfid((prev) => !prev);
-                            setRfidError("");
+                <div>
+                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
+                    <input
+                        name="license_plate"
+                        onInput={(event) => {
+                            event.target.value = formatLicensePlate(event.target.value);
                         }}
-                        className={`relative h-7 w-14 rounded-full transition ${
-                            useRfid ? "bg-[#1E5EFF]" : "bg-slate-300"
-                        }`}
-                    >
-                        <span
-                            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                                useRfid ? "left-8" : "left-1"
-                            }`}
-                        />
-                    </button>
+                        placeholder="Contoh: AD 45 ID"
+                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                        required
+                    />
                 </div>
 
-                {!useRfid ? (
+                <div className="space-y-3">
                     <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
+                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                            RFID UID (Opsional)
+                        </label>
                         <input
-                            name="license_plate"
-                            onInput={(event) => {
-                                event.target.value = formatLicensePlate(event.target.value);
-                            }}
-                            placeholder="Contoh: AD 45 ID"
+                            value={rfidUid}
+                            onChange={(event) => setRfidUid(event.target.value)}
+                            placeholder="Scan / input RFID UID (boleh kosong)"
                             className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                            required
                         />
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        <div className="flex flex-col md:flex-row gap-2">
-                            <input
-                                value={rfidUid}
-                                onChange={(event) => setRfidUid(event.target.value)}
-                                placeholder="Scan / input RFID UID"
-                                className="flex-1 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                            />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Jika diisi, RFID diverifikasi otomatis. Jika kosong, transaksi tetap diproses pakai plat.
+                    </p>
+                    {lookupLoading && (
+                        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                            Mencari data RFID...
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            RFID akan dicari otomatis setelah input berhenti diketik.
-                        </p>
-                        {lookupLoading && (
-                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                Mencari data RFID...
-                            </div>
-                        )}
+                    )}
 
-                        {rfidUser && (
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                                RFID cocok dengan user: <strong>{rfidUser.name}</strong>
-                            </div>
-                        )}
+                    {rfidUser && (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            RFID cocok dengan user: <strong>{rfidUser.name}</strong>
+                        </div>
+                    )}
 
-                        {!!rfidVehicles.length && (
-                            <div>
-                                <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                    Kendaraan Owner
-                                </label>
-                                <select
-                                    value={selectedVehicleId}
-                                    onChange={(event) => setSelectedVehicleId(event.target.value)}
-                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                                    required={useRfid}
-                                >
-                                    <option value="">Pilih kendaraan</option>
-                                    {rfidVehicles.map((vehicle) => (
-                                        <option key={vehicle.id} value={vehicle.id}>
-                                            {vehicle.license_plate} ({vehicle.vehicle_type_name || "-"})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {rfidError && (
-                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                                {rfidError}
-                            </div>
-                        )}
-                    </div>
-                )}
+                    {rfidError && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {rfidError}
+                        </div>
+                    )}
+                </div>
 
                 <div>
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Area Parkir</label>
@@ -507,6 +442,22 @@ export default function StandbyIn({
                                 )}
                             </div>
 
+                            {visitorData.rfid_uid && (
+                                <div>
+                                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                        RFID UID (Dari Form Sebelumnya)
+                                    </label>
+                                    <input
+                                        value={visitorData.rfid_uid}
+                                        disabled
+                                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-100 dark:bg-white/10 px-3 py-2.5 text-slate-700 dark:text-slate-200"
+                                    />
+                                    {visitorErrors.rfid_uid && (
+                                        <p className="mt-1 text-sm text-red-600">{visitorErrors.rfid_uid}</p>
+                                    )}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                                     Tipe Kendaraan
@@ -536,6 +487,7 @@ export default function StandbyIn({
 
                             <input type="hidden" name="next_action" value={visitorData.next_action} />
                             <input type="hidden" name="parking_area_id" value={visitorData.parking_area_id} />
+                            <input type="hidden" name="rfid_uid" value={visitorData.rfid_uid} />
 
                             <button
                                 type="submit"
