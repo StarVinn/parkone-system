@@ -34,12 +34,6 @@ class VehicleRequest extends FormRequest
                     'distinct',
                     Rule::unique('vehicles', 'license_plate'),
                 ],
-                'vehicles.*.user_id' => [
-                    'required',
-                    Rule::exists('users', 'id')->where(function ($query) {
-                        $query->whereNull('deleted_at')->where('is_active', true);
-                    }),
-                ],
                 'vehicles.*.vehicle_type_id' => 'required|exists:vehicle_types,id',
             ];
         }
@@ -50,12 +44,6 @@ class VehicleRequest extends FormRequest
                 'string',
                 'max:20',
                 Rule::unique('vehicles', 'license_plate')->ignore($vehicleId),
-            ],
-            'user_id' => [
-                'required',
-                Rule::exists('users', 'id')->where(function ($query) {
-                    $query->whereNull('deleted_at')->where('is_active', true);
-                }),
             ],
             'vehicle_type_id' => 'required|exists:vehicle_types,id',
         ];
@@ -73,8 +61,6 @@ class VehicleRequest extends FormRequest
             'vehicles.*.license_plate.max' => 'Nomor polisi maksimal 20 karakter.',
             'vehicles.*.license_plate.distinct' => 'Nomor polisi tidak boleh duplikat dalam form.',
             'vehicles.*.license_plate.unique' => 'Nomor polisi sudah terdaftar.',
-            'vehicles.*.user_id.required' => 'Pemilik kendaraan wajib dipilih.',
-            'vehicles.*.user_id.exists' => 'Pemilik kendaraan tidak valid atau tidak aktif.',
             'vehicles.*.vehicle_type_id.required' => 'Tipe kendaraan wajib dipilih.',
             'vehicles.*.vehicle_type_id.exists' => 'Tipe kendaraan tidak valid.',
 
@@ -82,8 +68,6 @@ class VehicleRequest extends FormRequest
             'license_plate.string' => 'Nomor polisi harus berupa teks.',
             'license_plate.max' => 'Nomor polisi maksimal 20 karakter.',
             'license_plate.unique' => 'Nomor polisi sudah terdaftar.',
-            'user_id.required' => 'Pemilik kendaraan wajib dipilih.',
-            'user_id.exists' => 'Pemilik kendaraan tidak valid atau tidak aktif.',
             'vehicle_type_id.required' => 'Tipe kendaraan wajib dipilih.',
             'vehicle_type_id.exists' => 'Tipe kendaraan tidak valid.',
         ];
