@@ -6,7 +6,7 @@ import AdminLayout from "../../Layouts/AdminLayout";
 export default function Index({ users = [], filters = {} }) {
     const page = usePage();
     const { flash } = page.props;
-    const [openActionId, setOpenActionId] = useState(null);
+    const [actionMenu, setActionMenu] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
     const rows = Array.isArray(users?.data)
@@ -87,8 +87,34 @@ export default function Index({ users = [], filters = {} }) {
         router.post(route("admin.accounts.activate", userId));
     };
 
+    const toggleActionMenu = (event, user) => {
+        const isSameUser = actionMenu?.user?.id === user.id;
+        if (isSameUser) {
+            setActionMenu(null);
+            return;
+        }
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const menuWidth = 192;
+        const menuHeight = 112;
+        const spacing = 8;
+        const viewportPadding = 12;
+
+        const left = Math.max(
+            viewportPadding,
+            Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding),
+        );
+
+        let top = rect.bottom + spacing;
+        if (top + menuHeight > window.innerHeight - viewportPadding) {
+            top = Math.max(viewportPadding, rect.top - menuHeight - spacing);
+        }
+
+        setActionMenu({ user, top, left });
+    };
+
     const openEmailForm = (user) => {
-        setOpenActionId(null);
+        setActionMenu(null);
         setEmailTargetUser(user);
         setEmailForm("email", user.email ?? "");
     };
@@ -111,9 +137,9 @@ export default function Index({ users = [], filters = {} }) {
     };
 
     const openRfidForm = (user) => {
-        setOpenActionId(null);
+        setActionMenu(null);
         setRfidTargetUser(user);
-        setRfidForm("rfid_uid", user.rfid_uid ?? "");
+        setRfidForm("rfid_uid", "");
     };
 
     const closeRfidForm = () => {
@@ -141,7 +167,8 @@ export default function Index({ users = [], filters = {} }) {
                         Manage Accounts
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Create user satu per satu, kirim email aktivasi, dan kelola reset email akun.
+                        Create user satu per satu, kirim email aktivasi, dan
+                        kelola reset email akun.
                     </p>
                 </div>
 
@@ -211,28 +238,57 @@ export default function Index({ users = [], filters = {} }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Name</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Role</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">RFID</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">Action</th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Name
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Email
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Role
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    RFID
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
+                                    Action
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                             {rows.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic">
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
+                                    >
                                         Belum ada akun yang cocok.
                                     </td>
                                 </tr>
                             ) : (
                                 rows.map((user) => (
-                                    <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">{user.name}</td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">{user.email}</td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm uppercase">{user.role}</td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">{user.rfid_uid || "-"}</td>
+                                    <tr
+                                        key={user.id}
+                                        className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
+                                    >
+                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">
+                                            {user.name}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">
+                                            {user.email}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm uppercase">
+                                            {user.role}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">
+                                            {user.rfid_uid || "-"}
+                                            {user.rfid_count > 1
+                                                ? ` (+${user.rfid_count - 1})`
+                                                : ""}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <span
                                                 className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
@@ -241,7 +297,9 @@ export default function Index({ users = [], filters = {} }) {
                                                         : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
                                                 }`}
                                             >
-                                                {user.is_active ? "Active" : "Pending Activation"}
+                                                {user.is_active
+                                                    ? "Active"
+                                                    : "Pending Activation"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -249,7 +307,11 @@ export default function Index({ users = [], filters = {} }) {
                                                 {!user.is_active && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleActivate(user.id)}
+                                                        onClick={() =>
+                                                            handleActivate(
+                                                                user.id,
+                                                            )
+                                                        }
                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition cursor-pointer"
                                                     >
                                                         <MailCheck size={14} />
@@ -258,9 +320,10 @@ export default function Index({ users = [], filters = {} }) {
                                                 )}
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        setOpenActionId((prev) =>
-                                                            prev === user.id ? null : user.id,
+                                                    onClick={(event) =>
+                                                        toggleActionMenu(
+                                                            event,
+                                                            user,
                                                         )
                                                     }
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition cursor-pointer"
@@ -268,29 +331,6 @@ export default function Index({ users = [], filters = {} }) {
                                                     Action
                                                     <ChevronDown size={14} />
                                                 </button>
-                                                {openActionId === user.id && (
-                                                    <div className="absolute right-0 top-9 z-20 min-w-44 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1026] shadow-xl p-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setOpenActionId(null);
-                                                                openEmailForm(user);
-                                                            }}
-                                                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
-                                                        >
-                                                            <MailPlus size={14} />
-                                                            Reset Email
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openRfidForm(user)}
-                                                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition cursor-pointer"
-                                                        >
-                                                            <ShieldCheck size={14} />
-                                                            Insert RFID
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -326,6 +366,41 @@ export default function Index({ users = [], filters = {} }) {
                 )}
             </div>
 
+            {actionMenu && (
+                <>
+                    <button
+                        type="button"
+                        onClick={() => setActionMenu(null)}
+                        className="fixed inset-0 z-40 bg-transparent cursor-default"
+                        aria-label="Close action menu"
+                    />
+                    <div
+                        className="fixed z-50 min-w-48 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1026] shadow-xl p-2"
+                        style={{
+                            top: `${actionMenu.top}px`,
+                            left: `${actionMenu.left}px`,
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => openRfidForm(actionMenu.user)}
+                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition cursor-pointer"
+                        >
+                            <ShieldCheck size={14} />
+                            Insert RFID
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => openEmailForm(actionMenu.user)}
+                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
+                        >
+                            <MailPlus size={14} />
+                            Reset Email
+                        </button>
+                    </div>
+                </>
+            )}
+
             {rfidTargetUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
@@ -334,11 +409,15 @@ export default function Index({ users = [], filters = {} }) {
                                 Insert RFID
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                User: {rfidTargetUser.name} ({rfidTargetUser.email})
+                                User: {rfidTargetUser.name} (
+                                {rfidTargetUser.email})
                             </p>
                         </div>
 
-                        <form onSubmit={submitRfidForm} className="p-6 space-y-4">
+                        <form
+                            onSubmit={submitRfidForm}
+                            className="p-6 space-y-4"
+                        >
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                     RFID UID
@@ -346,7 +425,9 @@ export default function Index({ users = [], filters = {} }) {
                                 <input
                                     type="text"
                                     value={rfidForm.rfid_uid}
-                                    onChange={(e) => setRfidForm("rfid_uid", e.target.value)}
+                                    onChange={(e) =>
+                                        setRfidForm("rfid_uid", e.target.value)
+                                    }
                                     placeholder="Scan / input RFID UID"
                                     className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
                                         rfidErrors.rfid_uid
@@ -355,12 +436,16 @@ export default function Index({ users = [], filters = {} }) {
                                     }`}
                                 />
                                 {rfidErrors.rfid_uid && (
-                                    <p className="text-xs text-red-500">{rfidErrors.rfid_uid}</p>
+                                    <p className="text-xs text-red-500">
+                                        {rfidErrors.rfid_uid}
+                                    </p>
                                 )}
                             </div>
 
                             <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300">
-                                Pastikan perangkat input RFID sudah terpasang dengan baik dan aman sebelum melakukan penyimpanan UID.
+                                Pastikan perangkat input RFID sudah terpasang
+                                dengan baik dan aman sebelum melakukan
+                                penyimpanan UID.
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -376,7 +461,9 @@ export default function Index({ users = [], filters = {} }) {
                                     disabled={processingRfid}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
-                                    {processingRfid ? "Menyimpan..." : "Simpan RFID"}
+                                    {processingRfid
+                                        ? "Menyimpan..."
+                                        : "Simpan RFID"}
                                 </button>
                             </div>
                         </form>
@@ -392,11 +479,15 @@ export default function Index({ users = [], filters = {} }) {
                                 Reset Email
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                User: {emailTargetUser.name} ({emailTargetUser.email})
+                                User: {emailTargetUser.name} (
+                                {emailTargetUser.email})
                             </p>
                         </div>
 
-                        <form onSubmit={submitEmailForm} className="p-6 space-y-4">
+                        <form
+                            onSubmit={submitEmailForm}
+                            className="p-6 space-y-4"
+                        >
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                     Email Baru
@@ -404,7 +495,9 @@ export default function Index({ users = [], filters = {} }) {
                                 <input
                                     type="email"
                                     value={emailForm.email}
-                                    onChange={(e) => setEmailForm("email", e.target.value)}
+                                    onChange={(e) =>
+                                        setEmailForm("email", e.target.value)
+                                    }
                                     placeholder="email@domain.com"
                                     className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
                                         emailErrors.email
@@ -413,12 +506,15 @@ export default function Index({ users = [], filters = {} }) {
                                     }`}
                                 />
                                 {emailErrors.email && (
-                                    <p className="text-xs text-red-500">{emailErrors.email}</p>
+                                    <p className="text-xs text-red-500">
+                                        {emailErrors.email}
+                                    </p>
                                 )}
                             </div>
 
                             <div className="rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
-                                Setelah email diubah, sistem akan mengirim link untuk set password awal kembali.
+                                Setelah email diubah, sistem akan mengirim link
+                                untuk set password awal kembali.
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -434,7 +530,9 @@ export default function Index({ users = [], filters = {} }) {
                                     disabled={processingEmail}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
-                                    {processingEmail ? "Menyimpan..." : "Simpan Email"}
+                                    {processingEmail
+                                        ? "Menyimpan..."
+                                        : "Simpan Email"}
                                 </button>
                             </div>
                         </form>

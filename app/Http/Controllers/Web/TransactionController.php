@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionRequest;
 use App\Models\ParkingArea;
 use App\Models\ParkingRate;
+use App\Models\RfidCard;
 use App\Models\Transaction;
-use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\TransactionService;
@@ -60,12 +60,13 @@ class TransactionController extends Controller
         ]);
 
         $rfid = trim($validated['rfid_uid']);
-        $user = User::query()
-            ->whereRaw('UPPER(rfid_uid) = ?', [strtoupper($rfid)])
+        $card = RfidCard::query()
+            ->with('user:id,name,email,is_active')
+            ->whereRaw('UPPER(uid) = ?', [strtoupper($rfid)])
             ->where('is_active', true)
             ->first();
 
-        if (!$user) {
+        if (!$card || !$card->user || !$card->user->is_active) {
             return response()->json([
                 'message' => 'RFID tidak terdaftar.',
                 'user' => null,
@@ -73,24 +74,15 @@ class TransactionController extends Controller
             ], 404);
         }
 
-        $vehicles = Vehicle::query()
-            ->with('vehicleType:id,name')
-            ->where('user_id', $user->id)
-            ->orderBy('license_plate')
-            ->get(['id', 'license_plate', 'vehicle_type_id']);
-
         return response()->json([
             'message' => 'RFID ditemukan.',
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+                'id' => $card->user->id,
+                'name' => $card->user->name,
+                'email' => $card->user->email,
+                'rfid_uid' => $card->uid,
             ],
-            'vehicles' => $vehicles->map(fn($vehicle) => [
-                'id' => $vehicle->id,
-                'license_plate' => $vehicle->license_plate,
-                'vehicle_type_name' => $vehicle->vehicleType?->name,
-            ])->values(),
+            'vehicles' => [],
         ]);
     }
 
@@ -102,6 +94,25 @@ class TransactionController extends Controller
         $checkoutMode = in_array($requestedCheckoutMode, ['ticket', 'rfid'], true)
             ? $requestedCheckoutMode
             : 'ticket';
+        $rfidUid = trim((string) ($validated['rfid_uid'] ?? ''));
+        $validated['rfid_uid'] = $rfidUid !== '' ? strtoupper($rfidUid) : null;
+        $validated['rfid_card_id'] = null;
+
+        if ($rfidUid !== '') {
+            $activeCard = RfidCard::query()
+                ->whereRaw('UPPER(uid) = ?', [strtoupper($rfidUid)])
+                ->where('is_active', true)
+                ->whereHas('user', fn($query) => $query->where('is_active', true))
+                ->first();
+
+            if (!$activeCard) {
+                throw ValidationException::withMessages([
+                    'rfid_uid' => 'RFID tidak valid atau tidak aktif.',
+                ]);
+            }
+
+            $validated['rfid_card_id'] = $activeCard->id;
+        }
 
         try {
             if ($action === 'entry') {
@@ -140,6 +151,7 @@ class TransactionController extends Controller
                 'license_plate' => $exception->normalizedPlate,
                 'next_action' => $action,
                 'parking_area_id' => $validated['parking_area_id'] ?? null,
+                'rfid_uid' => $validated['rfid_uid'] ?? null,
             ]);
         }
     }
@@ -200,12 +212,14 @@ class TransactionController extends Controller
             'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
             'next_action' => ['nullable', 'in:entry,exit'],
             'parking_area_id' => ['nullable', 'exists:parking_areas,id'],
+            'rfid_uid' => ['nullable', 'string', 'max:255'],
             'vehicle_photo' => ['required_if:next_action,entry', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ], [
             'license_plate.regex' => 'Format plat harus seperti "D 4512 I" atau "AD 45 ID".',
             'vehicle_type_id.required' => 'Tipe kendaraan wajib dipilih.',
             'vehicle_type_id.exists' => 'Tipe kendaraan tidak valid.',
             'parking_area_id.exists' => 'Area parkir tidak valid.',
+            'rfid_uid.max' => 'RFID UID maksimal 255 karakter.',
             'vehicle_photo.required_if' => 'Foto kendaraan wajib diambil untuk kendaraan masuk.',
             'vehicle_photo.image' => 'Foto kendaraan harus berupa gambar.',
             'vehicle_photo.mimes' => 'Format foto kendaraan harus JPG, PNG, atau WEBP.',
@@ -221,13 +235,30 @@ class TransactionController extends Controller
             Vehicle::create([
                 'license_plate' => $plate,
                 'vehicle_type_id' => $validated['vehicle_type_id'],
-                'user_id' => null,
             ]);
         }
 
         $nextAction = $validated['next_action'] ?? 'entry';
 
         if ($nextAction === 'entry') {
+            $rfidUid = strtoupper(trim((string) ($validated['rfid_uid'] ?? '')));
+            $rfidCardId = null;
+            if ($rfidUid !== '') {
+                $activeCard = RfidCard::query()
+                    ->whereRaw('UPPER(uid) = ?', [$rfidUid])
+                    ->where('is_active', true)
+                    ->whereHas('user', fn($query) => $query->where('is_active', true))
+                    ->first();
+
+                if (!$activeCard) {
+                    throw ValidationException::withMessages([
+                        'rfid_uid' => 'RFID tidak valid atau tidak aktif.',
+                    ]);
+                }
+
+                $rfidCardId = $activeCard->id;
+            }
+
             $parkingArea = ParkingArea::query()->find($validated['parking_area_id'] ?? null);
             if (!$parkingArea) {
                 throw ValidationException::withMessages([
@@ -249,6 +280,8 @@ class TransactionController extends Controller
             $transaction = $transactionService->processEntry([
                 'license_plate' => $plate,
                 'parking_area_id' => (int) $validated['parking_area_id'],
+                'rfid_card_id' => $rfidCardId,
+                'rfid_uid' => $rfidUid !== '' ? $rfidUid : null,
                 'vehicle_photo' => $request->file('vehicle_photo'),
             ], Auth::id());
 
@@ -282,6 +315,7 @@ class TransactionController extends Controller
             'vehicle.vehicleType:id,name',
             'parkingArea:id,name,ticket_penalty',
             'parkingRate:id,rate_type,rate_per_hour,flat_rate',
+            'rfidCard:id,uid,user_id',
         ]);
 
         $nominal = $type === 'exit' ? (float) ($transaction->total_fee ?? 0) : 0.0;

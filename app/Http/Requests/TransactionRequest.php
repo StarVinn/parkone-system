@@ -32,6 +32,7 @@ class TransactionRequest extends FormRequest
             'parking_area_id' => 'required_if:action,entry|nullable|exists:parking_areas,id',
             'vehicle_photo' => 'exclude_unless:action,entry|required_if:action,entry|image|mimes:jpg,jpeg,png,webp|max:4096',
             'checkout_mode' => 'exclude_unless:action,exit|nullable|in:ticket,rfid',
+            'rfid_uid' => 'nullable|string|max:255',
         ];
     }
 
@@ -51,6 +52,7 @@ class TransactionRequest extends FormRequest
             'vehicle_photo.mimes' => 'Format foto kendaraan harus JPG, PNG, atau WEBP.',
             'vehicle_photo.max' => 'Ukuran foto kendaraan maksimal 4 MB.',
             'checkout_mode.in' => 'Mode checkout tidak valid.',
+            'rfid_uid.max' => 'RFID UID maksimal 255 karakter.',
         ];
     }
 }

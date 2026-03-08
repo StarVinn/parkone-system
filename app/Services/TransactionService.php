@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\ParkingArea;
 use App\Models\ParkingLocation;
 use App\Models\ParkingRate;
+use App\Models\RfidCard;
 use App\Models\Transaction;
 use App\Models\Vehicle;
 use Illuminate\Http\UploadedFile;
@@ -82,6 +83,7 @@ class TransactionService
                 'vehicle:id,license_plate,vehicle_type_id',
                 'vehicle.vehicleType:id,name',
                 'parkingArea:id,name',
+                'rfidCard:id,uid,user_id',
             ])
             ->when($selectedArea, fn($query) => $query->where('parking_area_id', $selectedArea->id))
             ->where('status', 'active')
@@ -93,6 +95,7 @@ class TransactionService
                 'vehicle:id,license_plate,vehicle_type_id',
                 'vehicle.vehicleType:id,name',
                 'parkingArea:id,name',
+                'rfidCard:id,uid,user_id',
             ])
             ->when($selectedArea, fn($query) => $query->where('parking_area_id', $selectedArea->id))
             ->latest()
@@ -165,6 +168,13 @@ class TransactionService
         return DB::transaction(function () use ($data, $officerId) {
             $plate = $this->formatPlate($data['license_plate']);
             $vehicle = $this->findVehicleByPlate($plate);
+            $rfidUid = strtoupper(trim((string) ($data['rfid_uid'] ?? '')));
+            $rfidCardId = (int) ($data['rfid_card_id'] ?? 0);
+            if ($rfidCardId <= 0 && $rfidUid !== '') {
+                $rfidCardId = (int) (RfidCard::query()
+                    ->whereRaw('UPPER(uid) = ?', [$rfidUid])
+                    ->value('id') ?? 0);
+            }
 
             $existingActiveTransaction = Transaction::query()
                 ->where('vehicle_id', $vehicle->id)
@@ -175,6 +185,24 @@ class TransactionService
                 throw ValidationException::withMessages([
                     'license_plate' => 'Kendaraan ini masih tercatat berada di area parkir.',
                 ]);
+            }
+
+            if ($rfidCardId > 0) {
+                $existingRfidActiveTransaction = Transaction::query()
+                    ->where(function ($query) use ($rfidCardId, $rfidUid) {
+                        $query->where('rfid_card_id', $rfidCardId);
+                        if ($rfidUid !== '') {
+                            $query->orWhereRaw('UPPER(rfid_uid) = ?', [$rfidUid]);
+                        }
+                    })
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($existingRfidActiveTransaction) {
+                    throw ValidationException::withMessages([
+                        'rfid_uid' => 'RFID ini sedang dipakai di transaksi aktif lain.',
+                    ]);
+                }
             }
 
             $parkingArea = ParkingArea::query()
@@ -217,6 +245,8 @@ class TransactionService
                 'vehicle_id' => $vehicle->id,
                 'parking_area_id' => $parkingArea->id,
                 'parking_rate_id' => $parkingRate->id,
+                'rfid_card_id' => $rfidCardId > 0 ? $rfidCardId : null,
+                'rfid_uid' => $rfidUid !== '' ? $rfidUid : null,
                 'entry_time' => now(),
                 'entry_vehicle_photo_path' => $photoPath,
                 'status' => 'active',
@@ -239,6 +269,13 @@ class TransactionService
         return DB::transaction(function () use ($data, $officerId) {
             $plate = $this->formatPlate($data['license_plate']);
             $vehicle = $this->findVehicleByPlate($plate);
+            $rfidUid = strtoupper(trim((string) ($data['rfid_uid'] ?? '')));
+            $rfidCardId = (int) ($data['rfid_card_id'] ?? 0);
+            if ($rfidCardId <= 0 && $rfidUid !== '') {
+                $rfidCardId = (int) (RfidCard::query()
+                    ->whereRaw('UPPER(uid) = ?', [$rfidUid])
+                    ->value('id') ?? 0);
+            }
 
             $transaction = Transaction::query()
                 ->with(['parkingArea', 'parkingRate'])
@@ -251,6 +288,29 @@ class TransactionService
                 throw ValidationException::withMessages([
                     'license_plate' => 'Tidak ada transaksi aktif untuk plat nomor ini.',
                 ]);
+            }
+
+            $entryRfidCardId = (int) ($transaction->rfid_card_id ?? 0);
+            if ($entryRfidCardId > 0) {
+                if ($rfidCardId <= 0) {
+                    throw ValidationException::withMessages([
+                        'rfid_uid' => 'RFID wajib diisi karena transaksi masuk menggunakan RFID.',
+                    ]);
+                }
+
+                if ($entryRfidCardId !== $rfidCardId) {
+                    throw ValidationException::withMessages([
+                        'rfid_uid' => 'RFID tidak sesuai dengan transaksi masuk kendaraan ini.',
+                    ]);
+                }
+            } elseif (strtoupper(trim((string) ($transaction->rfid_uid ?? ''))) !== '') {
+                // Fallback untuk data lama yang belum punya rfid_card_id.
+                $entryRfidUid = strtoupper(trim((string) ($transaction->rfid_uid ?? '')));
+                if ($rfidUid === '' || $entryRfidUid !== $rfidUid) {
+                    throw ValidationException::withMessages([
+                        'rfid_uid' => 'RFID tidak sesuai dengan transaksi masuk kendaraan ini.',
+                    ]);
+                }
             }
 
             $exitTime = now();

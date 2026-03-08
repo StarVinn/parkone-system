@@ -21,21 +21,14 @@ const formatLicensePlate = (value) => {
 
 export default function StandbyOut({ activeTransactions = [], selectedParkingArea = null }) {
     const { flash, errors } = usePage().props;
-    const [useRfid, setUseRfid] = useState(false);
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
-    const [rfidVehicles, setRfidVehicles] = useState([]);
-    const [selectedVehicleId, setSelectedVehicleId] = useState("");
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
     const [selectedActiveTransaction, setSelectedActiveTransaction] = useState(null);
     const [activePlateSearch, setActivePlateSearch] = useState("");
     const latestLookupRef = useRef(0);
 
-    const selectedVehicle = useMemo(
-        () => rfidVehicles.find((item) => String(item.id) === String(selectedVehicleId)),
-        [rfidVehicles, selectedVehicleId],
-    );
     const filteredActiveTransactions = useMemo(() => {
         const keyword = activePlateSearch
             .toUpperCase()
@@ -59,8 +52,6 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             setLookupLoading(false);
             setRfidError("");
             setRfidUser(null);
-            setRfidVehicles([]);
-            setSelectedVehicleId("");
             return;
         }
 
@@ -70,8 +61,6 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
         setLookupLoading(true);
         setRfidError("");
         setRfidUser(null);
-        setRfidVehicles([]);
-        setSelectedVehicleId("");
 
         try {
             const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(normalizedUid)}`;
@@ -92,11 +81,6 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             }
 
             setRfidUser(payload.user);
-            setRfidVehicles(payload.vehicles || []);
-
-            if (!payload.vehicles?.length) {
-                setRfidError("User ditemukan, tapi belum punya data kendaraan.");
-            }
         } catch {
             if (latestLookupRef.current !== lookupId) {
                 return;
@@ -110,33 +94,28 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
     };
 
     useEffect(() => {
-        if (!useRfid) {
-            return undefined;
-        }
-
         const timeoutId = setTimeout(() => {
             handleLookupRfid(rfidUid);
         }, 450);
 
         return () => clearTimeout(timeoutId);
-    }, [useRfid, rfidUid]);
+    }, [rfidUid]);
 
     const submit = (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const licensePlate = useRfid
-            ? selectedVehicle?.license_plate || ""
-            : formData.get("license_plate");
+        const licensePlate = formData.get("license_plate");
 
-        if (useRfid && !licensePlate) {
-            setRfidError("Pilih kendaraan dari hasil RFID terlebih dahulu.");
+        if (rfidUid.trim() && !rfidUser) {
+            setRfidError("RFID belum terverifikasi.");
             return;
         }
 
         router.post(route("officer.transactions.store"), {
             action: "exit",
             license_plate: licensePlate,
-            checkout_mode: useRfid ? "rfid" : "ticket",
+            checkout_mode: String(rfidUid || "").trim() ? "rfid" : "ticket",
+            rfid_uid: String(rfidUid || "").trim(),
         });
     };
 
@@ -163,9 +142,9 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                 </div>
             )}
 
-            {(errors.license_plate || errors.action) && (
+            {(errors.license_plate || errors.action || errors.rfid_uid) && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {errors.license_plate || errors.action}
+                    {errors.license_plate || errors.action || errors.rfid_uid}
                 </div>
             )}
 
@@ -173,97 +152,52 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 px-4 py-3">
-                    <div>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Mode Input</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {useRfid ? "Pakai RFID" : "Input Normal Plat Nomor"}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setUseRfid((prev) => !prev);
-                            setRfidError("");
+                <div>
+                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
+                    <input
+                        name="license_plate"
+                        onInput={(event) => {
+                            event.target.value = formatLicensePlate(event.target.value);
                         }}
-                        className={`relative h-7 w-14 rounded-full transition ${
-                            useRfid ? "bg-[#1E5EFF]" : "bg-slate-300"
-                        }`}
-                    >
-                        <span
-                            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                                useRfid ? "left-8" : "left-1"
-                            }`}
-                        />
-                    </button>
+                        placeholder="Contoh: B 1018 PIA"
+                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                        required
+                    />
                 </div>
 
-                {!useRfid ? (
+                <div className="space-y-3">
                     <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
+                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                            RFID UID (Opsional)
+                        </label>
                         <input
-                            name="license_plate"
-                            onInput={(event) => {
-                                event.target.value = formatLicensePlate(event.target.value);
-                            }}
-                            placeholder="Contoh: B 1018 PIA"
+                            value={rfidUid}
+                            onChange={(event) => setRfidUid(event.target.value)}
+                            placeholder="Scan / input RFID UID (boleh kosong)"
                             className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                            required
                         />
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        <div className="flex flex-col md:flex-row gap-2">
-                            <input
-                                value={rfidUid}
-                                onChange={(event) => setRfidUid(event.target.value)}
-                                placeholder="Scan / input RFID UID"
-                                className="flex-1 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                            />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Jika transaksi masuk memakai RFID, saat keluar RFID yang sama harus diinput.
+                    </p>
+                    {lookupLoading && (
+                        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                            Mencari data RFID...
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            RFID akan dicari otomatis setelah input berhenti diketik.
-                        </p>
-                        {lookupLoading && (
-                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                Mencari data RFID...
-                            </div>
-                        )}
+                    )}
 
-                        {rfidUser && (
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                                RFID cocok dengan user: <strong>{rfidUser.name}</strong>
-                            </div>
-                        )}
+                    {rfidUser && (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            RFID cocok dengan user: <strong>{rfidUser.name}</strong>
+                        </div>
+                    )}
 
-                        {!!rfidVehicles.length && (
-                            <div>
-                                <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                    Kendaraan Owner
-                                </label>
-                                <select
-                                    value={selectedVehicleId}
-                                    onChange={(event) => setSelectedVehicleId(event.target.value)}
-                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                                    required={useRfid}
-                                >
-                                    <option value="">Pilih kendaraan</option>
-                                    {rfidVehicles.map((vehicle) => (
-                                        <option key={vehicle.id} value={vehicle.id}>
-                                            {vehicle.license_plate} ({vehicle.vehicle_type_name || "-"})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {rfidError && (
-                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                                {rfidError}
-                            </div>
-                        )}
-                    </div>
-                )}
+                    {rfidError && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {rfidError}
+                        </div>
+                    )}
+                </div>
 
                 <button
                     type="submit"
@@ -358,6 +292,13 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Area Parkir</p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.parking_area?.name || "-"}
+                                </p>
+
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">RFID Card ID</p>
+                                <p className="text-sm text-slate-800 dark:text-slate-200">
+                                    {selectedActiveTransaction.rfid_card?.id
+                                        ? `#${selectedActiveTransaction.rfid_card.id}`
+                                        : "-"}
                                 </p>
 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Waktu Masuk</p>

@@ -4,11 +4,10 @@ import AdminLayout from "../../Layouts/AdminLayout";
 
 const emptyRow = () => ({
     license_plate: "",
-    user_id: "",
     vehicle_type_id: "",
 });
 
-export default function Create({ users = [], vehicleTypes = [] }) {
+export default function Create({ vehicleTypes = [] }) {
     const page = usePage();
     const fromOverview = (page.url || "").includes("from=overview");
     const indexUrl = fromOverview
@@ -156,35 +155,6 @@ export default function Create({ users = [], vehicleTypes = [] }) {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                    Owner
-                                </label>
-                                <select
-                                    value={vehicle.user_id}
-                                    onChange={(e) => updateRow(index, "user_id", e.target.value)}
-                                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
-                                        bg-slate-50 dark:bg-[#0B1026]
-                                        text-slate-900 dark:text-white
-                                        ${
-                                            rowError(index, "user_id")
-                                                ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
-                                                : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
-                                        }`}
-                                >
-                                    <option value="">Pilih pemilik kendaraan</option>
-                                    {users.map((item) => (
-                                        <option key={item.id} value={item.id}>
-                                            {item.name} ({item.email})
-                                        </option>
-                                    ))}
-                                </select>
-                                {rowError(index, "user_id") && (
-                                    <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
-                                        {rowError(index, "user_id")}
-                                    </p>
-                                )}
-                            </div>
                         </div>
                     ))}
 

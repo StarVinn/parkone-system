@@ -28,7 +28,7 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('users', 'rfid_uid')->ignore($userId),
+                Rule::unique('rfid_cards', 'uid'),
             ],
         ];
     }

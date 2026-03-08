@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VehicleRequest;
-use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\VehicleService;
@@ -16,24 +15,18 @@ class VehicleController extends Controller
     {
         $filters = [
             'search' => $request->string('search')->toString(),
-            'user_id' => $request->string('user_id')->toString(),
             'vehicle_type_id' => $request->string('vehicle_type_id')->toString(),
         ];
 
-        $vehicles = Vehicle::with(['user', 'vehicleType'])
+        $vehicles = Vehicle::with(['vehicleType'])
             ->when($filters['search'], function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('license_plate', 'like', "%{$search}%")
-                        ->orWhereHas('user', function ($userQuery) use ($search) {
-                            $userQuery->where('name', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%");
-                        })
                         ->orWhereHas('vehicleType', function ($typeQuery) use ($search) {
                             $typeQuery->where('name', 'like', "%{$search}%");
                         });
                 });
             })
-            ->when($filters['user_id'], fn($query, $userId) => $query->where('user_id', $userId))
             ->when($filters['vehicle_type_id'], fn($query, $typeId) => $query->where('vehicle_type_id', $typeId))
             ->latest()
             ->paginate(15)
@@ -42,10 +35,6 @@ class VehicleController extends Controller
         return inertia('Admin/Vehicle/Index', [
             'vehicles' => $vehicles,
             'filters' => $filters,
-            'users' => User::select('id', 'name', 'email')
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(),
             'vehicleTypes' => VehicleType::latest()->get(),
         ]);
     }
@@ -53,10 +42,6 @@ class VehicleController extends Controller
     public function showCreate()
     {
         return inertia('Admin/Vehicle/Create', [
-            'users' => User::select('id', 'name', 'email')
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(),
             'vehicleTypes' => VehicleType::latest()->get(),
         ]);
     }
@@ -64,11 +49,7 @@ class VehicleController extends Controller
     public function showEdit($id)
     {
         return inertia('Admin/Vehicle/Edit', [
-            'vehicle' => Vehicle::with(['user', 'vehicleType'])->findOrFail($id),
-            'users' => User::select('id', 'name', 'email')
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(),
+            'vehicle' => Vehicle::with(['vehicleType'])->findOrFail($id),
             'vehicleTypes' => VehicleType::latest()->get(),
         ]);
     }

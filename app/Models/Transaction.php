@@ -15,6 +15,8 @@ class Transaction extends Model
         'vehicle_id',
         'parking_area_id',
         'parking_rate_id',
+        'rfid_card_id',
+        'rfid_uid',
         'entry_time',
         'entry_vehicle_photo_path',
         'exit_time',
@@ -55,6 +57,11 @@ class Transaction extends Model
     public function parkingRate()
     {
         return $this->belongsTo(ParkingRate::class, 'parking_rate_id');
+    }
+
+    public function rfidCard()
+    {
+        return $this->belongsTo(RfidCard::class, 'rfid_card_id');
     }
 
     public function getEntryVehiclePhotoUrlAttribute(): ?string
