@@ -44,6 +44,7 @@ export default function StandbyIn({
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+    const latestLookupRef = useRef(0);
     const {
         data: visitorData,
         setData: setVisitorData,
@@ -184,11 +185,19 @@ export default function StandbyIn({
         );
     };
 
-    const handleLookupRfid = async () => {
-        if (!rfidUid.trim()) {
-            setRfidError("RFID wajib diisi.");
+    const handleLookupRfid = async (uid) => {
+        const normalizedUid = String(uid || "").trim();
+        if (!normalizedUid) {
+            setLookupLoading(false);
+            setRfidError("");
+            setRfidUser(null);
+            setRfidVehicles([]);
+            setSelectedVehicleId("");
             return;
         }
+
+        const lookupId = latestLookupRef.current + 1;
+        latestLookupRef.current = lookupId;
 
         setLookupLoading(true);
         setRfidError("");
@@ -197,7 +206,7 @@ export default function StandbyIn({
         setSelectedVehicleId("");
 
         try {
-            const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(rfidUid)}`;
+            const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(normalizedUid)}`;
             const response = await fetch(url, {
                 headers: {
                     Accept: "application/json",
@@ -205,6 +214,9 @@ export default function StandbyIn({
                 },
             });
             const payload = await response.json();
+            if (latestLookupRef.current !== lookupId) {
+                return;
+            }
 
             if (!response.ok) {
                 setRfidError(payload.message || "RFID tidak ditemukan.");
@@ -218,11 +230,28 @@ export default function StandbyIn({
                 setRfidError("User ditemukan, tapi belum punya data kendaraan.");
             }
         } catch {
+            if (latestLookupRef.current !== lookupId) {
+                return;
+            }
             setRfidError("Gagal melakukan lookup RFID.");
         } finally {
-            setLookupLoading(false);
+            if (latestLookupRef.current === lookupId) {
+                setLookupLoading(false);
+            }
         }
     };
+
+    useEffect(() => {
+        if (!useRfid) {
+            return undefined;
+        }
+
+        const timeoutId = setTimeout(() => {
+            handleLookupRfid(rfidUid);
+        }, 450);
+
+        return () => clearTimeout(timeoutId);
+    }, [useRfid, rfidUid]);
 
     const submitVisitorVehicle = async (event) => {
         event.preventDefault();
@@ -340,15 +369,15 @@ export default function StandbyIn({
                                 placeholder="Scan / input RFID UID"
                                 className="flex-1 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                             />
-                            <button
-                                type="button"
-                                onClick={handleLookupRfid}
-                                disabled={lookupLoading}
-                                className="rounded-xl bg-slate-900 dark:bg-slate-700 px-4 py-2.5 text-white font-medium hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-60 cursor-pointer"
-                            >
-                                {lookupLoading ? "Mencari..." : "Cari RFID"}
-                            </button>
                         </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            RFID akan dicari otomatis setelah input berhenti diketik.
+                        </p>
+                        {lookupLoading && (
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                Mencari data RFID...
+                            </div>
+                        )}
 
                         {rfidUser && (
                             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
