@@ -8,10 +8,11 @@ use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\VehicleService;
 use Illuminate\Http\Request;
+use Inertia\Response;
 
 class VehicleController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $filters = [
             'search' => $request->string('search')->toString(),
@@ -39,32 +40,13 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function showCreate()
-    {
-        return inertia('Admin/Vehicle/Create', [
-            'vehicleTypes' => VehicleType::latest()->get(),
-        ]);
-    }
-
-    public function showEdit($id)
-    {
-        return inertia('Admin/Vehicle/Edit', [
-            'vehicle' => Vehicle::with(['vehicleType'])->findOrFail($id),
-            'vehicleTypes' => VehicleType::latest()->get(),
-        ]);
-    }
-
     public function store(VehicleRequest $request, VehicleService $vehicleService)
     {
         $validated = $request->validated();
         $createdCount = $vehicleService->createManyVehicles($validated['vehicles']);
 
-        $redirectParams = $request->query('from') === 'overview'
-            ? ['from' => 'overview']
-            : [];
-
         return redirect()
-            ->route('admin.vehicles.index', $redirectParams)
+            ->route('admin.vehicles.index')
             ->with('success', $createdCount . ' kendaraan berhasil ditambahkan.');
     }
 

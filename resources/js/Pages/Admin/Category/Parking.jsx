@@ -39,12 +39,6 @@ export default function ParkingCategory({ stats = {} }) {
                         >
                             Lihat Data
                         </Link>
-                        <Link
-                            href="/admin/parking-locations/create"
-                            className="px-3 py-2 rounded-lg text-sm text-white bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] hover:opacity-90 transition"
-                        >
-                            Tambah
-                        </Link>
                     </div>
                 </section>
 
@@ -72,12 +66,6 @@ export default function ParkingCategory({ stats = {} }) {
                         >
                             Lihat Data
                         </Link>
-                        <Link
-                            href="/admin/parking-areas/create"
-                            className="px-3 py-2 rounded-lg text-sm text-white bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] hover:opacity-90 transition"
-                        >
-                            Tambah
-                        </Link>
                     </div>
                 </section>
 
@@ -104,12 +92,6 @@ export default function ParkingCategory({ stats = {} }) {
                             className="px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition"
                         >
                             Lihat Data
-                        </Link>
-                        <Link
-                            href="/admin/parking-rates/create"
-                            className="px-3 py-2 rounded-lg text-sm text-white bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5] hover:opacity-90 transition"
-                        >
-                            Tambah
                         </Link>
                     </div>
                 </section>

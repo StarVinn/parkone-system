@@ -123,15 +123,21 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
         <div className="space-y-5">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Standby OUT</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Standby OUT
+                    </h1>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                         Mode cepat untuk transaksi kendaraan keluar.
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Area aktif: <strong>{selectedParkingArea?.name || "-"}</strong>
+                        Area aktif:{" "}
+                        <strong>{selectedParkingArea?.name || "-"}</strong>
                     </p>
                 </div>
-                <Link href="/officer" className="text-sm text-[#1E5EFF] hover:underline">
+                <Link
+                    href="/officer"
+                    className="text-sm text-[#1E5EFF] hover:underline"
+                >
                     Kembali ke Dashboard
                 </Link>
             </div>
@@ -152,19 +158,6 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
-                    <input
-                        name="license_plate"
-                        onInput={(event) => {
-                            event.target.value = formatLicensePlate(event.target.value);
-                        }}
-                        placeholder="Contoh: B 1018 PIA"
-                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                        required
-                    />
-                </div>
-
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
@@ -178,7 +171,8 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                         />
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Jika transaksi masuk memakai RFID, saat keluar RFID yang sama harus diinput.
+                        Jika transaksi masuk memakai RFID, saat keluar RFID yang
+                        sama harus diinput.
                     </p>
                     {lookupLoading && (
                         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
@@ -188,7 +182,8 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
 
                     {rfidUser && (
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            RFID cocok dengan user: <strong>{rfidUser.name}</strong>
+                            RFID cocok dengan user:{" "}
+                            <strong>{rfidUser.name}</strong>
                         </div>
                     )}
 
@@ -197,6 +192,23 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                             {rfidError}
                         </div>
                     )}
+                </div>
+
+                <div>
+                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                        Plat Nomor
+                    </label>
+                    <input
+                        name="license_plate"
+                        onInput={(event) => {
+                            event.target.value = formatLicensePlate(
+                                event.target.value,
+                            );
+                        }}
+                        placeholder="Contoh: B 1018 PIA"
+                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                        required
+                    />
                 </div>
 
                 <button
@@ -209,17 +221,25 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
 
             <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] p-5">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Transaksi Aktif</h2>
-                    <input
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Transaksi Aktif
+                    </h2>
+                    {/* <input
                         value={activePlateSearch}
-                        onChange={(event) => setActivePlateSearch(formatLicensePlate(event.target.value))}
+                        onChange={(event) =>
+                            setActivePlateSearch(
+                                formatLicensePlate(event.target.value),
+                            )
+                        }
                         placeholder="Cari plat: B 1234 XYZ"
                         className="w-full sm:w-64 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                    />
+                    /> */}
                 </div>
                 <div className="space-y-2 max-h-72 overflow-auto pr-1">
                     {filteredActiveTransactions.length === 0 && (
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada transaksi aktif.</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Tidak ada transaksi aktif.
+                        </p>
                     )}
                     {filteredActiveTransactions.map((item) => (
                         <button
@@ -232,10 +252,16 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                                 {item.vehicle?.license_plate}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {item.vehicle?.vehicle_type?.name || "-"} | {item.parking_area?.name || "-"}
+                                {item.vehicle?.vehicle_type?.name || "-"} |{" "}
+                                {item.parking_area?.name || "-"}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Masuk: {item.entry_time ? new Date(item.entry_time).toLocaleString("id-ID") : "-"}
+                                Masuk:{" "}
+                                {item.entry_time
+                                    ? new Date(item.entry_time).toLocaleString(
+                                          "id-ID",
+                                      )
+                                    : "-"}
                             </p>
                         </button>
                     ))}
@@ -251,12 +277,15 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                                     Detail Kendaraan Aktif
                                 </h2>
                                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                                    Preview foto kendaraan masuk dan data transaksi.
+                                    Preview foto kendaraan masuk dan data
+                                    transaksi.
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setSelectedActiveTransaction(null)}
+                                onClick={() =>
+                                    setSelectedActiveTransaction(null)
+                                }
                                 className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
                             >
                                 Tutup
@@ -267,7 +296,9 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                             <div className="rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden bg-slate-100 dark:bg-[#0B1026]">
                                 {selectedActiveTransaction.entry_vehicle_photo_url ? (
                                     <img
-                                        src={selectedActiveTransaction.entry_vehicle_photo_url}
+                                        src={
+                                            selectedActiveTransaction.entry_vehicle_photo_url
+                                        }
                                         alt={`Foto ${selectedActiveTransaction.vehicle?.license_plate || "kendaraan"}`}
                                         className="h-64 w-full object-cover"
                                     />
@@ -279,32 +310,47 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                             </div>
 
                             <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-2">
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Plat Nomor</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Plat Nomor
+                                </p>
                                 <p className="text-lg font-semibold text-slate-900 dark:text-white uppercase">
-                                    {selectedActiveTransaction.vehicle?.license_plate || "-"}
+                                    {selectedActiveTransaction.vehicle
+                                        ?.license_plate || "-"}
                                 </p>
 
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Tipe Kendaraan</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    Tipe Kendaraan
+                                </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
-                                    {selectedActiveTransaction.vehicle?.vehicle_type?.name || "-"}
+                                    {selectedActiveTransaction.vehicle
+                                        ?.vehicle_type?.name || "-"}
                                 </p>
 
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Area Parkir</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    Area Parkir
+                                </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
-                                    {selectedActiveTransaction.parking_area?.name || "-"}
+                                    {selectedActiveTransaction.parking_area
+                                        ?.name || "-"}
                                 </p>
 
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">RFID Card ID</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    RFID Card ID
+                                </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.rfid_card?.id
                                         ? `#${selectedActiveTransaction.rfid_card.id}`
                                         : "-"}
                                 </p>
 
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Waktu Masuk</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    Waktu Masuk
+                                </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.entry_time
-                                        ? new Date(selectedActiveTransaction.entry_time).toLocaleString("id-ID")
+                                        ? new Date(
+                                              selectedActiveTransaction.entry_time,
+                                          ).toLocaleString("id-ID")
                                         : "-"}
                                 </p>
                             </div>

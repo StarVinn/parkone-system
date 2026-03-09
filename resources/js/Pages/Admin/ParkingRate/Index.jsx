@@ -1,6 +1,7 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info, ArrowLeft } from "lucide-react";
+import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
+import { useState } from "react";
 
 const formatCurrency = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -9,10 +10,127 @@ const formatCurrency = (value) =>
         maximumFractionDigits: 0,
     }).format(Number(value || 0));
 
-export default function Index({ parkingRates = [] }) {
+const getNumericValue = (value) => String(value ?? "").replace(/\D/g, "");
+
+const formatRupiahInput = (value) => {
+    const numeric = getNumericValue(value);
+    if (!numeric) return "";
+    return `Rp ${Number(numeric).toLocaleString("id-ID")}`;
+};
+
+export default function Index({ parkingRates = [], parkingLocations = [], vehicleTypes = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        vehicle_type_id: "",
+        location_id: "",
+        rate_type: "hourly",
+        rate_per_hour: "",
+        flat_rate: "",
+    });
+    const [errors, setErrors] = useState({});
+    const [processing, setProcessing] = useState(false);
+
+    const isHourly = formData.rate_type === "hourly";
+    const currentRateValue = isHourly ? formData.rate_per_hour : formData.flat_rate;
+
+    const resetForm = () => {
+        setFormData({
+            vehicle_type_id: "",
+            location_id: "",
+            rate_type: "hourly",
+            rate_per_hour: "",
+            flat_rate: "",
+        });
+        setErrors({});
+        setEditingItem(null);
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (item) => {
+        setFormData({
+            vehicle_type_id: item.vehicle_type_id || "",
+            location_id: item.location_id || "",
+            rate_type: item.rate_type || "hourly",
+            rate_per_hour: item.rate_per_hour?.toString() || "",
+            flat_rate: item.flat_rate?.toString() || "",
+        });
+        setEditingItem(item);
+        setErrors({});
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        resetForm();
+    };
+
+    const handleRateChange = (e) => {
+        const numericValue = getNumericValue(e.target.value);
+
+        if (isHourly) {
+            setFormData((prev) => ({ ...prev, rate_per_hour: numericValue }));
+            return;
+        }
+
+        setFormData((prev) => ({ ...prev, flat_rate: numericValue }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        setErrors({});
+
+        // Submit with numeric values
+        const submitData = {
+            ...formData,
+            rate_per_hour: formData.rate_per_hour || null,
+            flat_rate: formData.flat_rate || null,
+        };
+
+        if (editingItem) {
+            router.put(
+                route("admin.parking-rates.update", editingItem.id),
+                submitData,
+                {
+                    onSuccess: () => {
+                        setProcessing(false);
+                        closeModal();
+                    },
+                    onError: (err) => {
+                        setProcessing(false);
+                        setErrors(err);
+                    },
+                }
+            );
+        } else {
+            router.post(
+                route("admin.parking-rates.store"),
+                submitData,
+                {
+                    onSuccess: () => {
+                        setProcessing(false);
+                        closeModal();
+                    },
+                    onError: (err) => {
+                        setProcessing(false);
+                        setErrors(err);
+                    },
+                }
+            );
+        }
+    };
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus tarif parkir ini?")) {
@@ -29,7 +147,9 @@ export default function Index({ parkingRates = [] }) {
                             href="/admin/parking"
                             className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition mb-2"
                         >
-                            <ArrowLeft size={14} />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
                             Back to Overview
                         </Link>
                     )}
@@ -41,15 +161,15 @@ export default function Index({ parkingRates = [] }) {
                     </p>
                 </div>
 
-                <Link
-                    href={route("admin.parking-rates.create")}
+                <button
+                    onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
                 >
                     <Plus size={18} />
                     Tambah Tarif
-                </Link>
+                </button>
             </div>
 
             {flash.success && (
@@ -84,25 +204,19 @@ export default function Index({ parkingRates = [] }) {
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                             {parkingRates.length === 0 ? (
                                 <tr>
-                                    <td
-                                        colSpan="5"
-                                        className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
-                                    >
+                                    <td colSpan="5" className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic">
                                         Belum ada data tarif kendaraan...
                                     </td>
                                 </tr>
                             ) : (
                                 parkingRates.map((item) => {
-                                    const isHourly = item.rate_type === "hourly";
-                                    const amount = isHourly
+                                    const isRateHourly = item.rate_type === "hourly";
+                                    const amount = isRateHourly
                                         ? `${formatCurrency(item.rate_per_hour)} / jam`
                                         : formatCurrency(item.flat_rate);
 
                                     return (
-                                        <tr
-                                            key={item.id}
-                                            className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
-                                        >
+                                        <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors">
                                             <td className="px-6 py-4">
                                                 <span className="font-medium text-slate-900 dark:text-slate-200">
                                                     {item.vehicle_type?.name || "-"}
@@ -119,16 +233,13 @@ export default function Index({ parkingRates = [] }) {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-3">
-                                                    <Link
-                                                        href={route(
-                                                            "admin.parking-rates.edit",
-                                                            item.id,
-                                                        )}
+                                                    <button
+                                                        onClick={() => openEditModal(item)}
                                                         className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                                         title="Edit"
                                                     >
                                                         <Edit3 size={18} />
-                                                    </Link>
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDelete(item.id)}
                                                         className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
@@ -146,8 +257,187 @@ export default function Index({ parkingRates = [] }) {
                     </table>
                 </div>
             </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
+                        onClick={closeModal}
+                    />
+
+                    {/* Modal Content */}
+                    <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
+                                {editingItem ? "Edit Parking Rate" : "Create Parking Rate"}
+                            </h2>
+                            <button
+                                onClick={closeModal}
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                        Vehicle Type
+                                    </label>
+                                    <select
+                                        value={formData.vehicle_type_id}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, vehicle_type_id: e.target.value }))}
+                                        className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                            bg-slate-50 dark:bg-[#0B1026]
+                                            text-slate-900 dark:text-white
+                                            ${
+                                                errors.vehicle_type_id
+                                                    ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                    : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                            }`}
+                                    >
+                                        <option value="">Pilih tipe kendaraan</option>
+                                        {vehicleTypes.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.vehicle_type_id && (
+                                        <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                            {errors.vehicle_type_id}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                        Parking Location
+                                    </label>
+                                    <select
+                                        value={formData.location_id}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, location_id: e.target.value }))}
+                                        className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                            bg-slate-50 dark:bg-[#0B1026]
+                                            text-slate-900 dark:text-white
+                                            ${
+                                                errors.location_id
+                                                    ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                    : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                            }`}
+                                    >
+                                        <option value="">Pilih lokasi parkir</option>
+                                        {parkingLocations.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.location_id && (
+                                        <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                            {errors.location_id}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                        Rate Type
+                                    </label>
+                                    <select
+                                        value={formData.rate_type}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, rate_type: e.target.value }))}
+                                        className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                            bg-slate-50 dark:bg-[#0B1026]
+                                            text-slate-900 dark:text-white
+                                            ${
+                                                errors.rate_type
+                                                    ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                    : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                            }`}
+                                    >
+                                        <option value="hourly">Hourly</option>
+                                        <option value="flat">Flat</option>
+                                    </select>
+                                    {errors.rate_type && (
+                                        <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                            {errors.rate_type}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                        {isHourly ? "Rate Per Hour" : "Flat Rate"}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder={isHourly ? "Contoh: Rp 5.000" : "Contoh: Rp 20.000"}
+                                        value={formatRupiahInput(currentRateValue)}
+                                        onChange={handleRateChange}
+                                        className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                            bg-slate-50 dark:bg-[#0B1026]
+                                            text-slate-900 dark:text-white
+                                            ${
+                                                errors.rate_per_hour || errors.flat_rate
+                                                    ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                    : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                            }`}
+                                    />
+                                    {(errors.rate_per_hour || errors.flat_rate) && (
+                                        <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                            {errors.rate_per_hour || errors.flat_rate}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold text-white transition-all
+                                        bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
+                                        hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 cursor-pointer"
+                                >
+                                    {processing ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                            <polyline points="17 21 17 13 7 13 7 21" />
+                                            <polyline points="7 3 7 8 15 8" />
+                                        </svg>
+                                    )}
+                                    {processing
+                                        ? "Menyimpan..."
+                                        : editingItem
+                                          ? "Update Data"
+                                          : "Simpan Data"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 Index.layout = (page) => <AdminLayout children={page} />;
+
