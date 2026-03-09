@@ -9,6 +9,15 @@
 - [x] ParkingRate - Modal form in Index.jsx
 - [x] Account - Added create modal to existing Index.jsx
 
+## Files Deleted:
+
+- ParkingLocation: Create.jsx, Edit.jsx
+- ParkingArea: Create.jsx, Edit.jsx
+- VehicleType: Create.jsx, Edit.jsx
+- Vehicle: Create.jsx, Edit.jsx
+- ParkingRate: Create.jsx, Edit.jsx
+- Account: Create.jsx
+
 ## Changes Made:
 
 ### Controllers Updated:
