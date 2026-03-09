@@ -8,28 +8,14 @@ use App\Models\ParkingLocation;
 use App\Models\ParkingRate;
 use App\Models\VehicleType;
 use App\Services\ParkingRateService;
+use Inertia\Response;
 
 class ParkingRateController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         return inertia('Admin/ParkingRate/Index', [
             'parkingRates' => ParkingRate::with(['location', 'vehicleType'])->latest()->get(),
-        ]);
-    }
-
-    public function showCreate()
-    {
-        return inertia('Admin/ParkingRate/Create', [
-            'parkingLocations' => ParkingLocation::latest()->get(),
-            'vehicleTypes' => VehicleType::latest()->get(),
-        ]);
-    }
-
-    public function showEdit($id)
-    {
-        return inertia('Admin/ParkingRate/Edit', [
-            'parkingRate' => ParkingRate::with(['location', 'vehicleType'])->findOrFail($id),
             'parkingLocations' => ParkingLocation::latest()->get(),
             'vehicleTypes' => VehicleType::latest()->get(),
         ]);
@@ -39,12 +25,8 @@ class ParkingRateController extends Controller
     {
         $parkingRateService->createParkingRate($request->validated());
 
-        $redirectParams = $request->query('from') === 'overview'
-            ? ['from' => 'overview']
-            : [];
-
         return redirect()
-            ->route('admin.parking-rates.index', $redirectParams)
+            ->route('admin.parking-rates.index')
             ->with('success', 'Tarif kendaraan berhasil ditambahkan.');
     }
 
