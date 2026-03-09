@@ -62,45 +62,35 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/parking', [AdminCategoryController::class, 'parking'])->name('admin.category.parking');
         Route::prefix('vehicle-types')->group(function () {
             Route::get('/', [VehicleTypeController::class, 'index'])->name('admin.vehicle-types.index');
-            Route::get('/create', [VehicleTypeController::class, 'showCreate'])->name('admin.vehicle-types.create');
             Route::post('/', [VehicleTypeController::class, 'store'])->name('admin.vehicle-types.store');
-            Route::get('/{id}/edit', [VehicleTypeController::class, 'showEdit'])->name('admin.vehicle-types.edit');
             Route::put('/{id}', [VehicleTypeController::class, 'update'])->name('admin.vehicle-types.update');
             Route::delete('/{id}', [VehicleTypeController::class, 'destroy'])->name('admin.vehicle-types.destroy');
         });
 
         Route::prefix('vehicles')->group(function () {
             Route::get('/', [VehicleController::class, 'index'])->name('admin.vehicles.index');
-            Route::get('/create', [VehicleController::class, 'showCreate'])->name('admin.vehicles.create');
             Route::post('/', [VehicleController::class, 'store'])->name('admin.vehicles.store');
-            Route::get('/{id}/edit', [VehicleController::class, 'showEdit'])->name('admin.vehicles.edit');
             Route::put('/{id}', [VehicleController::class, 'update'])->name('admin.vehicles.update');
             Route::delete('/{id}', [VehicleController::class, 'destroy'])->name('admin.vehicles.destroy');
         });
 
         Route::prefix('parking-locations')->group(function () {
             Route::get('/', [ParkingLocationController::class, 'index'])->name('admin.parking-locations.index');
-            Route::get('/create', [ParkingLocationController::class, 'showCreate'])->name('admin.parking-locations.create');
             Route::post('/', [ParkingLocationController::class, 'store'])->name('admin.parking-locations.store');
-            Route::get('/{id}/edit', [ParkingLocationController::class, 'showEdit'])->name('admin.parking-locations.edit');
             Route::put('/{id}', [ParkingLocationController::class, 'update'])->name('admin.parking-locations.update');
             Route::delete('/{id}', [ParkingLocationController::class, 'destroy'])->name('admin.parking-locations.destroy');
         });
 
         Route::prefix('parking-areas')->group(function () {
             Route::get('/', [ParkingAreaController::class, 'index'])->name('admin.parking-areas.index');
-            Route::get('/create', [ParkingAreaController::class, 'showCreate'])->name('admin.parking-areas.create');
             Route::post('/', [ParkingAreaController::class, 'store'])->name('admin.parking-areas.store');
-            Route::get('/{id}/edit', [ParkingAreaController::class, 'showEdit'])->name('admin.parking-areas.edit');
             Route::put('/{id}', [ParkingAreaController::class, 'update'])->name('admin.parking-areas.update');
             Route::delete('/{id}', [ParkingAreaController::class, 'destroy'])->name('admin.parking-areas.destroy');
         });
 
         Route::prefix('parking-rates')->group(function () {
             Route::get('/', [ParkingRateController::class, 'index'])->name('admin.parking-rates.index');
-            Route::get('/create', [ParkingRateController::class, 'showCreate'])->name('admin.parking-rates.create');
             Route::post('/', [ParkingRateController::class, 'store'])->name('admin.parking-rates.store');
-            Route::get('/{id}/edit', [ParkingRateController::class, 'showEdit'])->name('admin.parking-rates.edit');
             Route::put('/{id}', [ParkingRateController::class, 'update'])->name('admin.parking-rates.update');
             Route::delete('/{id}', [ParkingRateController::class, 'destroy'])->name('admin.parking-rates.destroy');
         });
@@ -112,7 +102,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
         Route::prefix('accounts')->group(function () {
             Route::get('/', [AdminAccountController::class, 'index'])->name('admin.accounts.index');
-            Route::get('/create', [AdminAccountController::class, 'showCreate'])->name('admin.accounts.create');
             Route::post('/', [AdminAccountController::class, 'store'])->name('admin.accounts.store');
             Route::post('/{user}/activate', [AdminAccountController::class, 'activate'])->name('admin.accounts.activate');
             Route::put('/{user}/reset-email', [AdminAccountController::class, 'resetEmail'])->name('admin.accounts.reset-email');
