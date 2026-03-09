@@ -1,28 +1,56 @@
 import { Link, usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info, RotateCcw, ArrowLeft } from "lucide-react";
+import { Plus, Edit3, Trash2, Info, RotateCcw, X } from "lucide-react";
+import { useState } from "react";
 
-export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }) {
+const emptyRow = () => ({
+    license_plate: "",
+    vehicle_type_id: "",
+});
+
+export default function Index({
+    vehicles = [],
+    filters = {},
+    vehicleTypes = [],
+}) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+
+    // Pagination helpers
     const rows = Array.isArray(vehicles?.data)
         ? vehicles.data
         : Array.isArray(vehicles)
           ? vehicles
           : [];
-    const paginationLinks = Array.isArray(vehicles?.links) ? vehicles.links : [];
+    const paginationLinks = Array.isArray(vehicles?.links)
+        ? vehicles.links
+        : [];
     const from = vehicles?.from ?? 0;
     const to = vehicles?.to ?? rows.length;
     const total = vehicles?.total ?? rows.length;
-    const { data, setData } = useForm({
+
+    // Filter form
+    const { data: filterData, setData: setFilterData } = useForm({
         search: filters.search ?? "",
         vehicle_type_id: filters.vehicle_type_id ?? "",
     });
 
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+
+    // Form state for create/edit
+    const [formData, setFormData] = useState({
+        vehicles: [emptyRow()],
+    });
+    const [errors, setErrors] = useState({});
+    const [processing, setProcessing] = useState(false);
+
+    // Filter functions
     const applyFilters = (event) => {
         event.preventDefault();
-        router.get(route("admin.vehicles.index"), data, {
+        router.get(route("admin.vehicles.index"), filterData, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -30,19 +58,12 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
         });
     };
 
-    const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus kendaraan ini?")) {
-            router.delete(route("admin.vehicles.destroy", id));
-        }
-    };
-
     const resetFilters = () => {
         const emptyFilters = {
             search: "",
             vehicle_type_id: "",
         };
-
-        setData(emptyFilters);
+        setFilterData(emptyFilters);
         router.get(route("admin.vehicles.index"), emptyFilters, {
             preserveState: true,
             preserveScroll: true,
@@ -53,13 +74,16 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
 
     const goToPage = (url) => {
         if (!url) return;
-
-        router.get(url, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["vehicles", "filters", "flash", "errors"],
-        });
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["vehicles", "filters", "flash", "errors"],
+            },
+        );
     };
 
     const paginationLabel = (label) =>
@@ -67,6 +91,102 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
             .replace(/&laquo;/g, "«")
             .replace(/&raquo;/g, "»")
             .replace(/<[^>]*>/g, "");
+
+    // Modal functions
+    const resetForm = () => {
+        setFormData({ vehicles: [emptyRow()] });
+        setErrors({});
+        setEditingItem(null);
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (item) => {
+        setFormData({
+            vehicles: [
+                {
+                    license_plate: item.license_plate || "",
+                    vehicle_type_id: item.vehicle_type_id || "",
+                },
+            ],
+        });
+        setEditingItem(item);
+        setErrors({});
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        resetForm();
+    };
+
+    // Form row functions
+    const updateRow = (index, field, value) => {
+        const nextRows = [...formData.vehicles];
+        nextRows[index] = {
+            ...nextRows[index],
+            [field]: field === "license_plate" ? value.toUpperCase() : value,
+        };
+        setFormData({ vehicles: nextRows });
+    };
+
+    const addRow = () => {
+        setFormData({ vehicles: [...formData.vehicles, emptyRow()] });
+    };
+
+    const removeRow = (index) => {
+        if (formData.vehicles.length <= 1) return;
+        setFormData({
+            vehicles: formData.vehicles.filter((_, i) => i !== index),
+        });
+    };
+
+    const rowError = (index, field) => errors[`vehicles.${index}.${field}`];
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        setErrors({});
+
+        if (editingItem) {
+            // Single vehicle update
+            router.put(
+                route("admin.vehicles.update", editingItem.id),
+                formData.vehicles[0],
+                {
+                    onSuccess: () => {
+                        setProcessing(false);
+                        closeModal();
+                    },
+                    onError: (err) => {
+                        setProcessing(false);
+                        setErrors(err);
+                    },
+                },
+            );
+        } else {
+            // Batch create
+            router.post(route("admin.vehicles.store"), formData, {
+                onSuccess: () => {
+                    setProcessing(false);
+                    closeModal();
+                },
+                onError: (err) => {
+                    setProcessing(false);
+                    setErrors(err);
+                },
+            });
+        }
+    };
+
+    const handleDelete = (id) => {
+        if (confirm("Yakin ingin menghapus kendaraan ini?")) {
+            router.delete(route("admin.vehicles.destroy", id));
+        }
+    };
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -77,7 +197,19 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                             href="/admin/vehicle"
                             className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition mb-2"
                         >
-                            <ArrowLeft size={14} />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
                             Back to Overview
                         </Link>
                     )}
@@ -89,15 +221,15 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                     </p>
                 </div>
 
-                <Link
-                    href={route("admin.vehicles.create")}
+                <button
+                    onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
                 >
                     <Plus size={18} />
                     Tambah Kendaraan
-                </Link>
+                </button>
             </div>
 
             {flash.success && (
@@ -115,8 +247,10 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                     <div className="lg:col-span-2">
                         <input
                             type="text"
-                            value={data.search}
-                            onChange={(e) => setData("search", e.target.value)}
+                            value={filterData.search}
+                            onChange={(e) =>
+                                setFilterData("search", e.target.value)
+                            }
                             placeholder="Cari plat atau tipe kendaraan..."
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         />
@@ -124,8 +258,10 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
 
                     <div>
                         <select
-                            value={data.vehicle_type_id}
-                            onChange={(e) => setData("vehicle_type_id", e.target.value)}
+                            value={filterData.vehicle_type_id}
+                            onChange={(e) =>
+                                setFilterData("vehicle_type_id", e.target.value)
+                            }
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         >
                             <option value="">Semua tipe</option>
@@ -184,7 +320,8 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                                         colSpan="3"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Tidak ada data kendaraan yang cocok dengan filter.
+                                        Tidak ada data kendaraan yang cocok
+                                        dengan filter.
                                     </td>
                                 </tr>
                             ) : (
@@ -205,15 +342,19 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-3">
-                                                <Link
-                                                    href={route("admin.vehicles.edit", item.id)}
+                                                <button
+                                                    onClick={() =>
+                                                        openEditModal(item)
+                                                    }
                                                     className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                                     title="Edit"
                                                 >
                                                     <Edit3 size={18} />
-                                                </Link>
+                                                </button>
                                                 <button
-                                                    onClick={() => handleDelete(item.id)}
+                                                    onClick={() =>
+                                                        handleDelete(item.id)
+                                                    }
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                                                     title="Hapus"
                                                 >
@@ -253,6 +394,306 @@ export default function Index({ vehicles = [], filters = {}, vehicleTypes = [] }
                     </div>
                 )}
             </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
+                        onClick={closeModal}
+                    />
+
+                    {/* Modal Content */}
+                    <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
+                                {editingItem
+                                    ? "Edit Vehicle"
+                                    : "Create Vehicles"}
+                            </h2>
+                            <button
+                                onClick={closeModal}
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {errors.vehicles && !editingItem && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.vehicles}
+                                </p>
+                            )}
+
+                            {editingItem ? (
+                                // Single edit form
+                                <div className="border border-slate-200 dark:border-white/10 rounded-2xl p-5 space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                                License Plate
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Contoh: B 1234 CD"
+                                                value={
+                                                    formData.vehicles[0]
+                                                        .license_plate
+                                                }
+                                                onChange={(e) =>
+                                                    updateRow(
+                                                        0,
+                                                        "license_plate",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                    bg-slate-50 dark:bg-[#0B1026]
+                                                    text-slate-900 dark:text-white
+                                                    ${
+                                                        errors.license_plate
+                                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                    }`}
+                                            />
+                                            {errors.license_plate && (
+                                                <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                    {errors.license_plate}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                                Vehicle Type
+                                            </label>
+                                            <select
+                                                value={
+                                                    formData.vehicles[0]
+                                                        .vehicle_type_id
+                                                }
+                                                onChange={(e) =>
+                                                    updateRow(
+                                                        0,
+                                                        "vehicle_type_id",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                    bg-slate-50 dark:bg-[#0B1026]
+                                                    text-slate-900 dark:text-white
+                                                    ${
+                                                        errors.vehicle_type_id
+                                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                    }`}
+                                            >
+                                                <option value="">
+                                                    Pilih tipe kendaraan
+                                                </option>
+                                                {vehicleTypes.map((item) => (
+                                                    <option
+                                                        key={item.id}
+                                                        value={item.id}
+                                                    >
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {errors.vehicle_type_id && (
+                                                <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                    {errors.vehicle_type_id}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                // Batch create form
+                                formData.vehicles.map((vehicle, index) => (
+                                    <div
+                                        key={`vehicle-row-${index}`}
+                                        className="border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 space-y-4"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                Vehicle #{index + 1}
+                                            </p>
+                                            {formData.vehicles.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeRow(index)
+                                                    }
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Hapus
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                                    License Plate
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Contoh: B 1234 CD"
+                                                    value={
+                                                        vehicle.license_plate
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateRow(
+                                                            index,
+                                                            "license_plate",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                        bg-slate-50 dark:bg-[#0B1026]
+                                                        text-slate-900 dark:text-white
+                                                        ${
+                                                            rowError(
+                                                                index,
+                                                                "license_plate",
+                                                            )
+                                                                ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                                : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                        }`}
+                                                />
+                                                {rowError(
+                                                    index,
+                                                    "license_plate",
+                                                ) && (
+                                                    <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                        {rowError(
+                                                            index,
+                                                            "license_plate",
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                                    Vehicle Type
+                                                </label>
+                                                <select
+                                                    value={
+                                                        vehicle.vehicle_type_id
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateRow(
+                                                            index,
+                                                            "vehicle_type_id",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                        bg-slate-50 dark:bg-[#0B1026]
+                                                        text-slate-900 dark:text-white
+                                                        ${
+                                                            rowError(
+                                                                index,
+                                                                "vehicle_type_id",
+                                                            )
+                                                                ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                                : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                        }`}
+                                                >
+                                                    <option value="">
+                                                        Pilih tipe kendaraan
+                                                    </option>
+                                                    {vehicleTypes.map(
+                                                        (item) => (
+                                                            <option
+                                                                key={item.id}
+                                                                value={item.id}
+                                                            >
+                                                                {item.name}
+                                                            </option>
+                                                        ),
+                                                    )}
+                                                </select>
+                                                {rowError(
+                                                    index,
+                                                    "vehicle_type_id",
+                                                ) && (
+                                                    <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                        {rowError(
+                                                            index,
+                                                            "vehicle_type_id",
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+
+                            {!editingItem && (
+                                <button
+                                    type="button"
+                                    onClick={addRow}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#1E5EFF] bg-blue-50 dark:bg-blue-500/10 hover:opacity-90 transition-opacity cursor-pointer"
+                                >
+                                    <Plus size={16} />
+                                    Tambah Baris Vehicle
+                                </button>
+                            )}
+
+                            <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold text-white transition-all
+                                        bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
+                                        hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 cursor-pointer"
+                                >
+                                    {processing ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="18"
+                                            height="18"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                            <polyline points="17 21 17 13 7 13 7 21" />
+                                            <polyline points="7 3 7 8 15 8" />
+                                        </svg>
+                                    )}
+                                    {processing
+                                        ? "Menyimpan..."
+                                        : editingItem
+                                          ? "Update Data"
+                                          : "Simpan Semua"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
