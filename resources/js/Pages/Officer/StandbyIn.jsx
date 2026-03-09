@@ -266,12 +266,17 @@ export default function StandbyIn({
         <div className="space-y-5">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Standby IN</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Standby IN
+                    </h1>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                         Mode cepat untuk transaksi kendaraan masuk.
                     </p>
                 </div>
-                <Link href="/officer" className="text-sm text-[#1E5EFF] hover:underline">
+                <Link
+                    href="/officer"
+                    className="text-sm text-[#1E5EFF] hover:underline"
+                >
                     Kembali ke Dashboard
                 </Link>
             </div>
@@ -282,14 +287,22 @@ export default function StandbyIn({
                 </div>
             )}
 
-            {(errors.license_plate || errors.parking_area_id || errors.action || errors.rfid_uid) && (
+            {(errors.license_plate ||
+                errors.parking_area_id ||
+                errors.action ||
+                errors.rfid_uid) && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {errors.license_plate || errors.parking_area_id || errors.action || errors.rfid_uid}
+                    {errors.license_plate ||
+                        errors.parking_area_id ||
+                        errors.action ||
+                        errors.rfid_uid}
                 </div>
             )}
             {!entryReady && entryBlockers.length > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    <p className="font-semibold mb-1">Transaksi masuk belum bisa diproses.</p>
+                    <p className="font-semibold mb-1">
+                        Transaksi masuk belum bisa diproses.
+                    </p>
                     <ul className="list-disc pl-5 space-y-1">
                         {entryBlockers.map((item, index) => (
                             <li key={`standbyin-blocker-${index}`}>{item}</li>
@@ -302,19 +315,6 @@ export default function StandbyIn({
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Plat Nomor</label>
-                    <input
-                        name="license_plate"
-                        onInput={(event) => {
-                            event.target.value = formatLicensePlate(event.target.value);
-                        }}
-                        placeholder="Contoh: AD 45 ID"
-                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                        required
-                    />
-                </div>
-
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
@@ -328,7 +328,8 @@ export default function StandbyIn({
                         />
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Jika diisi, RFID diverifikasi otomatis. Jika kosong, transaksi tetap diproses pakai plat.
+                        Jika diisi, RFID diverifikasi otomatis. Jika kosong,
+                        transaksi tetap diproses pakai plat.
                     </p>
                     {lookupLoading && (
                         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
@@ -338,7 +339,8 @@ export default function StandbyIn({
 
                     {rfidUser && (
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            RFID cocok dengan user: <strong>{rfidUser.name}</strong>
+                            RFID cocok dengan user:{" "}
+                            <strong>{rfidUser.name}</strong>
                         </div>
                     )}
 
@@ -350,7 +352,26 @@ export default function StandbyIn({
                 </div>
 
                 <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Area Parkir</label>
+                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                        Plat Nomor
+                    </label>
+                    <input
+                        name="license_plate"
+                        onInput={(event) => {
+                            event.target.value = formatLicensePlate(
+                                event.target.value,
+                            );
+                        }}
+                        placeholder="Contoh: AD 45 ID"
+                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                        Area Parkir
+                    </label>
                     <input
                         value={
                             selectedParkingArea
@@ -412,7 +433,8 @@ export default function StandbyIn({
                                     Kendaraan Belum Terdaftar
                                 </h2>
                                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                                    Lengkapi data kendaraan, lalu sistem akan lanjutkan transaksi masuk.
+                                    Lengkapi data kendaraan, lalu sistem akan
+                                    lanjutkan transaksi masuk.
                                 </p>
                             </div>
                             <button
@@ -424,7 +446,10 @@ export default function StandbyIn({
                             </button>
                         </div>
 
-                        <form onSubmit={submitVisitorVehicle} className="space-y-4">
+                        <form
+                            onSubmit={submitVisitorVehicle}
+                            className="space-y-4"
+                        >
                             <div>
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                                     Plat Nomor
@@ -432,13 +457,20 @@ export default function StandbyIn({
                                 <input
                                     value={visitorData.license_plate}
                                     onChange={(event) =>
-                                        setVisitorData("license_plate", formatLicensePlate(event.target.value))
+                                        setVisitorData(
+                                            "license_plate",
+                                            formatLicensePlate(
+                                                event.target.value,
+                                            ),
+                                        )
                                     }
                                     className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                                     required
                                 />
                                 {visitorErrors.license_plate && (
-                                    <p className="mt-1 text-sm text-red-600">{visitorErrors.license_plate}</p>
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {visitorErrors.license_plate}
+                                    </p>
                                 )}
                             </div>
 
@@ -453,7 +485,9 @@ export default function StandbyIn({
                                         className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-100 dark:bg-white/10 px-3 py-2.5 text-slate-700 dark:text-slate-200"
                                     />
                                     {visitorErrors.rfid_uid && (
-                                        <p className="mt-1 text-sm text-red-600">{visitorErrors.rfid_uid}</p>
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {visitorErrors.rfid_uid}
+                                        </p>
                                     )}
                                 </div>
                             )}
@@ -464,11 +498,18 @@ export default function StandbyIn({
                                 </label>
                                 <select
                                     value={visitorData.vehicle_type_id}
-                                    onChange={(event) => setVisitorData("vehicle_type_id", event.target.value)}
+                                    onChange={(event) =>
+                                        setVisitorData(
+                                            "vehicle_type_id",
+                                            event.target.value,
+                                        )
+                                    }
                                     className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                                     required
                                 >
-                                    <option value="">Pilih tipe kendaraan</option>
+                                    <option value="">
+                                        Pilih tipe kendaraan
+                                    </option>
                                     {entryVehicleTypes.map((type) => (
                                         <option key={type.id} value={type.id}>
                                             {type.name}
@@ -476,25 +517,45 @@ export default function StandbyIn({
                                     ))}
                                 </select>
                                 {visitorErrors.vehicle_type_id && (
-                                    <p className="mt-1 text-sm text-red-600">{visitorErrors.vehicle_type_id}</p>
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {visitorErrors.vehicle_type_id}
+                                    </p>
                                 )}
                                 {entryVehicleTypes.length === 0 && (
                                     <p className="mt-1 text-sm text-red-600">
-                                        Belum ada tipe kendaraan yang punya tarif di area ini.
+                                        Belum ada tipe kendaraan yang punya
+                                        tarif di area ini.
                                     </p>
                                 )}
                             </div>
 
-                            <input type="hidden" name="next_action" value={visitorData.next_action} />
-                            <input type="hidden" name="parking_area_id" value={visitorData.parking_area_id} />
-                            <input type="hidden" name="rfid_uid" value={visitorData.rfid_uid} />
+                            <input
+                                type="hidden"
+                                name="next_action"
+                                value={visitorData.next_action}
+                            />
+                            <input
+                                type="hidden"
+                                name="parking_area_id"
+                                value={visitorData.parking_area_id}
+                            />
+                            <input
+                                type="hidden"
+                                name="rfid_uid"
+                                value={visitorData.rfid_uid}
+                            />
 
                             <button
                                 type="submit"
-                                disabled={visitorProcessing || entryVehicleTypes.length === 0}
+                                disabled={
+                                    visitorProcessing ||
+                                    entryVehicleTypes.length === 0
+                                }
                                 className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 font-semibold text-white hover:bg-[#194FD8] transition disabled:opacity-60 cursor-pointer"
                             >
-                                {visitorProcessing ? "Menyimpan..." : "Simpan & Lanjutkan Masuk"}
+                                {visitorProcessing
+                                    ? "Menyimpan..."
+                                    : "Simpan & Lanjutkan Masuk"}
                             </button>
                         </form>
                     </div>
