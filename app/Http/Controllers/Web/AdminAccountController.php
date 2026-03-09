@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Inertia\Response;
 
 class AdminAccountController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
 
@@ -68,13 +69,6 @@ class AdminAccountController extends Controller
                 'search' => $search,
             ],
         ]);
-    }
-
-    public function showCreate()
-    {
-        abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
-
-        return inertia('Admin/Account/Create');
     }
 
     public function store(AdminStoreAccountRequest $request)

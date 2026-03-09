@@ -1,6 +1,16 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import { ChevronDown, Info, MailCheck, MailPlus, Plus, RotateCcw, Search, ShieldCheck } from "lucide-react";
+import {
+    ChevronDown,
+    Info,
+    MailCheck,
+    MailPlus,
+    Plus,
+    RotateCcw,
+    Search,
+    ShieldCheck,
+    X,
+} from "lucide-react";
 import AdminLayout from "../../Layouts/AdminLayout";
 
 export default function Index({ users = [], filters = {} }) {
@@ -9,6 +19,10 @@ export default function Index({ users = [], filters = {} }) {
     const [actionMenu, setActionMenu] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
+
+    // Create modal state
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
     const rows = Array.isArray(users?.data)
         ? users.data
         : Array.isArray(users)
@@ -21,6 +35,22 @@ export default function Index({ users = [], filters = {} }) {
     const { data, setData } = useForm({
         search: filters.search ?? "",
     });
+
+    // Create form
+    const {
+        data: createForm,
+        setData: setCreateForm,
+        post: postCreate,
+        processing: processingCreate,
+        errors: createErrors,
+        reset: resetCreateForm,
+    } = useForm({
+        name: "",
+        email: "",
+        role: "officer",
+        rfid_uid: "",
+    });
+
     const {
         data: emailForm,
         setData: setEmailForm,
@@ -69,12 +99,16 @@ export default function Index({ users = [], filters = {} }) {
     const goToPage = (url) => {
         if (!url) return;
 
-        router.get(url, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["users", "filters", "flash", "errors"],
-        });
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["users", "filters", "flash", "errors"],
+            },
+        );
     };
 
     const paginationLabel = (label) =>
@@ -102,7 +136,10 @@ export default function Index({ users = [], filters = {} }) {
 
         const left = Math.max(
             viewportPadding,
-            Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding),
+            Math.min(
+                rect.right - menuWidth,
+                window.innerWidth - menuWidth - viewportPadding,
+            ),
         );
 
         let top = rect.bottom + spacing;
@@ -159,6 +196,27 @@ export default function Index({ users = [], filters = {} }) {
         });
     };
 
+    // Create modal functions
+    const openCreateModal = () => {
+        resetCreateForm();
+        setIsCreateModalOpen(true);
+    };
+
+    const closeCreateModal = () => {
+        setIsCreateModalOpen(false);
+        resetCreateForm();
+    };
+
+    const submitCreateForm = (e) => {
+        e.preventDefault();
+        postCreate(route("admin.accounts.store"), {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeCreateModal();
+            },
+        });
+    };
+
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -172,15 +230,15 @@ export default function Index({ users = [], filters = {} }) {
                     </p>
                 </div>
 
-                <Link
-                    href={route("admin.accounts.create")}
+                <button
+                    onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
                 >
                     <Plus size={18} />
                     Create Account
-                </Link>
+                </button>
             </div>
 
             {(flash.success || flash.error) && (
@@ -533,6 +591,146 @@ export default function Index({ users = [], filters = {} }) {
                                     {processingEmail
                                         ? "Menyimpan..."
                                         : "Simpan Email"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Account Modal */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
+                                Create Account
+                            </h2>
+                            <button
+                                onClick={closeCreateModal}
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitCreateForm}
+                            className="p-6 space-y-4"
+                        >
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={createForm.name}
+                                    onChange={(e) =>
+                                        setCreateForm("name", e.target.value)
+                                    }
+                                    placeholder="Nama lengkap"
+                                    className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
+                                        createErrors.name
+                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                    }`}
+                                />
+                                {createErrors.name && (
+                                    <p className="text-xs text-red-500">
+                                        {createErrors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={createForm.email}
+                                    onChange={(e) =>
+                                        setCreateForm("email", e.target.value)
+                                    }
+                                    placeholder="email@domain.com"
+                                    className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
+                                        createErrors.email
+                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                    }`}
+                                />
+                                {createErrors.email && (
+                                    <p className="text-xs text-red-500">
+                                        {createErrors.email}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Role
+                                </label>
+                                <select
+                                    value={createForm.role}
+                                    onChange={(e) =>
+                                        setCreateForm("role", e.target.value)
+                                    }
+                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                >
+                                    <option value="officer">Officer</option>
+                                    <option value="owner">Owner</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    RFID UID (Opsional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={createForm.rfid_uid}
+                                    onChange={(e) =>
+                                        setCreateForm(
+                                            "rfid_uid",
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Scan / input RFID UID"
+                                    className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
+                                        createErrors.rfid_uid
+                                            ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                            : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                    }`}
+                                />
+                                {createErrors.rfid_uid && (
+                                    <p className="text-xs text-red-500">
+                                        {createErrors.rfid_uid}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
+                                Setelah akun dibuat, sistem akan mengirim link
+                                aktivasi ke email user untuk set password awal.
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeCreateModal}
+                                    className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processingCreate}
+                                    className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                                >
+                                    {processingCreate
+                                        ? "Menyimpan..."
+                                        : "Buat Akun"}
                                 </button>
                             </div>
                         </form>
