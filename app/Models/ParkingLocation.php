@@ -15,4 +15,14 @@ class ParkingLocation extends Model
         'longitude',
         'description',
     ];
+
+    public function areas()
+    {
+        return $this->hasMany(ParkingArea::class, 'parking_location_id');
+    }
+
+    public function rates()
+    {
+        return $this->hasMany(ParkingRate::class, 'location_id');
+    }
 }
