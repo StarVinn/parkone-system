@@ -140,7 +140,7 @@ export default function Index({ parkingLocations = [] }) {
                     onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
-                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
+                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
                     Tambah Lokasi
@@ -212,7 +212,7 @@ export default function Index({ parkingLocations = [] }) {
                                                     onClick={() =>
                                                         openEditModal(item)
                                                     }
-                                                    className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                                    className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
                                                     title="Edit"
                                                 >
                                                     <Edit3 size={18} />
@@ -278,7 +278,7 @@ export default function Index({ parkingLocations = [] }) {
                             </h2>
                             <button
                                 onClick={closeModal}
-                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                             >
                                 <X size={20} />
                             </button>
@@ -412,7 +412,7 @@ export default function Index({ parkingLocations = [] }) {
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
                                     Batal
                                 </button>
