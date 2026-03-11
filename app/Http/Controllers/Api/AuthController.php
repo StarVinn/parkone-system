@@ -3,22 +3,65 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PostLoginRequest;
+use App\Http\Requests\PostRegisterRequest;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(PostLoginRequest $request, AuthService $authService)
     {
-        // Implement API login logic here
+        try {
+            $credentials = $request->safe()->only(['email', 'password']);
+            $user = $authService->loginApi($credentials, 'api');
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Login gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $tokenName = (string) ($request->input('device_name') ?: ($request->userAgent() ?: 'api'));
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login berhasil.',
+            'token_type' => 'Bearer',
+            'token' => $token,
+            'user' => $user,
+        ]);
     }
 
     public function logout(Request $request)
     {
-        // Implement API logout logic here
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $request->user()->currentAccessToken()?->delete();
+
+        return response()->json([
+            'message' => 'Logout berhasil.',
+        ]);
     }
     
-    public function register(Request $request)
+    public function register(PostRegisterRequest $request, AuthService $authService)
     {
-        // Implement API registration logic here
+        $user = $authService->register($request->validated());
+
+        $tokenName = (string) ($request->input('device_name') ?: ($request->userAgent() ?: 'api'));
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        return response()->json([
+            'message' => 'Registrasi berhasil.',
+            'token_type' => 'Bearer',
+            'token' => $token,
+            'user' => $user,
+        ], 201);
     }
 }
