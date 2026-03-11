@@ -3,6 +3,23 @@ import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 
+function formatLicensePlate(value) {
+    const cleaned = String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+
+    if (!cleaned) {
+        return "";
+    }
+
+    const match = cleaned.match(/^([A-Z]{1,2})([0-9]{0,4})([A-Z]{0,3})/);
+    if (!match) {
+        return cleaned;
+    }
+
+    return [match[1], match[2], match[3]].filter(Boolean).join(" ");
+}
+
 const emptyRow = () => ({
     license_plate: "",
     vehicle_type_id: "",
@@ -108,7 +125,7 @@ export default function Index({
         setFormData({
             vehicles: [
                 {
-                    license_plate: item.license_plate || "",
+                    license_plate: formatLicensePlate(item.license_plate || ""),
                     vehicle_type_id: item.vehicle_type_id || "",
                 },
             ],
@@ -128,7 +145,7 @@ export default function Index({
         const nextRows = [...formData.vehicles];
         nextRows[index] = {
             ...nextRows[index],
-            [field]: field === "license_plate" ? value.toUpperCase() : value,
+            [field]: field === "license_plate" ? formatLicensePlate(value) : value,
         };
         setFormData({ vehicles: nextRows });
     };
@@ -225,7 +242,7 @@ export default function Index({
                     onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
-                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
+                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
                     Tambah Kendaraan
@@ -332,7 +349,7 @@ export default function Index({
                                     >
                                         <td className="px-6 py-4">
                                             <span className="font-medium text-slate-900 dark:text-slate-200 uppercase">
-                                                {item.license_plate}
+                                                {formatLicensePlate(item.license_plate)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -346,7 +363,7 @@ export default function Index({
                                                     onClick={() =>
                                                         openEditModal(item)
                                                     }
-                                                    className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                                    className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
                                                     title="Edit"
                                                 >
                                                     <Edit3 size={18} />
@@ -415,7 +432,7 @@ export default function Index({
                             </h2>
                             <button
                                 onClick={closeModal}
-                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                             >
                                 <X size={20} />
                             </button>
@@ -440,6 +457,7 @@ export default function Index({
                                             <input
                                                 type="text"
                                                 placeholder="Contoh: B 1234 CD"
+                                                maxLength={20}
                                                 value={
                                                     formData.vehicles[0]
                                                         .license_plate
@@ -545,6 +563,7 @@ export default function Index({
                                                 <input
                                                     type="text"
                                                     placeholder="Contoh: B 1234 CD"
+                                                    maxLength={20}
                                                     value={
                                                         vehicle.license_plate
                                                     }
@@ -595,7 +614,7 @@ export default function Index({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                    className={`w-full px-4 py-3 cursor-pointer rounded-xl border transition-all outline-none
                                                         bg-slate-50 dark:bg-[#0B1026]
                                                         text-slate-900 dark:text-white
                                                         ${
@@ -653,7 +672,7 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
                                     Batal
                                 </button>

@@ -162,16 +162,6 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <p className="text-center text-xs text-slate-500 mt-6">
-                        Belum memiliki akun?{" "}
-                        <Link
-                            href={route("register")}
-                            className="text-blue-600 hover:underline"
-                        >
-                            Register
-                        </Link>
-                    </p>
-
                     <p className="text-center text-xs text-slate-400 mt-6">
                         © 2026 PARKONE • Sistem Parkir Digital
                     </p>
