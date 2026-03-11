@@ -106,12 +106,12 @@ export default function AdminLayout({ children }) {
                                         : "opacity-0 -translate-y-1 scale-95 pointer-events-none"
                                 }`}
                         >
-                            <Link
-                                href="/profile"
-                                className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition"
-                            >
-                                Profile
-                            </Link>
+                            <div className="px-4 py-2 text-xs text-slate-500 dark:text-slate-300">
+                                Login dengan email
+                                <div className="text-slate-800 dark:text-white font-medium truncate">
+                                    {auth?.user?.email || "-"}
+                                </div>
+                            </div>
 
                             <hr className="my-2 border-slate-200 dark:border-white/10" />
 
