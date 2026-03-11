@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\VehicleTypeController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\TransactionController;
 use App\Http\Controllers\Web\AdminAccountController;
+use App\Http\Controllers\Web\OwnerDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -142,8 +143,6 @@ Route::middleware(['auth', 'role:officer'])->group(function () {
 
 Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::prefix('owner')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('Owner/Dashboard');
-        });
+        Route::get('/', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
     });
 });
