@@ -445,7 +445,7 @@ export default function Index({ users = [], filters = {} }) {
                             className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition cursor-pointer"
                         >
                             <ShieldCheck size={14} />
-                            Insert RFID
+                            {actionMenu.user?.rfid_uid ? "Switch RFID" : "Insert RFID"}
                         </button>
                         <button
                             type="button"
@@ -464,12 +464,20 @@ export default function Index({ users = [], filters = {} }) {
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10">
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                                Insert RFID
+                                {rfidTargetUser?.rfid_uid ? "Switch RFID" : "Insert RFID"}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 User: {rfidTargetUser.name} (
                                 {rfidTargetUser.email})
                             </p>
+                            {rfidTargetUser?.rfid_uid && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    RFID aktif sekarang:{" "}
+                                    <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                        {rfidTargetUser.rfid_uid}
+                                    </span>
+                                </p>
+                            )}
                         </div>
 
                         <form
@@ -521,7 +529,9 @@ export default function Index({ users = [], filters = {} }) {
                                 >
                                     {processingRfid
                                         ? "Menyimpan..."
-                                        : "Simpan RFID"}
+                                        : rfidTargetUser?.rfid_uid
+                                          ? "Switch RFID"
+                                          : "Simpan RFID"}
                                 </button>
                             </div>
                         </form>

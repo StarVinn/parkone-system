@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\AccountActivationSetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -160,13 +161,28 @@ class AdminAccountController extends Controller
         }
 
         if ($rfidChanged) {
-            RfidCard::firstOrCreate(
-                ['uid' => $newRfid],
-                [
-                    'user_id' => $user->id,
-                    'is_active' => true,
-                ],
-            );
+            DB::transaction(function () use ($user, $newRfid, &$updates) {
+                RfidCard::query()
+                    ->where('user_id', $user->id)
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+
+                $card = RfidCard::where('uid', $newRfid)->first();
+                if ($card) {
+                    $card->forceFill([
+                        'user_id' => $user->id,
+                        'is_active' => true,
+                    ])->save();
+                } else {
+                    RfidCard::create([
+                        'user_id' => $user->id,
+                        'uid' => $newRfid,
+                        'is_active' => true,
+                    ]);
+                }
+
+                $updates['rfid_uid'] = $newRfid;
+            });
         }
 
         $user->forceFill($updates)->save();

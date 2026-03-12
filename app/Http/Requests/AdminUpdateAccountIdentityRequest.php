@@ -15,6 +15,10 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
     public function rules(): array
     {
         $userId = $this->route('user')?->id;
+        $rfidUidRule = Rule::unique('rfid_cards', 'uid');
+        if ($userId) {
+            $rfidUidRule = $rfidUidRule->where(fn($query) => $query->where('user_id', '<>', $userId));
+        }
 
         return [
             'email' => [
@@ -28,7 +32,7 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('rfid_cards', 'uid'),
+                $rfidUidRule,
             ],
         ];
     }
