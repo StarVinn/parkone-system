@@ -89,6 +89,15 @@ class AuthService
             $normalizedSource = 'api';
         }
 
+        if (in_array($normalizedSource, ['mobile', 'api'], true)) {
+            $hasActiveRfid = $user->primaryRfidCard()->exists();
+            if (!$hasActiveRfid) {
+                throw ValidationException::withMessages([
+                    'email' => 'Akun Anda belum memiliki RFID aktif. Silakan hubungi administrator.',
+                ]);
+            }
+        }
+
         ActivityLog::create([
             'user_id' => $user->id,
             'activity' => 'User login (' . $normalizedSource . ')',

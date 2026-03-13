@@ -15,13 +15,7 @@ class AuthController extends Controller
     {
         try {
             $credentials = $request->safe()->only(['email', 'password']);
-            $user = $authService->loginApi($credentials, 'api');
-
-            if ($user || !in_array($user->role, ['admin', 'officer', 'owner'])) {
-                throw ValidationException::withMessages([
-                    'email' => 'Akun Anda tidak memiliki akses ke sistem.',
-                ]);
-            }
+            $user = $authService->loginApi($credentials, 'api', ['admin', 'officer', 'owner']);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Login gagal.',
