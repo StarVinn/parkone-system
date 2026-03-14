@@ -11,11 +11,23 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private function isMobile(Request $request): bool
+    {
+        $ua = strtolower($request->userAgent() ?? '');
+        return preg_match('/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i', $ua) || $request->header('X-Mobile-Emulator');
+    }
+
     public function login(PostLoginRequest $request, AuthService $authService)
     {
+        if (!$this->isMobile($request)) {
+            return response()->json([
+                'message' => 'API access only for mobile applications.',
+            ], 403);
+        }
+
         try {
             $credentials = $request->safe()->only(['email', 'password']);
-            $user = $authService->loginApi($credentials, 'api', ['admin', 'officer', 'owner']);
+            $user = $authService->loginApi($credentials, 'api', ['user']);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Login gagal.',
