@@ -47,7 +47,7 @@ export default function Index({ users = [], filters = {} }) {
     } = useForm({
         name: "",
         email: "",
-        role: "officer",
+        role: "user",
         rfid_uid: "",
     });
 
@@ -234,7 +234,7 @@ export default function Index({ users = [], filters = {} }) {
                     onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
-                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
+                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
                     Create Account
@@ -690,6 +690,7 @@ export default function Index({ users = [], filters = {} }) {
                                     <option value="officer">Officer</option>
                                     <option value="owner">Owner</option>
                                     <option value="admin">Admin</option>
+                                    <option value="user">User</option>
                                 </select>
                             </div>
 

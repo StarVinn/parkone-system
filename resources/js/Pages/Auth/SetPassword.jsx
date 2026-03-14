@@ -80,7 +80,7 @@ export default function SetPassword({ token, email }) {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Password Baru
+                                Password
                             </label>
                             <input
                                 type="password"
@@ -114,11 +114,11 @@ export default function SetPassword({ token, email }) {
                         </button>
                     </form>
 
-                    <p className="text-center text-sm mt-6">
+                    {/* <p className="text-center text-sm mt-6">
                         <Link href={route("login")} className="text-blue-600 hover:underline">
                             Kembali ke Login
                         </Link>
-                    </p>
+                    </p> */}
                 </div>
             </div>
         </>
