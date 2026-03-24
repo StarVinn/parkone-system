@@ -115,6 +115,7 @@ class AuthService
             'password'  => bcrypt($data['password']),
             'role'      => 'user',
             'is_active' => true,
+            'status'    => 'active',
         ]);
     }
 
