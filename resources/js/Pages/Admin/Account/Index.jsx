@@ -1,14 +1,15 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ChevronDown,
     Info,
     MailCheck,
     MailPlus,
     Plus,
-    RotateCcw,
     Search,
     ShieldCheck,
+    Trash2,
+    UserX,
     X,
 } from "lucide-react";
 import AdminLayout from "../../Layouts/AdminLayout";
@@ -34,7 +35,11 @@ export default function Index({ users = [], filters = {} }) {
     const total = users?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
+        status: filters.status ?? "all",
     });
+
+    const didMountRef = useRef(false);
+    const debounceRef = useRef(null);
 
     // Create form
     const {
@@ -72,29 +77,31 @@ export default function Index({ users = [], filters = {} }) {
         rfid_uid: "",
     });
 
-    const applyFilters = (event) => {
-        event.preventDefault();
-        router.get(route("admin.accounts.index"), data, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["users", "filters", "flash", "errors"],
-        });
-    };
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
 
-    const resetFilters = () => {
-        const emptyFilters = {
-            search: "",
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+            router.get(route("admin.accounts.index"), data, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["users", "filters", "flash", "errors"],
+            });
+        }, 500);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
         };
-
-        setData(emptyFilters);
-        router.get(route("admin.accounts.index"), emptyFilters, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["users", "filters", "flash", "errors"],
-        });
-    };
+    }, [data.search, data.status]);
 
     const goToPage = (url) => {
         if (!url) return;
@@ -130,7 +137,7 @@ export default function Index({ users = [], filters = {} }) {
 
         const rect = event.currentTarget.getBoundingClientRect();
         const menuWidth = 192;
-        const menuHeight = 112;
+        const menuHeight = 216;
         const spacing = 8;
         const viewportPadding = 12;
 
@@ -177,6 +184,32 @@ export default function Index({ users = [], filters = {} }) {
         setActionMenu(null);
         setRfidTargetUser(user);
         setRfidForm("rfid_uid", "");
+    };
+
+    const handleDeleteUser = (user) => {
+        setActionMenu(null);
+        if (!user?.id) return;
+
+        const name = user?.name ? ` (${user.name})` : "";
+        const ok = window.confirm(
+            `Yakin mau hapus user ini${name}? Tindakan ini tidak bisa dibatalkan.`,
+        );
+        if (!ok) return;
+
+        router.delete(route("admin.accounts.destroy", user.id), {
+            preserveScroll: true,
+        });
+    };
+
+    const handleDeactivateUser = (user) => {
+        setActionMenu(null);
+        if (!user?.id) return;
+
+        const name = user?.name ? ` (${user.name})` : "";
+        const ok = window.confirm(`Nonaktifkan akun ini${name}?`);
+        if (!ok) return;
+
+        router.put(route("admin.accounts.deactivate", user.id), {}, { preserveScroll: true });
     };
 
     const closeRfidForm = () => {
@@ -254,10 +287,7 @@ export default function Index({ users = [], filters = {} }) {
                 </div>
             )}
 
-            <form
-                onSubmit={applyFilters}
-                className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
-            >
+            <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
                 <div className="relative mb-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -270,26 +300,22 @@ export default function Index({ users = [], filters = {} }) {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filter dijalankan saat klik Apply.
+                        Filter otomatis setelah selesai mengetik.
                     </p>
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                        <select
+                            value={data.status}
+                            onChange={(e) => setData("status", e.target.value)}
+                            className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] text-sm"
                         >
-                            <RotateCcw size={16} />
-                            Reset
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
-                        >
-                            Apply
-                        </button>
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
                 </div>
-            </form>
+            </div>
 
             <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -347,22 +373,29 @@ export default function Index({ users = [], filters = {} }) {
                                                 ? ` (+${user.rfid_count - 1})`
                                                 : ""}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                                    user.is_active
-                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                                        : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-                                                }`}
-                                            >
-                                                {user.is_active
-                                                    ? "Active"
-                                                    : "Pending Activation"}
-                                            </span>
-                                        </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                            user.status ===
+                                                            "active"
+                                                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                                : user.status ===
+                                                                    "inactive"
+                                                                  ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                                                                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+                                                        }`}
+                                                    >
+                                                        {user.status === "active"
+                                                            ? "Active"
+                                                            : user.status ===
+                                                                "inactive"
+                                                              ? "Inactive"
+                                                              : "Pending Activation"}
+                                                    </span>
+                                                </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2 relative">
-                                                {!user.is_active && (
+                                                {user.status === "pending" && (
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -454,6 +487,25 @@ export default function Index({ users = [], filters = {} }) {
                         >
                             <MailPlus size={14} />
                             Reset Email
+                        </button>
+                        {actionMenu.user?.status === "active" && (
+                            <button
+                                type="button"
+                                onClick={() => handleDeactivateUser(actionMenu.user)}
+                                className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition cursor-pointer"
+                            >
+                                <UserX size={14} />
+                                Deactivate Account
+                            </button>
+                        )}
+                        <div className="my-2 border-t border-slate-200 dark:border-white/10" />
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteUser(actionMenu.user)}
+                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition cursor-pointer"
+                        >
+                            <Trash2 size={14} />
+                            Delete User
                         </button>
                     </div>
                 </>

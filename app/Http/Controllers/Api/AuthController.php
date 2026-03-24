@@ -21,7 +21,7 @@ class AuthController extends Controller
     {
         if (!$this->isMobile($request)) {
             return response()->json([
-                'message' => 'API access only for mobile applications.',
+                'message' => 'API hanya dapat diakses melalui perangkat mobile.',
             ], 403);
         }
 
