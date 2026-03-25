@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -14,3 +15,5 @@ Route::prefix('auth')->group(function () {
 Route::get('/user', function (Request $request) {
     return new UserResource($request->user());
 })->middleware('auth:sanctum');
+
+Route::get('/dashboard', DashboardController::class)->middleware('auth:sanctum');
