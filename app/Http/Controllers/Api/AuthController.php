@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PostLoginRequest;
 use App\Http\Requests\PostRegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -38,12 +39,14 @@ class AuthController extends Controller
         $tokenName = (string) ($request->input('device_name') ?: ($request->userAgent() ?: 'api'));
         $token = $user->createToken($tokenName)->plainTextToken;
 
-        return response()->json([
-            'message' => 'Login berhasil.',
-            'token_type' => 'Bearer',
-            'token' => $token,
-            'user' => $user,
-        ]);
+        return (new UserResource($user))
+            ->additional([
+                'meta' => [
+                    'message' => 'Login berhasil.',
+                    'token_type' => 'Bearer',
+                    'token' => $token,
+                ],
+            ]);
     }
 
     public function logout(Request $request)
@@ -61,7 +64,7 @@ class AuthController extends Controller
             'message' => 'Logout berhasil.',
         ]);
     }
-    
+
     public function register(PostRegisterRequest $request, AuthService $authService)
     {
         $user = $authService->register($request->validated());
@@ -69,11 +72,15 @@ class AuthController extends Controller
         $tokenName = (string) ($request->input('device_name') ?: ($request->userAgent() ?: 'api'));
         $token = $user->createToken($tokenName)->plainTextToken;
 
-        return response()->json([
-            'message' => 'Registrasi berhasil.',
-            'token_type' => 'Bearer',
-            'token' => $token,
-            'user' => $user,
-        ], 201);
+        return (new UserResource($user))
+            ->additional([
+                'meta' => [
+                    'message' => 'Registrasi berhasil.',
+                    'token_type' => 'Bearer',
+                    'token' => $token,
+                ],
+            ])
+            ->response()
+            ->setStatusCode(201);
     }
 }
