@@ -1,6 +1,7 @@
 import { usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Trash2, Info, RotateCcw } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const formatDateTime = (value) => {
     if (!value) return "-";
@@ -11,7 +12,7 @@ const formatDateTime = (value) => {
     });
 };
 
-export default function Index({ activityLogs = [], filters = {}, users = [] }) {
+export default function Index({ activityLogs = [], filters = {} }) {
     const { flash } = usePage().props;
     const rows = Array.isArray(activityLogs?.data)
         ? activityLogs.data
@@ -26,38 +27,43 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
     const total = activityLogs?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
-        user_id: filters.user_id ?? "",
+        date_from: filters.date_from ?? "",
+        date_to: filters.date_to ?? "",
     });
 
-    const applyFilters = (event) => {
-        event.preventDefault();
-        router.get(route("admin.activity-logs.index"), data, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["activityLogs", "filters", "flash", "errors"],
-        });
-    };
+    const didMountRef = useRef(false);
+    const debounceRef = useRef(null);
+
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
+
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+            router.get(route("admin.activity-logs.index"), data, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["activityLogs", "filters", "flash", "errors"],
+            });
+        }, 500);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, [data.search, data.date_from, data.date_to]);
 
     const handleDelete = (id) => {
         if (confirm("Yakin ingin menghapus activity log ini?")) {
             router.delete(route("admin.activity-logs.destroy", id));
         }
-    };
-
-    const resetFilters = () => {
-        const emptyFilters = {
-            search: "",
-            user_id: "",
-        };
-
-        setData(emptyFilters);
-        router.get(route("admin.activity-logs.index"), emptyFilters, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["activityLogs", "filters", "flash", "errors"],
-        });
     };
 
     const goToPage = (url) => {
@@ -98,7 +104,7 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
             )}
 
             <form
-                onSubmit={applyFilters}
+                onSubmit={(e) => e.preventDefault()}
                 className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
             >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -113,40 +119,27 @@ export default function Index({ activityLogs = [], filters = {}, users = [] }) {
                     </div>
 
                     <div>
-                        <select
-                            value={data.user_id}
-                            onChange={(e) => setData("user_id", e.target.value)}
+                        <input
+                            type="date"
+                            value={data.date_from}
+                            onChange={(e) => setData("date_from", e.target.value)}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
-                        >
-                            <option value="">Semua user</option>
-                            {users.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
+                        />
+                    </div>
+
+                    <div>
+                        <input
+                            type="date"
+                            value={data.date_to}
+                            onChange={(e) => setData("date_to", e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                        />
                     </div>
 
                     <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter dijalankan saat klik Apply.
+                            Filter dijalankan otomatis setelah selesai mengetik.
                         </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={resetFilters}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                            >
-                                <RotateCcw size={16} />
-                                Reset
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
-                            >
-                                Apply
-                            </button>
-                        </div>
                     </div>
                 </div>
             </form>
