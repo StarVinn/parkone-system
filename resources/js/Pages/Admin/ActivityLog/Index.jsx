@@ -14,6 +14,7 @@ const formatDateTime = (value) => {
 
 export default function Index({ activityLogs = [], filters = {} }) {
     const { flash } = usePage().props;
+    const today = new Date().toISOString().slice(0, 10);
     const rows = Array.isArray(activityLogs?.data)
         ? activityLogs.data
         : Array.isArray(activityLogs)
@@ -28,7 +29,7 @@ export default function Index({ activityLogs = [], filters = {} }) {
     const { data, setData } = useForm({
         search: filters.search ?? "",
         date_from: filters.date_from ?? "",
-        date_to: filters.date_to ?? "",
+        date_to: today,
     });
 
     const didMountRef = useRef(false);
@@ -122,7 +123,12 @@ export default function Index({ activityLogs = [], filters = {} }) {
                         <input
                             type="date"
                             value={data.date_from}
-                            onChange={(e) => setData("date_from", e.target.value)}
+                            onChange={(e) =>
+                                setData("date_from", e.target.value)
+                            }
+                            onKeyDown={(e) => e.preventDefault()}
+                            onPaste={(e) => e.preventDefault()}
+                            max={data.date_to || undefined}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         />
                     </div>
@@ -131,8 +137,9 @@ export default function Index({ activityLogs = [], filters = {} }) {
                         <input
                             type="date"
                             value={data.date_to}
-                            onChange={(e) => setData("date_to", e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                            disabled
+                            min={data.date_from || undefined}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] disabled:opacity-70 disabled:cursor-not-allowed"
                         />
                     </div>
 

@@ -20,6 +20,12 @@ export default function Index({ users = [], filters = {} }) {
     const [actionMenu, setActionMenu] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        action: null,
+        user: null,
+    });
+    const [confirmProcessing, setConfirmProcessing] = useState(false);
 
     // Create modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -186,30 +192,80 @@ export default function Index({ users = [], filters = {} }) {
         setRfidForm("rfid_uid", "");
     };
 
-    const handleDeleteUser = (user) => {
+    const closeConfirmModal = () => {
+        setConfirmModal({ open: false, action: null, user: null });
+        setConfirmProcessing(false);
+    };
+
+    const confirmTitle = () => {
+        if (confirmModal.action === "delete") return "Hapus Account";
+        if (confirmModal.action === "deactivate") return "Nonaktifkan Account";
+        return "Konfirmasi";
+    };
+
+    const confirmDescription = () => {
+        const name = confirmModal.user?.name ? ` (${confirmModal.user.name})` : "";
+
+        if (confirmModal.action === "delete") {
+            return `Yakin mau hapus user ini${name}? Tindakan ini tidak bisa dibatalkan.`;
+        }
+
+        if (confirmModal.action === "deactivate") {
+            return `Nonaktifkan akun ini${name}? User tidak bisa login sampai diaktifkan kembali.`;
+        }
+
+        return "Lanjutkan aksi ini?";
+    };
+
+    const confirmPrimaryLabel = () => {
+        if (confirmModal.action === "delete") return "Hapus";
+        if (confirmModal.action === "deactivate") return "Nonaktifkan";
+        return "Konfirmasi";
+    };
+
+    const openConfirmModal = (action, user) => {
         setActionMenu(null);
         if (!user?.id) return;
+        setConfirmModal({ open: true, action, user });
+        setConfirmProcessing(false);
+    };
 
-        const name = user?.name ? ` (${user.name})` : "";
-        const ok = window.confirm(
-            `Yakin mau hapus user ini${name}? Tindakan ini tidak bisa dibatalkan.`,
-        );
-        if (!ok) return;
+    const runConfirmedAction = () => {
+        const user = confirmModal.user;
+        if (!user?.id || !confirmModal.action) return;
 
-        router.delete(route("admin.accounts.destroy", user.id), {
-            preserveScroll: true,
-        });
+        setConfirmProcessing(true);
+
+        if (confirmModal.action === "delete") {
+            router.delete(route("admin.accounts.destroy", user.id), {
+                preserveScroll: true,
+                onFinish: () => {
+                    closeConfirmModal();
+                },
+            });
+            return;
+        }
+
+        if (confirmModal.action === "deactivate") {
+            router.put(
+                route("admin.accounts.deactivate", user.id),
+                {},
+                {
+                    preserveScroll: true,
+                    onFinish: () => {
+                        closeConfirmModal();
+                    },
+                },
+            );
+        }
+    };
+
+    const handleDeleteUser = (user) => {
+        openConfirmModal("delete", user);
     };
 
     const handleDeactivateUser = (user) => {
-        setActionMenu(null);
-        if (!user?.id) return;
-
-        const name = user?.name ? ` (${user.name})` : "";
-        const ok = window.confirm(`Nonaktifkan akun ini${name}?`);
-        if (!ok) return;
-
-        router.put(route("admin.accounts.deactivate", user.id), {}, { preserveScroll: true });
+        openConfirmModal("deactivate", user);
     };
 
     const closeRfidForm = () => {
@@ -509,6 +565,67 @@ export default function Index({ users = [], filters = {} }) {
                         </button>
                     </div>
                 </>
+            )}
+
+            {confirmModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-md bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
+                                {confirmTitle()}
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={closeConfirmModal}
+                                disabled={confirmProcessing}
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                {confirmDescription()}
+                            </p>
+
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
+                                User:{" "}
+                                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                    {confirmModal.user?.name || "-"}
+                                </span>{" "}
+                                <span className="text-slate-500 dark:text-slate-400">
+                                    ({confirmModal.user?.email || "-"})
+                                </span>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeConfirmModal}
+                                    disabled={confirmProcessing}
+                                    className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={runConfirmedAction}
+                                    disabled={confirmProcessing}
+                                    className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
+                                        confirmModal.action === "delete"
+                                            ? "bg-red-500 hover:bg-red-600"
+                                            : "bg-amber-500 hover:bg-amber-600"
+                                    }`}
+                                >
+                                    {confirmProcessing
+                                        ? "Memproses..."
+                                        : confirmPrimaryLabel()}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {rfidTargetUser && (
