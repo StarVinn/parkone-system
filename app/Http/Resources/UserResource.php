@@ -2,14 +2,12 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\JsonApi\JsonApiResource;
 
 class UserResource extends JsonApiResource
 {
-    /**
-     * The resource's attributes.
-     */
+    protected bool $includesPreviouslyLoadedRelationships = true;
+
     public $attributes = [
         'name',
         'email',
@@ -22,9 +20,6 @@ class UserResource extends JsonApiResource
         'updated_at',
     ];
 
-    /**
-     * The resource's relationships.
-     */
     public $relationships = [
         'rfidCards',
         'primaryRfidCard',
