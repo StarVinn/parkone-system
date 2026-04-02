@@ -12,6 +12,9 @@ use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\TransactionController;
 use App\Http\Controllers\Web\AdminAccountController;
 use App\Http\Controllers\Web\OwnerDashboardController;
+use App\Http\Controllers\Web\AdminCustomizationController;
+use App\Http\Controllers\Web\CustomizationApiController;
+use App\Http\Controllers\Web\LocaleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -50,6 +53,10 @@ Route::get('/set-password/{token}', function ($token) {
     ]);
 })->name('password.set');
 Route::post('/set-password', [PasswordController::class, 'setInitialPassword'])->name('password.set.store');
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+});
 /*
 |--------------------------------------------------------------------------
 | ADMIN
@@ -110,6 +117,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::put('/{user}/identity', [AdminAccountController::class, 'updateIdentity'])->name('admin.accounts.update-identity');
             Route::delete('/{user}', [AdminAccountController::class, 'destroy'])->name('admin.accounts.destroy');
         });
+
+        Route::get('/customization', [AdminCustomizationController::class, 'index'])->name('admin.customization.index');
+        Route::put('/customization/translations', [CustomizationApiController::class, 'updateTranslationsBulk'])->name('admin.customization.translations.bulk');
+        Route::put('/customization/translations/{locale}', [CustomizationApiController::class, 'updateTranslations'])->name('admin.customization.translations.update');
+        Route::put('/customization/navbar', [CustomizationApiController::class, 'updateNavbar'])->name('admin.customization.navbar.update');
 
     });
 });
