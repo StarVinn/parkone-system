@@ -19,8 +19,16 @@ const formatLicensePlate = (value) => {
     return [match[1], match[2], match[3]].filter(Boolean).join(" ");
 };
 
+const canonicalize = (value) =>
+    String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+
 export default function StandbyOut({ activeTransactions = [], selectedParkingArea = null }) {
     const { flash, errors } = usePage().props;
+    const [licensePlate, setLicensePlate] = useState("");
+    const [plateSource, setPlateSource] = useState("none");
+    const [plateError, setPlateError] = useState("");
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
     const [rfidError, setRfidError] = useState("");
@@ -45,6 +53,29 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             return plate.includes(keyword);
         });
     }, [activeTransactions, activePlateSearch]);
+
+    const activeTransactionForPlate = useMemo(() => {
+        const canonicalPlate = canonicalize(licensePlate);
+        if (!canonicalPlate) {
+            return null;
+        }
+
+        return (
+            activeTransactions.find((tx) => {
+                const txPlate = canonicalize(tx.vehicle?.license_plate);
+                return txPlate && txPlate === canonicalPlate;
+            }) || null
+        );
+    }, [activeTransactions, licensePlate]);
+
+    const rfidRequiredForPlate = useMemo(() => {
+        const tx = activeTransactionForPlate;
+        if (!tx) {
+            return false;
+        }
+
+        return Boolean(tx.rfidCard?.uid || tx.rfid_uid);
+    }, [activeTransactionForPlate]);
 
     const handleLookupRfid = async (uid) => {
         const normalizedUid = String(uid || "").trim();
@@ -81,6 +112,18 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             }
 
             setRfidUser(payload.user);
+
+            const matched = activeTransactions.find((tx) => {
+                const txUid = String(tx.rfidCard?.uid || tx.rfid_uid || "")
+                    .trim()
+                    .toUpperCase();
+                return txUid && txUid === normalizedUid.toUpperCase();
+            });
+            if (matched?.vehicle?.license_plate) {
+                setLicensePlate(formatLicensePlate(matched.vehicle.license_plate));
+                setPlateSource("rfid");
+                setPlateError("");
+            }
         } catch {
             if (latestLookupRef.current !== lookupId) {
                 return;
@@ -103,8 +146,12 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
 
     const submit = (event) => {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const licensePlate = formData.get("license_plate");
+        const normalizedPlate = String(licensePlate || "").trim();
+
+        if (!normalizedPlate) {
+            setPlateError("Plat nomor wajib diisi.");
+            return;
+        }
 
         if (rfidUid.trim() && !rfidUser) {
             setRfidError("RFID belum terverifikasi.");
@@ -113,11 +160,15 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
 
         router.post(route("officer.transactions.store"), {
             action: "exit",
-            license_plate: licensePlate,
+            license_plate: normalizedPlate,
             checkout_mode: String(rfidUid || "").trim() ? "rfid" : "ticket",
             rfid_uid: String(rfidUid || "").trim(),
         });
     };
+
+    const showRfidInput =
+        !licensePlate.trim() || rfidUid.trim() || rfidRequiredForPlate;
+    const showPlateInput = !rfidUid.trim();
 
     return (
         <div className="space-y-5">
@@ -158,58 +209,111 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                            RFID UID (Opsional)
-                        </label>
-                        <input
-                            value={rfidUid}
-                            onChange={(event) => setRfidUid(event.target.value)}
-                            placeholder="Scan / input RFID UID (boleh kosong)"
-                            className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                        />
+                {showRfidInput ? (
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                RFID UID (Opsional)
+                            </label>
+                            <input
+                                value={rfidUid}
+                                onChange={(event) => {
+                                    const nextUid = event.target.value;
+                                    setRfidUid(nextUid);
+                                    if (
+                                        String(nextUid || "").trim() &&
+                                        plateSource === "manual"
+                                    ) {
+                                        setLicensePlate("");
+                                        setPlateSource("none");
+                                        setPlateError("");
+                                    }
+                                }}
+                                placeholder="Scan / input RFID UID (boleh kosong)"
+                                className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Jika transaksi masuk memakai RFID, saat keluar RFID
+                            yang sama harus diinput.
+                        </p>
+                        {lookupLoading && (
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                Mencari data RFID...
+                            </div>
+                        )}
+
+                        {rfidUser && (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                RFID cocok dengan user:{" "}
+                                <strong>{rfidUser.name}</strong>
+                            </div>
+                        )}
+
+                        {rfidError && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {rfidError}
+                            </div>
+                        )}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Jika transaksi masuk memakai RFID, saat keluar RFID yang
-                        sama harus diinput.
-                    </p>
-                    {lookupLoading && (
-                        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                            Mencari data RFID...
-                        </div>
-                    )}
+                ) : (
+                    <input type="hidden" name="rfid_uid" value="" />
+                )}
 
-                    {rfidUser && (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            RFID cocok dengan user:{" "}
-                            <strong>{rfidUser.name}</strong>
+                {showPlateInput ? (
+                    <div className="space-y-2">
+                        <div>
+                            <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                Plat Nomor
+                            </label>
+                            <input
+                                name="license_plate"
+                                value={licensePlate}
+                                onChange={(event) => {
+                                    setLicensePlate(
+                                        formatLicensePlate(event.target.value),
+                                    );
+                                    setPlateSource("manual");
+                                    setPlateError("");
+                                    if (rfidUid.trim()) {
+                                        setRfidUid("");
+                                        setRfidUser(null);
+                                        setRfidError("");
+                                    }
+                                }}
+                                placeholder="Contoh: B 1018 PIA"
+                                className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                                required
+                            />
                         </div>
-                    )}
-
-                    {rfidError && (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {rfidError}
+                        {plateError && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {plateError}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        <input
+                            type="hidden"
+                            name="license_plate"
+                            value={licensePlate}
+                        />
+                        <div className="space-y-1">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                Plat Nomor (Otomatis)
+                            </p>
+                            <div className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white px-3 py-2.5 text-sm font-semibold uppercase">
+                                {licensePlate || "-"}
+                            </div>
                         </div>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                        Plat Nomor
-                    </label>
-                    <input
-                        name="license_plate"
-                        onInput={(event) => {
-                            event.target.value = formatLicensePlate(
-                                event.target.value,
-                            );
-                        }}
-                        placeholder="Contoh: B 1018 PIA"
-                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                        required
-                    />
-                </div>
+                        {plateError && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {plateError}
+                            </div>
+                        )}
+                    </>
+                )}
 
                 <button
                     type="submit"

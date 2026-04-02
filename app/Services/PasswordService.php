@@ -50,6 +50,7 @@ class PasswordService
                 $user->forceFill([
                     'password' => Hash::make($password),
                     'is_active' => true,
+                    'status' => 'active',
                     'email_verified_at' => now(),
                 ])->save();
 

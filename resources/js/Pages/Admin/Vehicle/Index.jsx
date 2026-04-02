@@ -1,7 +1,7 @@
 import { Link, usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 function formatLicensePlate(value) {
     const cleaned = String(value || "")
@@ -53,6 +53,9 @@ export default function Index({
         vehicle_type_id: filters.vehicle_type_id ?? "",
     });
 
+    const didMountRef = useRef(false);
+    const debounceRef = useRef(null);
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -64,30 +67,31 @@ export default function Index({
     const [errors, setErrors] = useState({});
     const [processing, setProcessing] = useState(false);
 
-    // Filter functions
-    const applyFilters = (event) => {
-        event.preventDefault();
-        router.get(route("admin.vehicles.index"), filterData, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["vehicles", "filters", "flash", "errors"],
-        });
-    };
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
 
-    const resetFilters = () => {
-        const emptyFilters = {
-            search: "",
-            vehicle_type_id: "",
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+            router.get(route("admin.vehicles.index"), filterData, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["vehicles", "filters", "flash", "errors"],
+            });
+        }, 500);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
         };
-        setFilterData(emptyFilters);
-        router.get(route("admin.vehicles.index"), emptyFilters, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["vehicles", "filters", "flash", "errors"],
-        });
-    };
+    }, [filterData.search, filterData.vehicle_type_id]);
 
     const goToPage = (url) => {
         if (!url) return;
@@ -257,7 +261,7 @@ export default function Index({
             )}
 
             <form
-                onSubmit={applyFilters}
+                onSubmit={(e) => e.preventDefault()}
                 className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
             >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -292,24 +296,8 @@ export default function Index({
 
                     <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter dijalankan saat klik Apply.
+                            Filter dijalankan otomatis setelah selesai mengetik.
                         </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={resetFilters}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                            >
-                                <RotateCcw size={16} />
-                                Reset
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
-                            >
-                                Apply
-                            </button>
-                        </div>
                     </div>
                 </div>
             </form>

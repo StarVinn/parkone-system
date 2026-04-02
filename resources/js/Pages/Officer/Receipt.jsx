@@ -74,7 +74,18 @@ export default function Receipt({
     const operatorName = auth?.user?.name || "-";
     const parkingGate = transaction.parking_area?.name || "-";
     const plate = transaction.vehicle?.license_plate || "-";
-    const subtotalText = `Rp ${currency.format(Number(nominal || 0))}`;
+    const baseTotal = Number(nominal || 0);
+    const receivedAmountValue = Number(data.received_amount || 0);
+    const penaltyAmount =
+        isExit &&
+        data.checkout_mode === "ticket" &&
+        receivedAmountValue > baseTotal
+            ? receivedAmountValue - baseTotal
+            : 0;
+    const totalToPay = baseTotal + penaltyAmount;
+    const baseTotalText = `Rp ${currency.format(Number(baseTotal || 0))}`;
+    const penaltyText = `Rp ${currency.format(Number(penaltyAmount || 0))}`;
+    const totalText = `Rp ${currency.format(Number(totalToPay || 0))}`;
 
     return (
         <>
@@ -176,7 +187,11 @@ export default function Receipt({
                             {isExit ? (
                                 <>
                                     <div className="my-2 border-t border-slate-700" />
-                                    <p>{padLine("TOTAL", subtotalText)}</p>
+                                    <p>{padLine("PARKIR", baseTotalText)}</p>
+                                    {penaltyAmount > 0 ? (
+                                        <p>{padLine("DENDA", penaltyText)}</p>
+                                    ) : null}
+                                    <p>{padLine("TOTAL", totalText)}</p>
                                     <p>
                                         {padLine(
                                             "TUNAI",
@@ -214,7 +229,7 @@ export default function Receipt({
                                     </p>
                                 ) : (
                                     <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                                        Mode RFID: nominal harus pas ({subtotalText}).
+                                        Mode RFID: nominal harus pas ({baseTotalText}).
                                     </p>
                                 )}
                                 <input

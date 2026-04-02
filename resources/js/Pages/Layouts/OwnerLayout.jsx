@@ -18,15 +18,20 @@ export default function OwnerLayout({ children }) {
         <div className="min-h-screen bg-slate-100 dark:bg-darkbg-primary text-slate-900 dark:text-[#F5F7FA] font-['Inter'] transition-colors duration-300">
             <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-white/95 dark:bg-darkbg-primary/90 border-b border-slate-200 dark:border-white/10 transition-colors duration-300">
                 <div className="mx-auto max-w-7xl px-6 lg:px-10 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <img src={logo} alt="Logo" className="h-8 w-8" />
-                        <Link
-                            href="/owner"
-                            className="font-['Poppins'] font-semibold tracking-wide bg-gradient-to-r from-brand.blue to-brand.teal bg-clip-text"
-                        >
-                            PARKONE Owner
-                        </Link>
-
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={logo}
+                            alt="Logo"
+                            className="h-9 w-9 rounded-xl"
+                        />
+                        <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                PARKONE
+                            </p>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                Owner Panel
+                            </p>
+                        </div>
                     </div>
 
                     <div className="relative">

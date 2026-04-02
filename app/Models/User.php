@@ -28,6 +28,7 @@ class User extends Authenticatable
         'profile_photo',
         'rfid_uid',
         'is_active',
+        'status',
     ];
 
     /**

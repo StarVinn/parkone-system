@@ -24,6 +24,7 @@ class PostLoginRequest extends FormRequest
         return [
             'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:2',
+            'device_name' => 'nullable|string|max:255',
         ];
     }
 
@@ -38,6 +39,9 @@ class PostLoginRequest extends FormRequest
             'password.required' => 'Password wajib diisi.',
             'password.string' => 'Password harus berupa teks.',
             'password.min' => 'Password minimal 2 karakter.',
+
+            'device_name.string' => 'Device name harus berupa teks.',
+            'device_name.max' => 'Device name maksimal 255 karakter.',
         ];
     }
 }

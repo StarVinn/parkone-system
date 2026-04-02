@@ -1219,7 +1219,7 @@ export default function Dashboard({
                                         !transactionsLoaded ||
                                         filteredTransactions.length === 0
                                     }
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     <Download size={16} />
                                     Export CSV

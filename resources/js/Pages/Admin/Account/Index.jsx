@@ -1,14 +1,15 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ChevronDown,
     Info,
     MailCheck,
     MailPlus,
     Plus,
-    RotateCcw,
     Search,
     ShieldCheck,
+    Trash2,
+    UserX,
     X,
 } from "lucide-react";
 import AdminLayout from "../../Layouts/AdminLayout";
@@ -19,6 +20,12 @@ export default function Index({ users = [], filters = {} }) {
     const [actionMenu, setActionMenu] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        action: null,
+        user: null,
+    });
+    const [confirmProcessing, setConfirmProcessing] = useState(false);
 
     // Create modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -34,7 +41,11 @@ export default function Index({ users = [], filters = {} }) {
     const total = users?.total ?? rows.length;
     const { data, setData } = useForm({
         search: filters.search ?? "",
+        status: filters.status ?? "all",
     });
+
+    const didMountRef = useRef(false);
+    const debounceRef = useRef(null);
 
     // Create form
     const {
@@ -47,7 +58,7 @@ export default function Index({ users = [], filters = {} }) {
     } = useForm({
         name: "",
         email: "",
-        role: "officer",
+        role: "user",
         rfid_uid: "",
     });
 
@@ -72,29 +83,31 @@ export default function Index({ users = [], filters = {} }) {
         rfid_uid: "",
     });
 
-    const applyFilters = (event) => {
-        event.preventDefault();
-        router.get(route("admin.accounts.index"), data, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["users", "filters", "flash", "errors"],
-        });
-    };
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
 
-    const resetFilters = () => {
-        const emptyFilters = {
-            search: "",
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+            router.get(route("admin.accounts.index"), data, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["users", "filters", "flash", "errors"],
+            });
+        }, 500);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
         };
-
-        setData(emptyFilters);
-        router.get(route("admin.accounts.index"), emptyFilters, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ["users", "filters", "flash", "errors"],
-        });
-    };
+    }, [data.search, data.status]);
 
     const goToPage = (url) => {
         if (!url) return;
@@ -130,7 +143,7 @@ export default function Index({ users = [], filters = {} }) {
 
         const rect = event.currentTarget.getBoundingClientRect();
         const menuWidth = 192;
-        const menuHeight = 112;
+        const menuHeight = 216;
         const spacing = 8;
         const viewportPadding = 12;
 
@@ -177,6 +190,82 @@ export default function Index({ users = [], filters = {} }) {
         setActionMenu(null);
         setRfidTargetUser(user);
         setRfidForm("rfid_uid", "");
+    };
+
+    const closeConfirmModal = () => {
+        setConfirmModal({ open: false, action: null, user: null });
+        setConfirmProcessing(false);
+    };
+
+    const confirmTitle = () => {
+        if (confirmModal.action === "delete") return "Hapus Account";
+        if (confirmModal.action === "deactivate") return "Nonaktifkan Account";
+        return "Konfirmasi";
+    };
+
+    const confirmDescription = () => {
+        const name = confirmModal.user?.name ? ` (${confirmModal.user.name})` : "";
+
+        if (confirmModal.action === "delete") {
+            return `Yakin mau hapus user ini${name}? Tindakan ini tidak bisa dibatalkan.`;
+        }
+
+        if (confirmModal.action === "deactivate") {
+            return `Nonaktifkan akun ini${name}? User tidak bisa login sampai diaktifkan kembali.`;
+        }
+
+        return "Lanjutkan aksi ini?";
+    };
+
+    const confirmPrimaryLabel = () => {
+        if (confirmModal.action === "delete") return "Hapus";
+        if (confirmModal.action === "deactivate") return "Nonaktifkan";
+        return "Konfirmasi";
+    };
+
+    const openConfirmModal = (action, user) => {
+        setActionMenu(null);
+        if (!user?.id) return;
+        setConfirmModal({ open: true, action, user });
+        setConfirmProcessing(false);
+    };
+
+    const runConfirmedAction = () => {
+        const user = confirmModal.user;
+        if (!user?.id || !confirmModal.action) return;
+
+        setConfirmProcessing(true);
+
+        if (confirmModal.action === "delete") {
+            router.delete(route("admin.accounts.destroy", user.id), {
+                preserveScroll: true,
+                onFinish: () => {
+                    closeConfirmModal();
+                },
+            });
+            return;
+        }
+
+        if (confirmModal.action === "deactivate") {
+            router.put(
+                route("admin.accounts.deactivate", user.id),
+                {},
+                {
+                    preserveScroll: true,
+                    onFinish: () => {
+                        closeConfirmModal();
+                    },
+                },
+            );
+        }
+    };
+
+    const handleDeleteUser = (user) => {
+        openConfirmModal("delete", user);
+    };
+
+    const handleDeactivateUser = (user) => {
+        openConfirmModal("deactivate", user);
     };
 
     const closeRfidForm = () => {
@@ -234,7 +323,7 @@ export default function Index({ users = [], filters = {} }) {
                     onClick={openCreateModal}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all
                         bg-gradient-to-r from-[#1E5EFF] to-[#1FD1A5]
-                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm"
+                        hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
                     Create Account
@@ -254,10 +343,7 @@ export default function Index({ users = [], filters = {} }) {
                 </div>
             )}
 
-            <form
-                onSubmit={applyFilters}
-                className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6"
-            >
+            <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
                 <div className="relative mb-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -270,26 +356,22 @@ export default function Index({ users = [], filters = {} }) {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filter dijalankan saat klik Apply.
+                        Filter otomatis setelah selesai mengetik.
                     </p>
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                        <select
+                            value={data.status}
+                            onChange={(e) => setData("status", e.target.value)}
+                            className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] text-sm"
                         >
-                            <RotateCcw size={16} />
-                            Reset
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition cursor-pointer"
-                        >
-                            Apply
-                        </button>
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
                 </div>
-            </form>
+            </div>
 
             <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -347,22 +429,29 @@ export default function Index({ users = [], filters = {} }) {
                                                 ? ` (+${user.rfid_count - 1})`
                                                 : ""}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                                    user.is_active
-                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                                        : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-                                                }`}
-                                            >
-                                                {user.is_active
-                                                    ? "Active"
-                                                    : "Pending Activation"}
-                                            </span>
-                                        </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                            user.status ===
+                                                            "active"
+                                                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                                : user.status ===
+                                                                    "inactive"
+                                                                  ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                                                                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+                                                        }`}
+                                                    >
+                                                        {user.status === "active"
+                                                            ? "Active"
+                                                            : user.status ===
+                                                                "inactive"
+                                                              ? "Inactive"
+                                                              : "Pending Activation"}
+                                                    </span>
+                                                </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2 relative">
-                                                {!user.is_active && (
+                                                {user.status === "pending" && (
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -445,7 +534,7 @@ export default function Index({ users = [], filters = {} }) {
                             className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition cursor-pointer"
                         >
                             <ShieldCheck size={14} />
-                            Insert RFID
+                            {actionMenu.user?.rfid_uid ? "Switch RFID" : "Insert RFID"}
                         </button>
                         <button
                             type="button"
@@ -455,8 +544,88 @@ export default function Index({ users = [], filters = {} }) {
                             <MailPlus size={14} />
                             Reset Email
                         </button>
+                        {actionMenu.user?.status === "active" && (
+                            <button
+                                type="button"
+                                onClick={() => handleDeactivateUser(actionMenu.user)}
+                                className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition cursor-pointer"
+                            >
+                                <UserX size={14} />
+                                Deactivate Account
+                            </button>
+                        )}
+                        <div className="my-2 border-t border-slate-200 dark:border-white/10" />
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteUser(actionMenu.user)}
+                            className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition cursor-pointer"
+                        >
+                            <Trash2 size={14} />
+                            Delete User
+                        </button>
                     </div>
                 </>
+            )}
+
+            {confirmModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-md bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
+                                {confirmTitle()}
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={closeConfirmModal}
+                                disabled={confirmProcessing}
+                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                {confirmDescription()}
+                            </p>
+
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
+                                User:{" "}
+                                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                    {confirmModal.user?.name || "-"}
+                                </span>{" "}
+                                <span className="text-slate-500 dark:text-slate-400">
+                                    ({confirmModal.user?.email || "-"})
+                                </span>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeConfirmModal}
+                                    disabled={confirmProcessing}
+                                    className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={runConfirmedAction}
+                                    disabled={confirmProcessing}
+                                    className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
+                                        confirmModal.action === "delete"
+                                            ? "bg-red-500 hover:bg-red-600"
+                                            : "bg-amber-500 hover:bg-amber-600"
+                                    }`}
+                                >
+                                    {confirmProcessing
+                                        ? "Memproses..."
+                                        : confirmPrimaryLabel()}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {rfidTargetUser && (
@@ -464,12 +633,20 @@ export default function Index({ users = [], filters = {} }) {
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10">
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                                Insert RFID
+                                {rfidTargetUser?.rfid_uid ? "Switch RFID" : "Insert RFID"}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 User: {rfidTargetUser.name} (
                                 {rfidTargetUser.email})
                             </p>
+                            {rfidTargetUser?.rfid_uid && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    RFID aktif sekarang:{" "}
+                                    <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                        {rfidTargetUser.rfid_uid}
+                                    </span>
+                                </p>
+                            )}
                         </div>
 
                         <form
@@ -521,7 +698,9 @@ export default function Index({ users = [], filters = {} }) {
                                 >
                                     {processingRfid
                                         ? "Menyimpan..."
-                                        : "Simpan RFID"}
+                                        : rfidTargetUser?.rfid_uid
+                                          ? "Switch RFID"
+                                          : "Simpan RFID"}
                                 </button>
                             </div>
                         </form>
@@ -680,6 +859,7 @@ export default function Index({ users = [], filters = {} }) {
                                     <option value="officer">Officer</option>
                                     <option value="owner">Owner</option>
                                     <option value="admin">Admin</option>
+                                    <option value="user">User</option>
                                 </select>
                             </div>
 

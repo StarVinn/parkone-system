@@ -105,8 +105,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/', [AdminAccountController::class, 'index'])->name('admin.accounts.index');
             Route::post('/', [AdminAccountController::class, 'store'])->name('admin.accounts.store');
             Route::post('/{user}/activate', [AdminAccountController::class, 'activate'])->name('admin.accounts.activate');
+            Route::put('/{user}/deactivate', [AdminAccountController::class, 'deactivate'])->name('admin.accounts.deactivate');
             Route::put('/{user}/reset-email', [AdminAccountController::class, 'resetEmail'])->name('admin.accounts.reset-email');
             Route::put('/{user}/identity', [AdminAccountController::class, 'updateIdentity'])->name('admin.accounts.update-identity');
+            Route::delete('/{user}', [AdminAccountController::class, 'destroy'])->name('admin.accounts.destroy');
         });
 
     });
