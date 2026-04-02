@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\CustomizationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,6 +30,15 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request)
     {
+        $locale = (string) ($request->cookie('app_locale') ?? 'id');
+        if (! in_array($locale, CustomizationService::LOCALES, true)) {
+            $locale = 'id';
+        }
+
+        $customizationService = app(CustomizationService::class);
+        $strings = $customizationService->getTranslations($locale);
+        $navbar = $customizationService->getNavbar();
+
         return array_merge(parent::share($request), [
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -38,6 +48,11 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(), // Ini yang bikin {auth.user.name} bisa jalan
             ],
+            'i18n' => [
+                'locale' => $locale,
+                'strings' => $strings,
+            ],
+            'nav' => $navbar,
         ]);
     }
 }
