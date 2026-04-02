@@ -2,6 +2,7 @@ import { usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Trash2, Info } from "lucide-react";
 import { useEffect, useRef } from "react";
+import useI18n from "../../../hooks/useI18n";
 
 const formatDateTime = (value) => {
     if (!value) return "-";
@@ -14,7 +15,9 @@ const formatDateTime = (value) => {
 
 export default function Index({ activityLogs = [], filters = {} }) {
     const { flash } = usePage().props;
+    const { t } = useI18n();
     const today = new Date().toISOString().slice(0, 10);
+
     const rows = Array.isArray(activityLogs?.data)
         ? activityLogs.data
         : Array.isArray(activityLogs)
@@ -62,7 +65,14 @@ export default function Index({ activityLogs = [], filters = {} }) {
     }, [data.search, data.date_from, data.date_to]);
 
     const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus activity log ini?")) {
+        if (
+            confirm(
+                t(
+                    "admin.activity_logs.confirm_delete",
+                    "Yakin ingin menghapus activity log ini?",
+                ),
+            )
+        ) {
             router.delete(route("admin.activity-logs.destroy", id));
         }
     };
@@ -89,10 +99,13 @@ export default function Index({ activityLogs = [], filters = {} }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Activity Logs
+                        {t("admin.activity_logs.title", "Activity Logs")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Riwayat aktivitas user pada sistem.
+                        {t(
+                            "admin.activity_logs.description",
+                            "Riwayat aktivitas user pada sistem.",
+                        )}
                     </p>
                 </div>
             </div>
@@ -114,7 +127,10 @@ export default function Index({ activityLogs = [], filters = {} }) {
                             type="text"
                             value={data.search}
                             onChange={(e) => setData("search", e.target.value)}
-                            placeholder="Cari aktivitas, nama user, atau email..."
+                            placeholder={t(
+                                "admin.activity_logs.search_placeholder",
+                                "Cari aktivitas, nama user, atau email...",
+                            )}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         />
                     </div>
@@ -145,7 +161,10 @@ export default function Index({ activityLogs = [], filters = {} }) {
 
                     <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter dijalankan otomatis setelah selesai mengetik.
+                            {t(
+                                "filters.auto_apply",
+                                "Filter dijalankan otomatis setelah selesai mengetik.",
+                            )}
                         </p>
                     </div>
                 </div>
@@ -157,16 +176,16 @@ export default function Index({ activityLogs = [], filters = {} }) {
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    User
+                                    {t("fields.user", "User")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Activity
+                                    {t("fields.activity", "Activity")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Time
+                                    {t("fields.time", "Time")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -177,7 +196,10 @@ export default function Index({ activityLogs = [], filters = {} }) {
                                         colSpan="4"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Tidak ada activity log yang cocok dengan filter.
+                                        {t(
+                                            "admin.activity_logs.empty",
+                                            "Tidak ada activity log yang cocok dengan filter.",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -200,7 +222,7 @@ export default function Index({ activityLogs = [], filters = {} }) {
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                    title="Hapus"
+                                                    title={t("actions.delete", "Hapus")}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -216,7 +238,11 @@ export default function Index({ activityLogs = [], filters = {} }) {
                 {paginationLinks.length > 3 && (
                     <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Menampilkan {from} - {to} dari {total} data
+                            {t(
+                                "pagination.showing",
+                                "Menampilkan {from} - {to} dari {total} data",
+                                { from, to, total },
+                            )}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                             {paginationLinks.map((link, index) => (
