@@ -19,6 +19,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import AdminLayout from "../Layouts/AdminLayout";
+import useI18n from "../../hooks/useI18n";
 
 ChartJS.register(
     ArcElement,
@@ -50,15 +51,19 @@ export default function Dashboard({
         },
     },
 }) {
+    const { t } = useI18n();
     const setupReadiness = adminCards.setupReadiness || {};
     const masterDataHealth = adminCards.masterDataHealth || {};
 
     const setupReadinessCards = [
         {
             key: "rate-coverage",
-            title: "Cakupan Tarif",
+            title: t("admin.dashboard.setup.rate_coverage", "Cakupan Tarif"),
             value: `${Number(setupReadiness.rate_coverage_percent || 0)}%`,
-            subtitle: `${Number(setupReadiness.configured_rate_combinations || 0)} dari ${Number(setupReadiness.expected_rate_combinations || 0)} kombinasi`,
+            subtitle: t(
+                "admin.dashboard.setup.rate_coverage_subtitle",
+                `${Number(setupReadiness.configured_rate_combinations || 0)} dari ${Number(setupReadiness.expected_rate_combinations || 0)} kombinasi`,
+            ),
             icon: ShieldCheck,
             iconBoxClass: "text-blue-500",
             progress: Number(setupReadiness.rate_coverage_percent || 0),
@@ -66,25 +71,37 @@ export default function Dashboard({
         },
         {
             key: "area-incomplete-rate",
-            title: "Area Tanpa Tarif Lengkap",
+            title: t(
+                "admin.dashboard.setup.area_incomplete_rate",
+                "Area Tanpa Tarif Lengkap",
+            ),
             value: Number(setupReadiness.areas_without_complete_rates || 0),
-            subtitle: "Perlu lengkapi tarif per lokasi",
+            subtitle: t(
+                "admin.dashboard.setup.area_incomplete_rate_subtitle",
+                "Perlu lengkapi tarif per lokasi",
+            ),
             icon: ClipboardCheck,
             iconBoxClass: "text-amber-500",
         },
         {
             key: "officer-active",
-            title: "Officer Aktif",
+            title: t("admin.dashboard.setup.officer_active", "Officer Aktif"),
             value: Number(setupReadiness.officer_active || 0),
-            subtitle: `${Number(setupReadiness.officer_total || 0)} total officer`,
+            subtitle: t(
+                "admin.dashboard.setup.officer_active_subtitle",
+                `${Number(setupReadiness.officer_total || 0)} total officer`,
+            ),
             icon: Users,
             iconBoxClass: "text-emerald-500",
         },
         {
             key: "data-alert",
-            title: "Data Alert",
+            title: t("admin.dashboard.setup.data_alert", "Data Alert"),
             value: Number(setupReadiness.data_alert_total || 0),
-            subtitle: "Cek plate duplikat/owner/area invalid",
+            subtitle: t(
+                "admin.dashboard.setup.data_alert_subtitle",
+                "Cek plate duplikat/owner/area invalid",
+            ),
             icon: AlertTriangle,
             iconBoxClass: "text-rose-500",
         },
@@ -93,33 +110,48 @@ export default function Dashboard({
     const masterDataCards = [
         {
             key: "location-total",
-            title: "Parking Location",
+            title: t("admin.dashboard.master.location_total", "Parking Location"),
             value: Number(masterDataHealth.location_total || 0),
-            subtitle: "Total lokasi aktif",
+            subtitle: t(
+                "admin.dashboard.master.location_total_subtitle",
+                "Total lokasi aktif",
+            ),
             icon: MapPinned,
             iconBoxClass: "text-indigo-500",
         },
         {
             key: "area-total",
-            title: "Parking Area",
+            title: t("admin.dashboard.master.area_total", "Parking Area"),
             value: Number(masterDataHealth.area_total || 0),
-            subtitle: "Total area terdaftar",
+            subtitle: t(
+                "admin.dashboard.master.area_total_subtitle",
+                "Total area terdaftar",
+            ),
             icon: Map,
             iconBoxClass: "text-cyan-500",
         },
         {
             key: "vehicle-type-total",
-            title: "Vehicle Type",
+            title: t("admin.dashboard.master.vehicle_type_total", "Vehicle Type"),
             value: Number(masterDataHealth.vehicle_type_total || 0),
-            subtitle: "Tipe kendaraan aktif",
+            subtitle: t(
+                "admin.dashboard.master.vehicle_type_total_subtitle",
+                "Tipe kendaraan aktif",
+            ),
             icon: Tags,
             iconBoxClass: "text-fuchsia-500",
         },
         {
             key: "rate-completeness",
-            title: "Rate Completeness",
+            title: t(
+                "admin.dashboard.master.rate_completeness",
+                "Rate Completeness",
+            ),
             value: `${Number(masterDataHealth.rate_completeness_percent || 0)}%`,
-            subtitle: "Kelengkapan tarif lintas lokasi",
+            subtitle: t(
+                "admin.dashboard.master.rate_completeness_subtitle",
+                "Kelengkapan tarif lintas lokasi",
+            ),
             icon: CheckCircle2,
             iconBoxClass: "text-green-500",
             progress: Number(masterDataHealth.rate_completeness_percent || 0),
@@ -169,10 +201,13 @@ export default function Dashboard({
     };
 
     const creationChartData = {
-        labels: ["Vehicle", "Parking"],
+        labels: [
+            t("admin.dashboard.chart.vehicle", "Vehicle"),
+            t("admin.dashboard.chart.parking", "Parking"),
+        ],
         datasets: [
             {
-                label: "Jumlah Data",
+                label: t("admin.dashboard.chart.total_data", "Jumlah Data"),
                 data: [vehicleCreated, parkingCreated],
                 backgroundColor: ["#3B82F6", "#10B981"],
                 borderRadius: 10,
@@ -234,10 +269,13 @@ export default function Dashboard({
         <div className="p-4 sm:p-6 transition-colors duration-300">
             <div className="mb-5">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                    Admin Dashboard
+                    {t("admin.dashboard.title", "Admin Dashboard")}
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Ringkasan readiness sistem dan kesehatan master data admin.
+                    {t(
+                        "admin.dashboard.description",
+                        "Ringkasan readiness sistem dan kesehatan master data admin.",
+                    )}
                 </p>
             </div>
 
@@ -333,7 +371,7 @@ export default function Dashboard({
                 <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                            User Activity
+                            Aktivitas Login Pengguna
                         </h2>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                             Total login: {totalCount}

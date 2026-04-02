@@ -13,10 +13,12 @@ import {
     X,
 } from "lucide-react";
 import AdminLayout from "../../Layouts/AdminLayout";
+import useI18n from "../../../hooks/useI18n";
 
 export default function Index({ users = [], filters = {} }) {
     const page = usePage();
     const { flash } = page.props;
+    const { t } = useI18n();
     const [actionMenu, setActionMenu] = useState(null);
     const [emailTargetUser, setEmailTargetUser] = useState(null);
     const [rfidTargetUser, setRfidTargetUser] = useState(null);
@@ -198,29 +200,37 @@ export default function Index({ users = [], filters = {} }) {
     };
 
     const confirmTitle = () => {
-        if (confirmModal.action === "delete") return "Hapus Account";
-        if (confirmModal.action === "deactivate") return "Nonaktifkan Account";
-        return "Konfirmasi";
+        if (confirmModal.action === "delete") return t("admin.accounts.confirm.delete_title", "Hapus Account");
+        if (confirmModal.action === "deactivate") return t("admin.accounts.confirm.deactivate_title", "Nonaktifkan Account");
+        return t("admin.accounts.confirm.title", "Konfirmasi");
     };
 
     const confirmDescription = () => {
         const name = confirmModal.user?.name ? ` (${confirmModal.user.name})` : "";
 
         if (confirmModal.action === "delete") {
-            return `Yakin mau hapus user ini${name}? Tindakan ini tidak bisa dibatalkan.`;
+            return t(
+                "admin.accounts.confirm.delete_desc",
+                "Yakin mau hapus user ini{name}? Tindakan ini tidak bisa dibatalkan.",
+                { name },
+            );
         }
 
         if (confirmModal.action === "deactivate") {
-            return `Nonaktifkan akun ini${name}? User tidak bisa login sampai diaktifkan kembali.`;
+            return t(
+                "admin.accounts.confirm.deactivate_desc",
+                "Nonaktifkan akun ini{name}? User tidak bisa login sampai diaktifkan kembali.",
+                { name },
+            );
         }
 
-        return "Lanjutkan aksi ini?";
+        return t("admin.accounts.confirm.generic_desc", "Lanjutkan aksi ini?");
     };
 
     const confirmPrimaryLabel = () => {
-        if (confirmModal.action === "delete") return "Hapus";
-        if (confirmModal.action === "deactivate") return "Nonaktifkan";
-        return "Konfirmasi";
+        if (confirmModal.action === "delete") return t("actions.delete", "Hapus");
+        if (confirmModal.action === "deactivate") return t("admin.accounts.confirm.deactivate_btn", "Nonaktifkan");
+        return t("admin.accounts.confirm.primary", "Konfirmasi");
     };
 
     const openConfirmModal = (action, user) => {
@@ -311,11 +321,13 @@ export default function Index({ users = [], filters = {} }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Manage Accounts
+                        {t("admin.accounts.title", "Manage Accounts")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Create user satu per satu, kirim email aktivasi, dan
-                        kelola reset email akun.
+                        {t(
+                            "admin.accounts.description",
+                            "Create user satu per satu, kirim email aktivasi, dan kelola reset email akun.",
+                        )}
                     </p>
                 </div>
 
@@ -326,7 +338,7 @@ export default function Index({ users = [], filters = {} }) {
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
-                    Create Account
+                    {t("admin.accounts.create", "Create Account")}
                 </button>
             </div>
 
@@ -350,13 +362,19 @@ export default function Index({ users = [], filters = {} }) {
                         type="text"
                         value={data.search}
                         onChange={(e) => setData("search", e.target.value)}
-                        placeholder="Cari nama, email, role, atau RFID..."
+                        placeholder={t(
+                            "admin.accounts.search_placeholder",
+                            "Cari nama, email, role, atau RFID...",
+                        )}
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                     />
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filter otomatis setelah selesai mengetik.
+                        {t(
+                            "filters.auto_apply",
+                            "Filter otomatis setelah selesai mengetik.",
+                        )}
                     </p>
                     <div className="flex items-center gap-2">
                         <select
@@ -364,10 +382,10 @@ export default function Index({ users = [], filters = {} }) {
                             onChange={(e) => setData("status", e.target.value)}
                             className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] text-sm"
                         >
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="all">{t("statuses.all", "All Status")}</option>
+                            <option value="active">{t("statuses.active", "Active")}</option>
+                            <option value="pending">{t("statuses.pending", "Pending")}</option>
+                            <option value="inactive">{t("statuses.inactive", "Inactive")}</option>
                         </select>
                     </div>
                 </div>
@@ -379,22 +397,22 @@ export default function Index({ users = [], filters = {} }) {
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Name
+                                    {t("fields.name", "Name")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Email
+                                    {t("fields.email", "Email")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Role
+                                    {t("fields.role", "Role")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    RFID
+                                    {t("fields.rfid", "RFID")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Status
+                                    {t("fields.status", "Status")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -405,7 +423,10 @@ export default function Index({ users = [], filters = {} }) {
                                         colSpan="6"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Belum ada akun yang cocok.
+                                        {t(
+                                            "admin.accounts.empty",
+                                            "No matching accounts found.",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -442,11 +463,20 @@ export default function Index({ users = [], filters = {} }) {
                                                         }`}
                                                     >
                                                         {user.status === "active"
-                                                            ? "Active"
+                                                            ? t(
+                                                                  "statuses.active",
+                                                                  "Active",
+                                                              )
                                                             : user.status ===
                                                                 "inactive"
-                                                              ? "Inactive"
-                                                              : "Pending Activation"}
+                                                              ? t(
+                                                                    "statuses.inactive",
+                                                                    "Inactive",
+                                                                )
+                                                              : t(
+                                                                    "statuses.pending_activation",
+                                                                    "Pending Activation",
+                                                                )}
                                                     </span>
                                                 </td>
                                         <td className="px-6 py-4">
@@ -462,7 +492,10 @@ export default function Index({ users = [], filters = {} }) {
                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition cursor-pointer"
                                                     >
                                                         <MailCheck size={14} />
-                                                        Activate Account
+                                                        {t(
+                                                            "admin.accounts.actions.activate",
+                                                            "Activate Account",
+                                                        )}
                                                     </button>
                                                 )}
                                                 <button
@@ -475,7 +508,10 @@ export default function Index({ users = [], filters = {} }) {
                                                     }
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition cursor-pointer"
                                                 >
-                                                    Action
+                                                    {t(
+                                                        "fields.action",
+                                                        "Action",
+                                                    )}
                                                     <ChevronDown size={14} />
                                                 </button>
                                             </div>
@@ -490,7 +526,11 @@ export default function Index({ users = [], filters = {} }) {
                 {paginationLinks.length > 3 && (
                     <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Menampilkan {from} - {to} dari {total} data
+                            {t("pagination.showing", "Showing {from} - {to} of {total}", {
+                                from,
+                                to,
+                                total,
+                            })}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                             {paginationLinks.map((link, index) => (
@@ -519,7 +559,10 @@ export default function Index({ users = [], filters = {} }) {
                         type="button"
                         onClick={() => setActionMenu(null)}
                         className="fixed inset-0 z-40 bg-transparent cursor-default"
-                        aria-label="Close action menu"
+                        aria-label={t(
+                            "admin.accounts.actions.close_action_menu",
+                            "Close action menu",
+                        )}
                     />
                     <div
                         className="fixed z-50 min-w-48 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1026] shadow-xl p-2"
@@ -534,7 +577,15 @@ export default function Index({ users = [], filters = {} }) {
                             className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition cursor-pointer"
                         >
                             <ShieldCheck size={14} />
-                            {actionMenu.user?.rfid_uid ? "Switch RFID" : "Insert RFID"}
+                            {actionMenu.user?.rfid_uid
+                                ? t(
+                                      "admin.accounts.actions.switch_rfid",
+                                      "Switch RFID",
+                                  )
+                                : t(
+                                      "admin.accounts.actions.insert_rfid",
+                                      "Insert RFID",
+                                  )}
                         </button>
                         <button
                             type="button"
@@ -542,7 +593,10 @@ export default function Index({ users = [], filters = {} }) {
                             className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
                         >
                             <MailPlus size={14} />
-                            Reset Email
+                            {t(
+                                "admin.accounts.actions.reset_email",
+                                "Reset Email",
+                            )}
                         </button>
                         {actionMenu.user?.status === "active" && (
                             <button
@@ -551,7 +605,10 @@ export default function Index({ users = [], filters = {} }) {
                                 className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition cursor-pointer"
                             >
                                 <UserX size={14} />
-                                Deactivate Account
+                                {t(
+                                    "admin.accounts.actions.deactivate",
+                                    "Deactivate Account",
+                                )}
                             </button>
                         )}
                         <div className="my-2 border-t border-slate-200 dark:border-white/10" />
@@ -561,7 +618,10 @@ export default function Index({ users = [], filters = {} }) {
                             className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition cursor-pointer"
                         >
                             <Trash2 size={14} />
-                            Delete User
+                            {t(
+                                "admin.accounts.actions.delete_user",
+                                "Delete User",
+                            )}
                         </button>
                     </div>
                 </>
@@ -590,7 +650,7 @@ export default function Index({ users = [], filters = {} }) {
                             </p>
 
                             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
-                                User:{" "}
+                                {t("fields.user", "User")}:{" "}
                                 <span className="font-semibold text-slate-700 dark:text-slate-200">
                                     {confirmModal.user?.name || "-"}
                                 </span>{" "}
@@ -606,7 +666,7 @@ export default function Index({ users = [], filters = {} }) {
                                     disabled={confirmProcessing}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Cancel")}
                                 </button>
                                 <button
                                     type="button"
@@ -619,7 +679,10 @@ export default function Index({ users = [], filters = {} }) {
                                     }`}
                                 >
                                     {confirmProcessing
-                                        ? "Memproses..."
+                                        ? t(
+                                              "states.processing",
+                                              "Processing...",
+                                          )
                                         : confirmPrimaryLabel()}
                                 </button>
                             </div>
@@ -633,15 +696,27 @@ export default function Index({ users = [], filters = {} }) {
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10">
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                                {rfidTargetUser?.rfid_uid ? "Switch RFID" : "Insert RFID"}
+                                {rfidTargetUser?.rfid_uid
+                                    ? t(
+                                          "admin.accounts.rfid.title_switch",
+                                          "Switch RFID",
+                                      )
+                                    : t(
+                                          "admin.accounts.rfid.title_insert",
+                                          "Insert RFID",
+                                      )}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                User: {rfidTargetUser.name} (
+                                {t("fields.user", "User")}: {rfidTargetUser.name} (
                                 {rfidTargetUser.email})
                             </p>
                             {rfidTargetUser?.rfid_uid && (
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    RFID aktif sekarang:{" "}
+                                    {t(
+                                        "admin.accounts.rfid.current",
+                                        "Current RFID",
+                                    )}
+                                    :{" "}
                                     <span className="font-semibold text-slate-700 dark:text-slate-200">
                                         {rfidTargetUser.rfid_uid}
                                     </span>
@@ -655,7 +730,7 @@ export default function Index({ users = [], filters = {} }) {
                         >
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    RFID UID
+                                    {t("fields.rfid_uid", "RFID UID")}
                                 </label>
                                 <input
                                     type="text"
@@ -663,7 +738,10 @@ export default function Index({ users = [], filters = {} }) {
                                     onChange={(e) =>
                                         setRfidForm("rfid_uid", e.target.value)
                                     }
-                                    placeholder="Scan / input RFID UID"
+                                    placeholder={t(
+                                        "admin.accounts.rfid.placeholder",
+                                        "Scan / input RFID UID",
+                                    )}
                                     className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
                                         rfidErrors.rfid_uid
                                             ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
@@ -678,9 +756,10 @@ export default function Index({ users = [], filters = {} }) {
                             </div>
 
                             <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300">
-                                Pastikan perangkat input RFID sudah terpasang
-                                dengan baik dan aman sebelum melakukan
-                                penyimpanan UID.
+                                {t(
+                                    "admin.accounts.rfid.help",
+                                    "Make sure the RFID input device is properly installed and secure before saving the UID.",
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -689,7 +768,7 @@ export default function Index({ users = [], filters = {} }) {
                                     onClick={closeRfidForm}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Cancel")}
                                 </button>
                                 <button
                                     type="submit"
@@ -697,10 +776,16 @@ export default function Index({ users = [], filters = {} }) {
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     {processingRfid
-                                        ? "Menyimpan..."
+                                        ? t("states.saving", "Saving...")
                                         : rfidTargetUser?.rfid_uid
-                                          ? "Switch RFID"
-                                          : "Simpan RFID"}
+                                          ? t(
+                                                "admin.accounts.rfid.btn_switch",
+                                                "Switch RFID",
+                                            )
+                                          : t(
+                                                "admin.accounts.rfid.btn_save",
+                                                "Save RFID",
+                                            )}
                                 </button>
                             </div>
                         </form>
@@ -713,10 +798,13 @@ export default function Index({ users = [], filters = {} }) {
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10">
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                                Reset Email
+                                {t(
+                                    "admin.accounts.email.title",
+                                    "Reset Email",
+                                )}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                User: {emailTargetUser.name} (
+                                {t("fields.user", "User")}: {emailTargetUser.name} (
                                 {emailTargetUser.email})
                             </p>
                         </div>
@@ -727,7 +815,10 @@ export default function Index({ users = [], filters = {} }) {
                         >
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Email Baru
+                                    {t(
+                                        "admin.accounts.email.new_email",
+                                        "New Email",
+                                    )}
                                 </label>
                                 <input
                                     type="email"
@@ -750,8 +841,10 @@ export default function Index({ users = [], filters = {} }) {
                             </div>
 
                             <div className="rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
-                                Setelah email diubah, sistem akan mengirim link
-                                untuk set password awal kembali.
+                                {t(
+                                    "admin.accounts.email.help",
+                                    "After the email is changed, the system will send an activation link to set the initial password again.",
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -760,7 +853,7 @@ export default function Index({ users = [], filters = {} }) {
                                     onClick={closeEmailForm}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Cancel")}
                                 </button>
                                 <button
                                     type="submit"
@@ -768,8 +861,11 @@ export default function Index({ users = [], filters = {} }) {
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     {processingEmail
-                                        ? "Menyimpan..."
-                                        : "Simpan Email"}
+                                        ? t("states.saving", "Saving...")
+                                        : t(
+                                              "admin.accounts.email.btn_save",
+                                              "Save Email",
+                                          )}
                                 </button>
                             </div>
                         </form>
@@ -783,7 +879,10 @@ export default function Index({ users = [], filters = {} }) {
                     <div className="w-full max-w-lg bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                                Create Account
+                                {t(
+                                    "admin.accounts.create_modal.title",
+                                    "Create Account",
+                                )}
                             </h2>
                             <button
                                 onClick={closeCreateModal}
@@ -799,7 +898,7 @@ export default function Index({ users = [], filters = {} }) {
                         >
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Name
+                                    {t("fields.name", "Name")}
                                 </label>
                                 <input
                                     type="text"
@@ -807,7 +906,10 @@ export default function Index({ users = [], filters = {} }) {
                                     onChange={(e) =>
                                         setCreateForm("name", e.target.value)
                                     }
-                                    placeholder="Nama lengkap"
+                                    placeholder={t(
+                                        "admin.accounts.create_modal.name_placeholder",
+                                        "Full name",
+                                    )}
                                     className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
                                         createErrors.name
                                             ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
@@ -823,7 +925,7 @@ export default function Index({ users = [], filters = {} }) {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Email
+                                    {t("fields.email", "Email")}
                                 </label>
                                 <input
                                     type="email"
@@ -847,7 +949,7 @@ export default function Index({ users = [], filters = {} }) {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Role
+                                    {t("fields.role", "Role")}
                                 </label>
                                 <select
                                     value={createForm.role}
@@ -856,16 +958,27 @@ export default function Index({ users = [], filters = {} }) {
                                     }
                                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                                 >
-                                    <option value="officer">Officer</option>
-                                    <option value="owner">Owner</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="user">User</option>
+                                    <option value="officer">
+                                        {t("roles.officer", "Officer")}
+                                    </option>
+                                    <option value="owner">
+                                        {t("roles.owner", "Owner")}
+                                    </option>
+                                    <option value="admin">
+                                        {t("roles.admin", "Admin")}
+                                    </option>
+                                    <option value="user">
+                                        {t("roles.user", "User")}
+                                    </option>
                                 </select>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    RFID UID (Opsional)
+                                    {t(
+                                        "admin.accounts.create_modal.rfid_optional",
+                                        "RFID UID (Optional)",
+                                    )}
                                 </label>
                                 <input
                                     type="text"
@@ -876,7 +989,10 @@ export default function Index({ users = [], filters = {} }) {
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Scan / input RFID UID"
+                                    placeholder={t(
+                                        "admin.accounts.rfid.placeholder",
+                                        "Scan / input RFID UID",
+                                    )}
                                     className={`w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none ${
                                         createErrors.rfid_uid
                                             ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
@@ -891,8 +1007,10 @@ export default function Index({ users = [], filters = {} }) {
                             </div>
 
                             <div className="rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
-                                Setelah akun dibuat, sistem akan mengirim link
-                                aktivasi ke email user untuk set password awal.
+                                {t(
+                                    "admin.accounts.create_modal.help",
+                                    "After the account is created, the system will send an activation link to the user's email to set the initial password.",
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -901,7 +1019,7 @@ export default function Index({ users = [], filters = {} }) {
                                     onClick={closeCreateModal}
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Cancel")}
                                 </button>
                                 <button
                                     type="submit"
@@ -909,8 +1027,11 @@ export default function Index({ users = [], filters = {} }) {
                                     className="px-4 py-2 text-sm rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     {processingCreate
-                                        ? "Menyimpan..."
-                                        : "Buat Akun"}
+                                        ? t("states.saving", "Saving...")
+                                        : t(
+                                              "admin.accounts.create_modal.btn_create",
+                                              "Create Account",
+                                          )}
                                 </button>
                             </div>
                         </form>

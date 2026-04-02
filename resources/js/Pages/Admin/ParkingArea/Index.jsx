@@ -2,6 +2,7 @@ import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
 import { useState } from "react";
+import useI18n from "../../../hooks/useI18n";
 
 const formatCurrency = (amount) =>
     new Intl.NumberFormat("id-ID", {
@@ -22,6 +23,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+    const { t } = useI18n();
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,7 +113,14 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus area parkir ini?")) {
+        if (
+            confirm(
+                t(
+                    "admin.parking_areas.confirm_delete",
+                    "Yakin ingin menghapus area parkir ini?",
+                ),
+            )
+        ) {
             router.delete(route("admin.parking-areas.destroy", id));
         }
     };
@@ -138,14 +147,17 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                             >
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            Back to Overview
+                            {t("actions.back_to_overview", "Back to Overview")}
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Parking Areas
+                        {t("admin.parking_areas.title", "Parking Areas")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola area parkir untuk sistem parkir Anda.
+                        {t(
+                            "admin.parking_areas.description",
+                            "Kelola area parkir untuk sistem parkir Anda.",
+                        )}
                     </p>
                 </div>
 
@@ -156,7 +168,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
-                    Tambah Area
+                    {t("admin.parking_areas.add", "Tambah Area")}
                 </button>
             </div>
 
@@ -173,22 +185,22 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Name
+                                    {t("fields.name", "Name")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Location
+                                    {t("fields.location", "Location")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Capacity
+                                    {t("fields.capacity", "Capacity")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Occupied
+                                    {t("fields.occupied", "Occupied")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Denda Tiket
+                                    {t("admin.parking_areas.ticket_penalty", "Denda Tiket")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -199,7 +211,10 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                         colSpan="6"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Belum ada data area parkir...
+                                        {t(
+                                            "admin.parking_areas.empty",
+                                            "Belum ada data area parkir...",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -234,7 +249,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                                         openEditModal(item)
                                                     }
                                                     className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
-                                                    title="Edit"
+                                                    title={t("actions.edit", "Edit")}
                                                 >
                                                     <Edit3 size={18} />
                                                 </button>
@@ -243,7 +258,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                                         handleDelete(item.id)
                                                     }
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                    title="Hapus"
+                                                    title={t("actions.delete", "Hapus")}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -272,8 +287,14 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
                                 {editingItem
-                                    ? "Edit Parking Area"
-                                    : "Create Parking Area"}
+                                    ? t(
+                                          "admin.parking_areas.edit_title",
+                                          "Edit Parking Area",
+                                      )
+                                    : t(
+                                          "admin.parking_areas.create_title",
+                                          "Create Parking Area",
+                                      )}
                             </h2>
                             <button
                                 onClick={closeModal}
@@ -287,11 +308,17 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                    Area Name
+                                    {t(
+                                        "admin.parking_areas.fields.name",
+                                        "Area Name",
+                                    )}
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Contoh: Basement A, Lantai 3 Zona B"
+                                    placeholder={t(
+                                        "admin.parking_areas.fields.name_placeholder",
+                                        "Contoh: Basement A, Lantai 3 Zona B",
+                                    )}
                                     value={formData.name}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -318,7 +345,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Parking Location
+                                        {t("fields.location", "Parking Location")}
                                     </label>
                                     <select
                                         value={formData.parking_location_id}
@@ -339,7 +366,10 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                             }`}
                                     >
                                         <option value="">
-                                            Pilih lokasi parkir
+                                            {t(
+                                                "admin.parking_areas.fields.location_placeholder",
+                                                "Pilih lokasi parkir",
+                                            )}
                                         </option>
                                         {parkingLocations.map((location) => (
                                             <option
@@ -359,12 +389,15 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Capacity
+                                        {t("fields.capacity", "Capacity")}
                                     </label>
                                     <input
                                         type="number"
                                         min="1"
-                                        placeholder="Contoh: 120"
+                                        placeholder={t(
+                                            "admin.parking_areas.fields.capacity_placeholder",
+                                            "Contoh: 120",
+                                        )}
                                         value={formData.capacity}
                                         onChange={(e) =>
                                             setFormData((prev) => ({
@@ -390,12 +423,18 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Denda Tiket (Rp)
+                                        {t(
+                                            "admin.parking_areas.fields.ticket_penalty",
+                                            "Denda Tiket (Rp)",
+                                        )}
                                     </label>
                                     <input
                                         type="text"
                                         inputMode="numeric"
-                                        placeholder="Contoh: Rp 10.000"
+                                        placeholder={t(
+                                            "admin.parking_areas.fields.ticket_penalty_placeholder",
+                                            "Contoh: Rp 10.000",
+                                        )}
                                         value={formatRupiahInput(
                                             formData.ticket_penalty,
                                         )}
@@ -428,7 +467,7 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                     onClick={closeModal}
                                     className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Batal")}
                                 </button>
                                 <button
                                     type="submit"
@@ -457,10 +496,13 @@ export default function Index({ parkingAreas = [], parkingLocations = [] }) {
                                         </svg>
                                     )}
                                     {processing
-                                        ? "Menyimpan..."
+                                        ? t("states.saving", "Menyimpan...")
                                         : editingItem
-                                          ? "Update Data"
-                                          : "Simpan Data"}
+                                          ? t(
+                                                "admin.parking_areas.update",
+                                                "Update Data",
+                                            )
+                                          : t("actions.save", "Simpan Data")}
                                 </button>
                             </div>
                         </form>

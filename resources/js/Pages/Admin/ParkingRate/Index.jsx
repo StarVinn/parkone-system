@@ -2,6 +2,7 @@ import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
 import { useState } from "react";
+import useI18n from "../../../hooks/useI18n";
 
 const formatCurrency = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -21,6 +22,7 @@ const formatRupiahInput = (value) => {
 export default function Index({ parkingRates = [], parkingLocations = [], vehicleTypes = [] }) {
     const page = usePage();
     const { flash } = page.props;
+    const { t } = useI18n();
     const showBackToOverview = (page.url || "").includes("from=overview");
 
     // Modal states
@@ -133,7 +135,14 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
     };
 
     const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus tarif parkir ini?")) {
+        if (
+            confirm(
+                t(
+                    "admin.parking_rates.confirm_delete",
+                    "Yakin ingin menghapus tarif parkir ini?",
+                ),
+            )
+        ) {
             router.delete(route("admin.parking-rates.destroy", id));
         }
     };
@@ -160,15 +169,20 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                             >
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            Back to Overview
+                            {t(
+                                "actions.back_to_overview",
+                                "Back to Overview",
+                            )}
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Parking Rates
+                        {t("admin.parking_rates.title", "Parking Rates")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola tarif parkir berdasarkan tipe kendaraan dan area
-                        parkir.
+                        {t(
+                            "admin.parking_rates.description",
+                            "Kelola tarif parkir berdasarkan tipe kendaraan dan area parkir.",
+                        )}
                     </p>
                 </div>
 
@@ -179,7 +193,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
-                    Tambah Tarif
+                    {t("admin.parking_rates.add", "Tambah Tarif")}
                 </button>
             </div>
 
@@ -196,19 +210,22 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Vehicle Type
+                                    {t("fields.vehicle_type", "Vehicle Type")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Parking Location
+                                    {t(
+                                        "fields.parking_location",
+                                        "Parking Location",
+                                    )}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Rate Type
+                                    {t("fields.rate_type", "Rate Type")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Amount
+                                    {t("fields.amount", "Amount")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -219,7 +236,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                         colSpan="5"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Belum ada data tarif kendaraan...
+                                        {t(
+                                            "admin.parking_rates.empty",
+                                            "Belum ada data tarif kendaraan...",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -227,8 +247,23 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                     const isRateHourly =
                                         item.rate_type === "hourly";
                                     const amount = isRateHourly
-                                        ? `${formatCurrency(item.rate_per_hour)} / jam`
+                                        ? `${formatCurrency(item.rate_per_hour)} ${t(
+                                              "admin.parking_rates.per_hour_suffix",
+                                              "/ jam",
+                                          )}`
                                         : formatCurrency(item.flat_rate);
+                                    const rateTypeLabel =
+                                        item.rate_type === "hourly"
+                                            ? t(
+                                                  "rate_types.hourly",
+                                                  "Hourly",
+                                              )
+                                            : item.rate_type === "flat"
+                                              ? t(
+                                                    "rate_types.flat",
+                                                    "Flat",
+                                                )
+                                              : item.rate_type;
 
                                     return (
                                         <tr
@@ -247,7 +282,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                                     "-"}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 capitalize">
-                                                {item.rate_type}
+                                                {rateTypeLabel}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                                 {amount}
@@ -259,7 +294,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                                             openEditModal(item)
                                                         }
                                                         className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
-                                                        title="Edit"
+                                                        title={t(
+                                                            "actions.edit",
+                                                            "Edit",
+                                                        )}
                                                     >
                                                         <Edit3 size={18} />
                                                     </button>
@@ -270,7 +308,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                                             )
                                                         }
                                                         className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                        title="Hapus"
+                                                        title={t(
+                                                            "actions.delete",
+                                                            "Delete",
+                                                        )}
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>
@@ -300,8 +341,14 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
                                 {editingItem
-                                    ? "Edit Parking Rate"
-                                    : "Create Parking Rate"}
+                                    ? t(
+                                          "admin.parking_rates.modal.edit_title",
+                                          "Edit Parking Rate",
+                                      )
+                                    : t(
+                                          "admin.parking_rates.modal.create_title",
+                                          "Create Parking Rate",
+                                      )}
                             </h2>
                             <button
                                 onClick={closeModal}
@@ -316,7 +363,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Vehicle Type
+                                        {t("fields.vehicle_type", "Vehicle Type")}
                                     </label>
                                     <select
                                         value={formData.vehicle_type_id}
@@ -336,7 +383,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                             }`}
                                     >
                                         <option value="">
-                                            Pilih tipe kendaraan
+                                            {t(
+                                                "admin.parking_rates.fields.vehicle_type_placeholder",
+                                                "Pilih tipe kendaraan",
+                                            )}
                                         </option>
                                         {vehicleTypes.map((item) => (
                                             <option
@@ -356,7 +406,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Parking Location
+                                        {t(
+                                            "fields.parking_location",
+                                            "Parking Location",
+                                        )}
                                     </label>
                                     <select
                                         value={formData.location_id}
@@ -376,7 +429,10 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                             }`}
                                     >
                                         <option value="">
-                                            Pilih lokasi parkir
+                                            {t(
+                                                "admin.parking_rates.fields.location_placeholder",
+                                                "Pilih lokasi parkir",
+                                            )}
                                         </option>
                                         {parkingLocations.map((item) => (
                                             <option
@@ -398,7 +454,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        Rate Type
+                                        {t("fields.rate_type", "Rate Type")}
                                     </label>
                                     <select
                                         value={formData.rate_type}
@@ -417,8 +473,12 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                                     : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                                             }`}
                                     >
-                                        <option value="hourly">Hourly</option>
-                                        <option value="flat">Flat</option>
+                                        <option value="hourly">
+                                            {t("rate_types.hourly", "Hourly")}
+                                        </option>
+                                        <option value="flat">
+                                            {t("rate_types.flat", "Flat")}
+                                        </option>
                                     </select>
                                     {errors.rate_type && (
                                         <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
@@ -430,16 +490,28 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                         {isHourly
-                                            ? "Rate Per Hour"
-                                            : "Flat Rate"}
+                                            ? t(
+                                                  "admin.parking_rates.fields.rate_per_hour",
+                                                  "Rate Per Hour",
+                                              )
+                                            : t(
+                                                  "admin.parking_rates.fields.flat_rate",
+                                                  "Flat Rate",
+                                              )}
                                     </label>
                                     <input
                                         type="text"
                                         inputMode="numeric"
                                         placeholder={
                                             isHourly
-                                                ? "Contoh: Rp 5.000"
-                                                : "Contoh: Rp 20.000"
+                                                ? t(
+                                                      "admin.parking_rates.fields.rate_per_hour_placeholder",
+                                                      "Contoh: Rp 5.000",
+                                                  )
+                                                : t(
+                                                      "admin.parking_rates.fields.flat_rate_placeholder",
+                                                      "Contoh: Rp 20.000",
+                                                  )
                                         }
                                         value={formatRupiahInput(
                                             currentRateValue,
@@ -471,7 +543,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                     onClick={closeModal}
                                     className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Batal")}
                                 </button>
                                 <button
                                     type="submit"
@@ -500,10 +572,13 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                         </svg>
                                     )}
                                     {processing
-                                        ? "Menyimpan..."
+                                        ? t("states.saving", "Menyimpan...")
                                         : editingItem
-                                          ? "Update Data"
-                                          : "Simpan Data"}
+                                          ? t(
+                                                "admin.parking_rates.update",
+                                                "Update Data",
+                                            )
+                                          : t("actions.save", "Simpan Data")}
                                 </button>
                             </div>
                         </form>
@@ -515,4 +590,3 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
 }
 
 Index.layout = (page) => <AdminLayout children={page} />;
-

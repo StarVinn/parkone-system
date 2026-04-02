@@ -2,6 +2,7 @@ import { Link, usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import useI18n from "../../../hooks/useI18n";
 
 function formatLicensePlate(value) {
     const cleaned = String(value || "")
@@ -32,6 +33,7 @@ export default function Index({
 }) {
     const page = usePage();
     const { flash } = page.props;
+    const { t } = useI18n();
     const showBackToOverview = (page.url || "").includes("from=overview");
 
     // Pagination helpers
@@ -204,7 +206,7 @@ export default function Index({
     };
 
     const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus kendaraan ini?")) {
+        if (confirm(t("admin.vehicles.confirm_delete", "Yakin ingin menghapus kendaraan ini?"))) {
             router.delete(route("admin.vehicles.destroy", id));
         }
     };
@@ -231,14 +233,17 @@ export default function Index({
                             >
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            Back to Overview
+                            {t("actions.back_to_overview", "Back to Overview")}
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Vehicles
+                        {t("admin.vehicles.title", "Vehicles")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola data kendaraan dan tipe kendaraan.
+                        {t(
+                            "admin.vehicles.description",
+                            "Kelola data kendaraan dan tipe kendaraan.",
+                        )}
                     </p>
                 </div>
 
@@ -249,7 +254,7 @@ export default function Index({
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
-                    Tambah Kendaraan
+                    {t("admin.vehicles.add", "Tambah Kendaraan")}
                 </button>
             </div>
 
@@ -272,7 +277,10 @@ export default function Index({
                             onChange={(e) =>
                                 setFilterData("search", e.target.value)
                             }
-                            placeholder="Cari plat atau tipe kendaraan..."
+                            placeholder={t(
+                                "admin.vehicles.search_placeholder",
+                                "Cari plat atau tipe kendaraan...",
+                            )}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         />
                     </div>
@@ -285,7 +293,12 @@ export default function Index({
                             }
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
                         >
-                            <option value="">Semua tipe</option>
+                            <option value="">
+                                {t(
+                                    "admin.vehicles.filters.all_types",
+                                    "All Types",
+                                )}
+                            </option>
                             {vehicleTypes.map((item) => (
                                 <option key={item.id} value={item.id}>
                                     {item.name}
@@ -296,7 +309,10 @@ export default function Index({
 
                     <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between gap-2 pt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Filter dijalankan otomatis setelah selesai mengetik.
+                            {t(
+                                "filters.auto_apply",
+                                "Filters apply automatically after you stop typing.",
+                            )}
                         </p>
                     </div>
                 </div>
@@ -308,13 +324,19 @@ export default function Index({
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    License Plate
+                                    {t(
+                                        "fields.license_plate",
+                                        "License Plate",
+                                    )}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Vehicle Type
+                                    {t(
+                                        "fields.vehicle_type",
+                                        "Vehicle Type",
+                                    )}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -325,8 +347,10 @@ export default function Index({
                                         colSpan="3"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Tidak ada data kendaraan yang cocok
-                                        dengan filter.
+                                        {t(
+                                            "admin.vehicles.empty",
+                                            "No matching vehicles found.",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -352,7 +376,10 @@ export default function Index({
                                                         openEditModal(item)
                                                     }
                                                     className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
-                                                    title="Edit"
+                                                    title={t(
+                                                        "actions.edit",
+                                                        "Edit",
+                                                    )}
                                                 >
                                                     <Edit3 size={18} />
                                                 </button>
@@ -361,7 +388,10 @@ export default function Index({
                                                         handleDelete(item.id)
                                                     }
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                    title="Hapus"
+                                                    title={t(
+                                                        "actions.delete",
+                                                        "Delete",
+                                                    )}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -377,7 +407,11 @@ export default function Index({
                 {paginationLinks.length > 3 && (
                     <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Menampilkan {from} - {to} dari {total} data
+                            {t(
+                                "pagination.showing",
+                                "Menampilkan {from} - {to} dari {total} data",
+                                { from, to, total },
+                            )}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                             {paginationLinks.map((link, index) => (
@@ -415,8 +449,14 @@ export default function Index({
                         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
                                 {editingItem
-                                    ? "Edit Vehicle"
-                                    : "Create Vehicles"}
+                                    ? t(
+                                          "admin.vehicles.modal.edit_title",
+                                          "Edit Vehicle",
+                                      )
+                                    : t(
+                                          "admin.vehicles.modal.create_title",
+                                          "Create Vehicles",
+                                      )}
                             </h2>
                             <button
                                 onClick={closeModal}
@@ -440,11 +480,17 @@ export default function Index({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                                License Plate
+                                                {t(
+                                                    "fields.license_plate",
+                                                    "License Plate",
+                                                )}
                                             </label>
                                             <input
                                                 type="text"
-                                                placeholder="Contoh: B 1234 CD"
+                                                placeholder={t(
+                                                    "admin.vehicles.fields.license_plate_placeholder",
+                                                    "Example: B 1234 CD",
+                                                )}
                                                 maxLength={20}
                                                 value={
                                                     formData.vehicles[0]
@@ -475,7 +521,10 @@ export default function Index({
 
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                                Vehicle Type
+                                                {t(
+                                                    "fields.vehicle_type",
+                                                    "Vehicle Type",
+                                                )}
                                             </label>
                                             <select
                                                 value={
@@ -499,7 +548,10 @@ export default function Index({
                                                     }`}
                                             >
                                                 <option value="">
-                                                    Pilih tipe kendaraan
+                                                    {t(
+                                                        "admin.vehicles.fields.vehicle_type_placeholder",
+                                                        "Select vehicle type",
+                                                    )}
                                                 </option>
                                                 {vehicleTypes.map((item) => (
                                                     <option
@@ -527,7 +579,11 @@ export default function Index({
                                     >
                                         <div className="flex items-center justify-between">
                                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                                Vehicle #{index + 1}
+                                                {t(
+                                                    "admin.vehicles.batch.row_title",
+                                                    "Vehicle #{n}",
+                                                    { n: index + 1 },
+                                                )}
                                             </p>
                                             {formData.vehicles.length > 1 && (
                                                 <button
@@ -538,7 +594,10 @@ export default function Index({
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
                                                 >
                                                     <Trash2 size={14} />
-                                                    Hapus
+                                                    {t(
+                                                        "actions.delete",
+                                                        "Delete",
+                                                    )}
                                                 </button>
                                             )}
                                         </div>
@@ -546,11 +605,17 @@ export default function Index({
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                                    License Plate
+                                                    {t(
+                                                        "fields.license_plate",
+                                                        "License Plate",
+                                                    )}
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Contoh: B 1234 CD"
+                                                    placeholder={t(
+                                                        "admin.vehicles.fields.license_plate_placeholder",
+                                                        "Example: B 1234 CD",
+                                                    )}
                                                     maxLength={20}
                                                     value={
                                                         vehicle.license_plate
@@ -589,7 +654,10 @@ export default function Index({
 
                                             <div className="space-y-2">
                                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                                    Vehicle Type
+                                                    {t(
+                                                        "fields.vehicle_type",
+                                                        "Vehicle Type",
+                                                    )}
                                                 </label>
                                                 <select
                                                     value={
@@ -615,7 +683,10 @@ export default function Index({
                                                         }`}
                                                 >
                                                     <option value="">
-                                                        Pilih tipe kendaraan
+                                                        {t(
+                                                            "admin.vehicles.fields.vehicle_type_placeholder",
+                                                            "Select vehicle type",
+                                                        )}
                                                     </option>
                                                     {vehicleTypes.map(
                                                         (item) => (
@@ -652,7 +723,10 @@ export default function Index({
                                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#1E5EFF] bg-blue-50 dark:bg-blue-500/10 hover:opacity-90 transition-opacity cursor-pointer"
                                 >
                                     <Plus size={16} />
-                                    Tambah Baris Vehicle
+                                    {t(
+                                        "admin.vehicles.batch.add_row",
+                                        "Add Row",
+                                    )}
                                 </button>
                             )}
 
@@ -662,7 +736,7 @@ export default function Index({
                                     onClick={closeModal}
                                     className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Cancel")}
                                 </button>
                                 <button
                                     type="submit"
@@ -691,10 +765,16 @@ export default function Index({
                                         </svg>
                                     )}
                                     {processing
-                                        ? "Menyimpan..."
+                                        ? t("states.saving", "Saving...")
                                         : editingItem
-                                          ? "Update Data"
-                                          : "Simpan Semua"}
+                                          ? t(
+                                                "admin.vehicles.update",
+                                                "Update Data",
+                                            )
+                                          : t(
+                                                "admin.vehicles.batch.save_all",
+                                                "Save All",
+                                            )}
                                 </button>
                             </div>
                         </form>
