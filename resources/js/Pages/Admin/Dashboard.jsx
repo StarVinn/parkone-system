@@ -371,7 +371,7 @@ export default function Dashboard({
                 <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                            User Activity
+                            Aktivitas Login Pengguna
                         </h2>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                             Total login: {totalCount}
