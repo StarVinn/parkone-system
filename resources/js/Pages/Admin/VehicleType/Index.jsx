@@ -2,11 +2,13 @@ import { Link, usePage, router } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
 import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
 import { useState } from "react";
+import useI18n from "../../../hooks/useI18n";
 
 export default function Index({ vehicleTypes = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
+    const { t } = useI18n();
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,7 +86,14 @@ export default function Index({ vehicleTypes = [] }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm("Yakin ingin menghapus jenis kendaraan ini?")) {
+        if (
+            confirm(
+                t(
+                    "admin.vehicle_types.confirm_delete",
+                    "Yakin ingin menghapus jenis kendaraan ini?",
+                ),
+            )
+        ) {
             router.delete(route("admin.vehicle-types.destroy", id));
         }
     };
@@ -111,14 +120,17 @@ export default function Index({ vehicleTypes = [] }) {
                             >
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            Back to Overview
+                            {t("actions.back_to_overview", "Back to Overview")}
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        Vehicle Types
+                        {t("admin.vehicle_types.title", "Vehicle Types")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola kategori kendaraan untuk sistem parkir Anda.
+                        {t(
+                            "admin.vehicle_types.description",
+                            "Kelola kategori kendaraan untuk sistem parkir Anda.",
+                        )}
                     </p>
                 </div>
 
@@ -129,7 +141,7 @@ export default function Index({ vehicleTypes = [] }) {
                         hover:opacity-90 active:scale-95 shadow-lg shadow-blue-500/20 text-sm cursor-pointer"
                 >
                     <Plus size={18} />
-                    Tambah Tipe
+                    {t("admin.vehicle_types.add", "Tambah Tipe")}
                 </button>
             </div>
 
@@ -146,13 +158,13 @@ export default function Index({ vehicleTypes = [] }) {
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Name
+                                    {t("fields.name", "Name")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    Description
+                                    {t("fields.description", "Description")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
-                                    Action
+                                    {t("fields.action", "Action")}
                                 </th>
                             </tr>
                         </thead>
@@ -163,7 +175,10 @@ export default function Index({ vehicleTypes = [] }) {
                                         colSpan="3"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
-                                        Belum ada data kendaraan...
+                                        {t(
+                                            "admin.vehicle_types.empty",
+                                            "Belum ada data kendaraan...",
+                                        )}
                                     </td>
                                 </tr>
                             ) : (
@@ -189,7 +204,7 @@ export default function Index({ vehicleTypes = [] }) {
                                                         openEditModal(item)
                                                     }
                                                     className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
-                                                    title="Edit"
+                                                    title={t("actions.edit", "Edit")}
                                                 >
                                                     <Edit3 size={18} />
                                                 </button>
@@ -198,7 +213,7 @@ export default function Index({ vehicleTypes = [] }) {
                                                         handleDelete(item.id)
                                                     }
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                    title="Hapus"
+                                                    title={t("actions.delete", "Hapus")}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -227,8 +242,14 @@ export default function Index({ vehicleTypes = [] }) {
                         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
                                 {editingItem
-                                    ? "Edit Vehicle Type"
-                                    : "Create Vehicle Type"}
+                                    ? t(
+                                          "admin.vehicle_types.edit_title",
+                                          "Edit Vehicle Type",
+                                      )
+                                    : t(
+                                          "admin.vehicle_types.create_title",
+                                          "Create Vehicle Type",
+                                      )}
                             </h2>
                             <button
                                 onClick={closeModal}
@@ -242,11 +263,17 @@ export default function Index({ vehicleTypes = [] }) {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                    Vehicle Type Name
+                                    {t(
+                                        "admin.vehicle_types.fields.name",
+                                        "Vehicle Type Name",
+                                    )}
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Contoh: Mobil Sedan, Motor Sport..."
+                                    placeholder={t(
+                                        "admin.vehicle_types.fields.name_placeholder",
+                                        "Contoh: Mobil Sedan, Motor Sport...",
+                                    )}
                                     value={formData.name}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -272,10 +299,16 @@ export default function Index({ vehicleTypes = [] }) {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                    Description
+                                    {t(
+                                        "admin.vehicle_types.fields.description",
+                                        "Description",
+                                    )}
                                 </label>
                                 <textarea
-                                    placeholder="Berikan keterangan singkat mengenai tipe ini..."
+                                    placeholder={t(
+                                        "admin.vehicle_types.fields.description_placeholder",
+                                        "Berikan keterangan singkat mengenai tipe ini...",
+                                    )}
                                     value={formData.description}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -297,7 +330,7 @@ export default function Index({ vehicleTypes = [] }) {
                                     onClick={closeModal}
                                     className="px-6 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                    Batal
+                                    {t("actions.cancel", "Batal")}
                                 </button>
                                 <button
                                     type="submit"
@@ -326,10 +359,13 @@ export default function Index({ vehicleTypes = [] }) {
                                         </svg>
                                     )}
                                     {processing
-                                        ? "Menyimpan..."
+                                        ? t("states.saving", "Menyimpan...")
                                         : editingItem
-                                          ? "Update Data"
-                                          : "Simpan Data"}
+                                          ? t(
+                                                "admin.vehicle_types.update",
+                                                "Update Data",
+                                            )
+                                          : t("actions.save", "Simpan Data")}
                                 </button>
                             </div>
                         </form>
