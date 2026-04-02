@@ -35,9 +35,17 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 php artisan storage:link
-php artisan serve
 npm run build
+```
+
+## ⚙️ Step Activate Server
+> Pastikan running di 3 terminal berbeda
+
+``` bash
+
+php artisan ser
 npm run dev
+php artisan queue:work 
 ```
 
 Aplikasi dapat diakses di:
