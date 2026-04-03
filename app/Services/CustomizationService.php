@@ -316,6 +316,10 @@ class CustomizationService
                 'admin.dashboard.chart.vehicle' => 'Vehicle',
                 'admin.dashboard.chart.parking' => 'Parking',
                 'admin.dashboard.chart.total_data' => 'Total Data',
+                'admin.dashboard.chart.activity.login' => 'Login Activity',
+                'admin.dashboard.chart.statistic.title' => 'Creation Statistics',
+                'admin.dashboard.chart.statistic.span' => 'This Month',
+
                 'admin.activity_logs.title' => 'Activity Logs',
                 'admin.activity_logs.description' => 'User activity history in the system.',
                 'admin.activity_logs.search_placeholder' => 'Search activity, user name, or email...',
@@ -566,6 +570,10 @@ class CustomizationService
             'admin.dashboard.chart.vehicle' => 'Kendaraan',
             'admin.dashboard.chart.parking' => 'Parkir',
             'admin.dashboard.chart.total_data' => 'Jumlah Data',
+            'admin.dashboard.chart.activity.login' => 'Aktivitas Login',
+            'admin.dashboard.chart.statistic.title' => 'Statistik Pembuatan',
+            'admin.dashboard.chart.statistic.span' => 'Bulan Ini',
+
             'admin.activity_logs.title' => 'Log Aktivitas',
             'admin.activity_logs.description' => 'Riwayat aktivitas user pada sistem.',
             'admin.activity_logs.search_placeholder' => 'Cari aktivitas, nama user, atau email...',
