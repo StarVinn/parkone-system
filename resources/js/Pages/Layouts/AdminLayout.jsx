@@ -186,7 +186,7 @@ export default function AdminLayout({ children }) {
                                 className="w-full text-left px-4 py-2 text-red-500 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
                             >
                                 {processing
-                                    ? "..."
+                                    ? t("states.processing", "Processing...")
                                     : t("actions.logout", "Logout")}
                             </button>
                         </div>
