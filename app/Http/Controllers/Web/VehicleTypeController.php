@@ -16,7 +16,7 @@ class VehicleTypeController extends Controller
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         
         return inertia('Admin/VehicleType/Index', [
-            'vehicleTypes' => VehicleType::latest()->get(),
+            'vehicleTypes' => VehicleType::latest()->paginate(15)->withQueryString(),
         ]);
     }
 
