@@ -371,7 +371,10 @@ export default function Dashboard({
                 <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                            Aktivitas Login Pengguna
+                            {t(
+                                "admin.dashboard.chart.activity.login",
+                                "Aktivitas Login",
+                            )}
                         </h2>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                             Total login: {totalCount}
@@ -410,10 +413,16 @@ export default function Dashboard({
                 <div className="bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-['Poppins']">
-                            Statistik Pembuatan
+                            {t(
+                                "admin.dashboard.chart.statistic.title",
+                                "Statistik Pembuatan",
+                            )}
                         </h2>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                            Bulan ini
+                            {t(
+                                "admin.dashboard.chart.statistic.span",
+                                "Bulan Ini"
+                            )}
                         </span>
                     </div>
 
