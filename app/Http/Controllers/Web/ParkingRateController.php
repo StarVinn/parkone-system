@@ -15,7 +15,7 @@ class ParkingRateController extends Controller
     public function index(): Response
     {
         return inertia('Admin/ParkingRate/Index', [
-            'parkingRates' => ParkingRate::with(['location', 'vehicleType'])->latest()->get(),
+            'parkingRates' => ParkingRate::with(['location', 'vehicleType'])->latest()->paginate(15)->withQueryString(),
             'parkingLocations' => ParkingLocation::latest()->get(),
             'vehicleTypes' => VehicleType::latest()->get(),
         ]);

@@ -19,11 +19,27 @@ const formatRupiahInput = (value) => {
     return `Rp ${Number(numeric).toLocaleString("id-ID")}`;
 };
 
-export default function Index({ parkingRates = [], parkingLocations = [], vehicleTypes = [] }) {
+export default function Index({
+    parkingRates = [],
+    parkingLocations = [],
+    vehicleTypes = [],
+}) {
     const page = usePage();
     const { flash } = page.props;
     const { t } = useI18n();
     const showBackToOverview = (page.url || "").includes("from=overview");
+
+    const rows = Array.isArray(parkingRates?.data)
+        ? parkingRates.data
+        : Array.isArray(parkingRates)
+          ? parkingRates
+          : [];
+    const paginationLinks = Array.isArray(parkingRates?.links)
+        ? parkingRates.links
+        : [];
+    const from = parkingRates?.from ?? 0;
+    const to = parkingRates?.to ?? rows.length;
+    const total = parkingRates?.total ?? rows.length;
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,7 +57,9 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
     const [processing, setProcessing] = useState(false);
 
     const isHourly = formData.rate_type === "hourly";
-    const currentRateValue = isHourly ? formData.rate_per_hour : formData.flat_rate;
+    const currentRateValue = isHourly
+        ? formData.rate_per_hour
+        : formData.flat_rate;
 
     const resetForm = () => {
         setFormData({
@@ -114,23 +132,19 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                         setProcessing(false);
                         setErrors(err);
                     },
-                }
+                },
             );
         } else {
-            router.post(
-                route("admin.parking-rates.store"),
-                submitData,
-                {
-                    onSuccess: () => {
-                        setProcessing(false);
-                        closeModal();
-                    },
-                    onError: (err) => {
-                        setProcessing(false);
-                        setErrors(err);
-                    },
-                }
-            );
+            router.post(route("admin.parking-rates.store"), submitData, {
+                onSuccess: () => {
+                    setProcessing(false);
+                    closeModal();
+                },
+                onError: (err) => {
+                    setProcessing(false);
+                    setErrors(err);
+                },
+            });
         }
     };
 
@@ -146,6 +160,33 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
             router.delete(route("admin.parking-rates.destroy", id));
         }
     };
+
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: [
+                    "parkingRates",
+                    "parkingLocations",
+                    "vehicleTypes",
+                    "flash",
+                    "errors",
+                ],
+            },
+        );
+    };
+
+    const paginationLabel = (label) =>
+        String(label || "")
+            .replace(/&laquo;/g, "«")
+            .replace(/&raquo;/g, "»")
+            .replace(/<[^>]*>/g, "");
 
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
@@ -230,7 +271,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {parkingRates.length === 0 ? (
+                            {rows.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan="5"
@@ -243,7 +284,7 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                     </td>
                                 </tr>
                             ) : (
-                                parkingRates.map((item) => {
+                                rows.map((item) => {
                                     const isRateHourly =
                                         item.rate_type === "hourly";
                                     const amount = isRateHourly
@@ -254,15 +295,9 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                                         : formatCurrency(item.flat_rate);
                                     const rateTypeLabel =
                                         item.rate_type === "hourly"
-                                            ? t(
-                                                  "rate_types.hourly",
-                                                  "Hourly",
-                                              )
+                                            ? t("rate_types.hourly", "Hourly")
                                             : item.rate_type === "flat"
-                                              ? t(
-                                                    "rate_types.flat",
-                                                    "Flat",
-                                                )
+                                              ? t("rate_types.flat", "Flat")
                                               : item.rate_type;
 
                                     return (
@@ -324,6 +359,35 @@ export default function Index({ parkingRates = [], parkingLocations = [], vehicl
                         </tbody>
                     </table>
                 </div>
+
+                {paginationLinks.length > 3 && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {t(
+                                "pagination.showing",
+                                "Menampilkan {from} - {to} dari {total} data",
+                                { from, to, total },
+                            )}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {paginationLinks.map((link, index) => (
+                                <button
+                                    key={`${link.label}-${index}`}
+                                    type="button"
+                                    onClick={() => goToPage(link.url)}
+                                    disabled={!link.url}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                                        link.active
+                                            ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
+                                            : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {paginationLabel(link.label)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modal */}
