@@ -16,7 +16,7 @@ class ParkingLocationController extends Controller
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         
         return inertia('Admin/ParkingLocation/Index', [
-            'parkingLocations' => ParkingLocation::latest()->get(),
+            'parkingLocations' => ParkingLocation::latest()->paginate(15)->withQueryString(),
         ]);
     }
 

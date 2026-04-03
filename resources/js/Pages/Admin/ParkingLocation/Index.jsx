@@ -11,6 +11,18 @@ export default function Index({ parkingLocations = [] }) {
     const showBackToOverview = (page.url || "").includes("from=overview");
     const { t } = useI18n();
 
+    const rows = Array.isArray(parkingLocations?.data)
+        ? parkingLocations.data
+        : Array.isArray(parkingLocations)
+          ? parkingLocations
+          : [];
+    const paginationLinks = Array.isArray(parkingLocations?.links)
+        ? parkingLocations.links
+        : [];
+    const from = parkingLocations?.from ?? 0;
+    const to = parkingLocations?.to ?? rows.length;
+    const total = parkingLocations?.total ?? rows.length;
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -112,6 +124,27 @@ export default function Index({ parkingLocations = [] }) {
         )}`;
     };
 
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["parkingLocations", "flash", "errors"],
+            },
+        );
+    };
+
+    const paginationLabel = (label) =>
+        String(label || "")
+            .replace(/&laquo;/g, "«")
+            .replace(/&raquo;/g, "»")
+            .replace(/<[^>]*>/g, "");
+
     return (
         <div className="p-4 sm:p-6 transition-colors duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -138,7 +171,10 @@ export default function Index({ parkingLocations = [] }) {
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
-                        {t("admin.parking_locations.title", "Parking Locations")}
+                        {t(
+                            "admin.parking_locations.title",
+                            "Parking Locations",
+                        )}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         {t(
@@ -189,7 +225,7 @@ export default function Index({ parkingLocations = [] }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                            {parkingLocations.length === 0 ? (
+                            {rows.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan="5"
@@ -202,7 +238,7 @@ export default function Index({ parkingLocations = [] }) {
                                     </td>
                                 </tr>
                             ) : (
-                                parkingLocations.map((item) => (
+                                rows.map((item) => (
                                     <tr
                                         key={item.id}
                                         className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
@@ -228,7 +264,10 @@ export default function Index({ parkingLocations = [] }) {
                                                         openEditModal(item)
                                                     }
                                                     className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
-                                                    title={t("actions.edit", "Edit")}
+                                                    title={t(
+                                                        "actions.edit",
+                                                        "Edit",
+                                                    )}
                                                 >
                                                     <Edit3 size={18} />
                                                 </button>
@@ -242,7 +281,10 @@ export default function Index({ parkingLocations = [] }) {
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                                                        title={t("actions.open_maps", "Go to GMaps")}
+                                                        title={t(
+                                                            "actions.open_maps",
+                                                            "Go to GMaps",
+                                                        )}
                                                     >
                                                         <MapPinned size={18} />
                                                     </a>
@@ -262,7 +304,10 @@ export default function Index({ parkingLocations = [] }) {
                                                         handleDelete(item.id)
                                                     }
                                                     className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                    title={t("actions.delete", "Hapus")}
+                                                    title={t(
+                                                        "actions.delete",
+                                                        "Hapus",
+                                                    )}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -274,6 +319,35 @@ export default function Index({ parkingLocations = [] }) {
                         </tbody>
                     </table>
                 </div>
+
+                {paginationLinks.length > 3 && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {t(
+                                "pagination.showing",
+                                "Menampilkan {from} - {to} dari {total} data",
+                                { from, to, total },
+                            )}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {paginationLinks.map((link, index) => (
+                                <button
+                                    key={`${link.label}-${index}`}
+                                    type="button"
+                                    onClick={() => goToPage(link.url)}
+                                    disabled={!link.url}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                                        link.active
+                                            ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
+                                            : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {paginationLabel(link.label)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modal */}
@@ -428,10 +502,7 @@ export default function Index({ parkingLocations = [] }) {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                    {t(
-                                        "fields.description",
-                                        "Description",
-                                    )}
+                                    {t("fields.description", "Description")}
                                 </label>
                                 <textarea
                                     placeholder={t(
