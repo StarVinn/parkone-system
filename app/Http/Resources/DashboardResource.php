@@ -97,7 +97,7 @@ class DashboardResource extends JsonApiResource
                 'name' => $transaction->user->name,
                 'email' => $transaction->user->email,
                 'role' => $transaction->user->role,
-                'rfid_uid' => $transaction->user->rfid_uid,
+                'rfid_uid' => $transaction->user->relationLoaded('primaryRfidCard') && $transaction->user->primaryRfidCard ? $transaction->user->primaryRfidCard->uid : null,
                 'status' => $transaction->user->status,
             ] : null,
             'vehicle' => $transaction->relationLoaded('vehicle') && $transaction->vehicle ? [

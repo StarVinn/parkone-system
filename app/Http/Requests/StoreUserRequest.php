@@ -27,7 +27,7 @@ class StoreUserRequest extends FormRequest
             'password' => 'required|string|min:2|confirmed',
             'role' => 'in:admin,user',
             'profile_photo' => 'nullable|image|mimes:png,jpg,heic',
-            'rfid_uid' => 'nullable|string|max:255|unique:users',
+            'rfid_uid' => 'nullable|string|max:255|unique:rfid_cards,uid',
             'is_active' => 'boolean',
         ];
     }
