@@ -11,6 +11,9 @@ class ParkingRateResource extends JsonApiResource
     public $attributes = [
         'location_id',
         'vehicle_type_id',
+        'pricing_rule_key',
+        'version_number',
+        'is_current',
         'rate_type',
         'rate_per_hour',
         'flat_rate',

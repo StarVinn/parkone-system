@@ -12,9 +12,19 @@ class ParkingRate extends Model
     protected $fillable = [
         'location_id',
         'vehicle_type_id',
+        'pricing_rule_key',
+        'version_number',
+        'is_current',
         'rate_type',
         'rate_per_hour',
         'flat_rate',
+    ];
+
+    protected $casts = [
+        'rate_per_hour' => 'float',
+        'flat_rate' => 'float',
+        'version_number' => 'integer',
+        'is_current' => 'boolean',
     ];
 
     public function location()
