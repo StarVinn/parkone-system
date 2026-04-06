@@ -127,6 +127,9 @@ class DashboardResource extends JsonApiResource
                     'id' => (string) $transaction->parkingRate->vehicleType->id,
                     'name' => $transaction->parkingRate->vehicleType->name,
                 ] : null,
+                'effective_rate_type' => $transaction->rate_type_snapshot ?: $transaction->parkingRate->rate_type,
+                'effective_rate_per_hour' => $transaction->rate_per_hour_snapshot ?? $transaction->parkingRate->rate_per_hour,
+                'effective_flat_rate' => $transaction->flat_rate_snapshot ?? $transaction->parkingRate->flat_rate,
             ] : null,
             'rfid_card' => $transaction->relationLoaded('rfidCard') && $transaction->rfidCard ? [
                 'id' => (string) $transaction->rfidCard->id,
