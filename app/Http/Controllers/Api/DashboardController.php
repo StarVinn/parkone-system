@@ -33,7 +33,7 @@ class DashboardController extends Controller
                 'parkingArea.location',
                 'parkingRate.location',
                 'parkingRate.vehicleType',
-                'rfidCard',
+                'rfidCard.vehicle',
             ])
             ->where('status', 'active')
             ->whereHas('user.primaryRfidCard')
@@ -47,7 +47,7 @@ class DashboardController extends Controller
                 'parkingArea.location',
                 'parkingRate.location',
                 'parkingRate.vehicleType',
-                'rfidCard',
+                'rfidCard.vehicle',
             ])
             ->where('user_id', $user->id)
             ->latest('entry_time')

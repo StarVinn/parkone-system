@@ -61,7 +61,11 @@ class TransactionController extends Controller
 
         $rfid = trim($validated['rfid_uid']);
         $card = RfidCard::query()
-            ->with('user:id,name,email,is_active')
+            ->with([
+                'user:id,name,email,is_active',
+                'vehicle:id,license_plate,vehicle_type_id,user_id',
+                'vehicle.vehicleType:id,name',
+            ])
             ->whereRaw('UPPER(uid) = ?', [strtoupper($rfid)])
             ->where('is_active', true)
             ->first();
@@ -82,7 +86,15 @@ class TransactionController extends Controller
                 'email' => $card->user->email,
                 'rfid_uid' => $card->uid,
             ],
-            'vehicles' => [],
+            'vehicle' => $card->vehicle ? [
+                'id' => $card->vehicle->id,
+                'license_plate' => $card->vehicle->license_plate,
+                'vehicle_type' => $card->vehicle->relationLoaded('vehicleType') && $card->vehicle->vehicleType ? [
+                    'id' => (string) $card->vehicle->vehicleType->id,
+                    'name' => $card->vehicle->vehicleType->name,
+                ] : null,
+            ] : null,
+            'vehicles' => $card->vehicle ? [$card->vehicle->id] : [],
         ]);
     }
 
@@ -95,7 +107,6 @@ class TransactionController extends Controller
             ? $requestedCheckoutMode
             : 'ticket';
         $rfidUid = trim((string) ($validated['rfid_uid'] ?? ''));
-        $validated['rfid_uid'] = $rfidUid !== '' ? strtoupper($rfidUid) : null;
         $validated['rfid_card_id'] = null;
 
         if ($rfidUid !== '') {
@@ -151,7 +162,7 @@ class TransactionController extends Controller
                 'license_plate' => $exception->normalizedPlate,
                 'next_action' => $action,
                 'parking_area_id' => $validated['parking_area_id'] ?? null,
-                'rfid_uid' => $validated['rfid_uid'] ?? null,
+                'rfid_uid' => $rfidUid !== '' ? strtoupper($rfidUid) : null,
             ]);
         }
     }
@@ -281,7 +292,6 @@ class TransactionController extends Controller
                 'license_plate' => $plate,
                 'parking_area_id' => (int) $validated['parking_area_id'],
                 'rfid_card_id' => $rfidCardId,
-                'rfid_uid' => $rfidUid !== '' ? $rfidUid : null,
                 'vehicle_photo' => $request->file('vehicle_photo'),
             ], Auth::id());
 

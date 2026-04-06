@@ -86,7 +86,11 @@ class DashboardResource extends JsonApiResource
             'exit_time' => optional($transaction->exit_time)->toISOString(),
             'total_hours' => $transaction->total_hours,
             'total_fee' => $transaction->total_fee,
+            'parking_session_id' => $transaction->parking_session_id,
             'rfid_uid' => $transaction->rfid_uid,
+            'exit_sync_status' => $transaction->exit_sync_status,
+            'exit_synced_at' => optional($transaction->exit_synced_at)->toISOString(),
+            'exit_sync_error' => $transaction->exit_sync_error,
             'entry_vehicle_photo_url' => $transaction->entry_vehicle_photo_url,
             'user' => $transaction->relationLoaded('user') && $transaction->user ? [
                 'id' => (string) $transaction->user->id,
@@ -116,6 +120,9 @@ class DashboardResource extends JsonApiResource
             ] : null,
             'parking_rate' => $transaction->relationLoaded('parkingRate') && $transaction->parkingRate ? [
                 'id' => (string) $transaction->parkingRate->id,
+                'pricing_rule_key' => $transaction->parkingRate->pricing_rule_key,
+                'version_number' => $transaction->parkingRate->version_number,
+                'is_current' => (bool) $transaction->parkingRate->is_current,
                 'rate_type' => $transaction->parkingRate->rate_type,
                 'rate_per_hour' => $transaction->parkingRate->rate_per_hour,
                 'flat_rate' => $transaction->parkingRate->flat_rate,
@@ -135,6 +142,10 @@ class DashboardResource extends JsonApiResource
                 'id' => (string) $transaction->rfidCard->id,
                 'uid' => $transaction->rfidCard->uid,
                 'is_active' => (bool) $transaction->rfidCard->is_active,
+                'vehicle' => $transaction->rfidCard->relationLoaded('vehicle') && $transaction->rfidCard->vehicle ? [
+                    'id' => (string) $transaction->rfidCard->vehicle->id,
+                    'license_plate' => $transaction->rfidCard->vehicle->license_plate,
+                ] : null,
             ] : null,
         ];
     }
