@@ -7,13 +7,16 @@ use App\Models\ActivityLog;
 use App\Models\ParkingArea;
 use App\Models\ParkingLocation;
 use App\Models\ParkingRate;
+use App\Jobs\ProcessTransactionExitEventJob;
 use App\Models\RfidCard;
+use App\Models\TransactionExitEvent;
 use App\Models\Transaction;
 use App\Models\Vehicle;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class TransactionService
@@ -47,6 +50,7 @@ class TransactionService
 
         $hasRates = ParkingRate::query()
             ->where('location_id', $area->parking_location_id)
+            ->where('is_current', true)
             ->exists();
 
         if (!$hasRates) {
@@ -83,7 +87,8 @@ class TransactionService
                 'vehicle:id,license_plate,vehicle_type_id',
                 'vehicle.vehicleType:id,name',
                 'parkingArea:id,name',
-                'rfidCard:id,uid,user_id',
+                'rfidCard:id,uid,user_id,vehicle_id',
+                'rfidCard.vehicle:id,license_plate,vehicle_type_id',
             ])
             ->when($selectedArea, fn($query) => $query->where('parking_area_id', $selectedArea->id))
             ->where('status', 'active')
@@ -95,7 +100,8 @@ class TransactionService
                 'vehicle:id,license_plate,vehicle_type_id',
                 'vehicle.vehicleType:id,name',
                 'parkingArea:id,name',
-                'rfidCard:id,uid,user_id',
+                'rfidCard:id,uid,user_id,vehicle_id',
+                'rfidCard.vehicle:id,license_plate,vehicle_type_id',
             ])
             ->when($selectedArea, fn($query) => $query->where('parking_area_id', $selectedArea->id))
             ->latest()
@@ -112,6 +118,7 @@ class TransactionService
             $entryVehicleTypes = ParkingRate::query()
                 ->with('vehicleType:id,name')
                 ->where('location_id', $selectedArea->parking_location_id)
+                ->where('is_current', true)
                 ->get(['id', 'vehicle_type_id', 'location_id'])
                 ->pluck('vehicleType')
                 ->filter()
@@ -178,7 +185,14 @@ class TransactionService
             }
 
             if ($rfidCardId > 0) {
-                RfidCard::query()->lockForUpdate()->find($rfidCardId);
+                $rfidCard = RfidCard::query()
+                    ->with('vehicle:id,license_plate,vehicle_type_id')
+                    ->lockForUpdate()
+                    ->find($rfidCardId);
+
+                if ($rfidCard) {
+                    $this->bindRfidCardToVehicle($rfidCard, $vehicle, true);
+                }
             }
 
             $existingActiveTransaction = Transaction::query()
@@ -224,6 +238,7 @@ class TransactionService
             $parkingRate = ParkingRate::query()
                 ->where('location_id', $parkingArea->parking_location_id)
                 ->where('vehicle_type_id', $vehicle->vehicle_type_id)
+                ->where('is_current', true)
                 ->first();
 
             if (!$parkingRate) {
@@ -246,6 +261,9 @@ class TransactionService
                 'parking_area_id' => $parkingArea->id,
                 'parking_rate_id' => $parkingRate->id,
                 'rfid_card_id' => $rfidCardId > 0 ? $rfidCardId : null,
+                'parking_session_id' => (string) Str::uuid(),
+                'parking_rate_rule_key_snapshot' => $parkingRate->pricing_rule_key,
+                'parking_rate_version_number_snapshot' => $parkingRate->version_number,
                 'rate_type_snapshot' => $parkingRate->rate_type,
                 'rate_per_hour_snapshot' => $parkingRate->rate_per_hour,
                 'flat_rate_snapshot' => $parkingRate->flat_rate,
@@ -270,82 +288,131 @@ class TransactionService
 
     public function processExit(array $data, int $officerId): Transaction
     {
-        return DB::transaction(function () use ($data, $officerId) {
-            $plate = $this->formatPlate($data['license_plate']);
-            $vehicle = $this->findVehicleByPlate($plate);
-            $vehicle = Vehicle::query()->lockForUpdate()->findOrFail($vehicle->id);
-            $rfidUid = strtoupper(trim((string) ($data['rfid_uid'] ?? '')));
-            $rfidCardId = (int) ($data['rfid_card_id'] ?? 0);
-            if ($rfidCardId <= 0 && $rfidUid !== '') {
-                $rfidCardId = (int) (RfidCard::query()
-                    ->whereRaw('UPPER(uid) = ?', [$rfidUid])
-                    ->value('id') ?? 0);
-            }
+        $plate = $this->formatPlate($data['license_plate']);
+        $rfidCardId = (int) ($data['rfid_card_id'] ?? 0);
+        $sequenceScopeType = $rfidCardId > 0 ? 'rfid_card' : 'officer';
+        $sequenceScopeKey = $rfidCardId > 0 ? (string) $rfidCardId : (string) $officerId;
+        $sequenceNumber = $this->nextSequenceNumber($sequenceScopeType, $sequenceScopeKey);
 
-            if ($rfidCardId > 0) {
-                RfidCard::query()->lockForUpdate()->find($rfidCardId);
-            }
+        $exitEvent = TransactionExitEvent::create([
+            'event_uuid' => (string) Str::uuid(),
+            'event_type' => 'transaction.exit.requested',
+            'sequence_scope_type' => $sequenceScopeType,
+            'sequence_scope_key' => $sequenceScopeKey,
+            'sequence_number' => $sequenceNumber,
+            'occurred_at' => now(),
+            'received_at' => now(),
+            'officer_id' => $officerId,
+            'license_plate' => $plate,
+            'rfid_card_id' => $rfidCardId > 0 ? $rfidCardId : null,
+            'payload' => $data,
+            'status' => 'pending',
+        ]);
 
-            $transaction = Transaction::query()
-                ->with(['parkingArea', 'parkingRate'])
-                ->where('vehicle_id', $vehicle->id)
-                ->where('status', 'active')
-                ->lockForUpdate()
-                ->latest('entry_time')
-                ->first();
-
-            if (!$transaction) {
-                throw ValidationException::withMessages([
-                    'license_plate' => 'Tidak ada transaksi aktif untuk plat nomor ini.',
-                ]);
-            }
-
-            $entryRfidCardId = (int) ($transaction->rfid_card_id ?? 0);
-            if ($entryRfidCardId > 0) {
-                if ($rfidCardId <= 0) {
-                    throw ValidationException::withMessages([
-                        'rfid_uid' => 'RFID wajib diisi karena transaksi masuk menggunakan RFID.',
-                    ]);
+        try {
+            return DB::transaction(function () use ($data, $officerId, $exitEvent, $plate, $rfidCardId) {
+                $vehicle = $this->findVehicleByPlate($plate);
+                $vehicle = Vehicle::query()->lockForUpdate()->findOrFail($vehicle->id);
+                $rfidUid = strtoupper(trim((string) ($data['rfid_uid'] ?? '')));
+                if ($rfidCardId <= 0 && $rfidUid !== '') {
+                    $rfidCardId = (int) (RfidCard::query()
+                        ->whereRaw('UPPER(uid) = ?', [$rfidUid])
+                        ->value('id') ?? 0);
                 }
 
-                if ($entryRfidCardId !== $rfidCardId) {
-                    throw ValidationException::withMessages([
-                        'rfid_uid' => 'RFID tidak sesuai dengan transaksi masuk kendaraan ini.',
-                    ]);
+                if ($rfidCardId > 0) {
+                    $rfidCard = RfidCard::query()
+                        ->with('vehicle:id,license_plate,vehicle_type_id')
+                        ->lockForUpdate()
+                        ->find($rfidCardId);
+
+                    if ($rfidCard) {
+                        $this->assertRfidCardMatchesVehicle($rfidCard, $vehicle);
+                    }
                 }
-            }
 
-            $exitTime = now();
-            $hours = $this->calculateHours($transaction->entry_time, $exitTime);
-            $totalFee = $this->calculateFeeFromTransaction($transaction, $hours);
-
-            $transaction->update([
-                'exit_time' => $exitTime,
-                'total_hours' => $hours,
-                'total_fee' => $totalFee,
-                'status' => 'completed',
-            ]);
-
-            if ($transaction->parkingArea) {
-                $parkingArea = ParkingArea::query()
+                $transaction = Transaction::query()
+                    ->with(['parkingArea', 'parkingRate'])
+                    ->where('vehicle_id', $vehicle->id)
+                    ->where('status', 'active')
                     ->lockForUpdate()
-                    ->find($transaction->parkingArea->id);
+                    ->latest('entry_time')
+                    ->first();
 
-                if ($parkingArea && $parkingArea->occupied > 0) {
-                    $parkingArea->update([
-                        'occupied' => max(0, (int) $parkingArea->occupied - 1),
+                if (!$transaction) {
+                    throw ValidationException::withMessages([
+                        'license_plate' => 'Tidak ada transaksi aktif untuk plat nomor ini.',
                     ]);
                 }
-            }
 
-            ActivityLog::create([
-                'user_id' => $officerId,
-                'activity' => 'Check-out kendaraan: ' . $plate . ', biaya: Rp ' . number_format($totalFee, 0, ',', '.'),
-                'activity_time' => now(),
-            ]);
+                $entryRfidCardId = (int) ($transaction->rfid_card_id ?? 0);
+                if ($entryRfidCardId > 0) {
+                    if ($rfidCardId <= 0) {
+                        throw ValidationException::withMessages([
+                            'rfid_uid' => 'RFID wajib diisi karena transaksi masuk menggunakan RFID.',
+                        ]);
+                    }
 
-            return $transaction->fresh(['vehicle', 'parkingArea', 'parkingRate']);
-        });
+                    if ($entryRfidCardId !== $rfidCardId) {
+                        throw ValidationException::withMessages([
+                            'rfid_uid' => 'RFID tidak sesuai dengan transaksi masuk kendaraan ini.',
+                        ]);
+                    }
+                }
+
+                $exitTime = now();
+                $hours = $this->calculateHours($transaction->entry_time, $exitTime);
+                $totalFee = $this->calculateFeeFromTransaction($transaction, $hours);
+
+                $transaction->update([
+                    'exit_time' => $exitTime,
+                    'total_hours' => $hours,
+                    'total_fee' => $totalFee,
+                    'status' => 'completed',
+                    'exit_sync_status' => 'synced',
+                    'exit_synced_at' => now(),
+                    'exit_sync_error' => null,
+                ]);
+
+                $exitEvent->forceFill([
+                    'transaction_id' => $transaction->id,
+                    'parking_session_id' => $transaction->parking_session_id,
+                    'status' => 'completed',
+                    'processed_at' => now(),
+                    'error_message' => null,
+                ])->save();
+
+                ProcessTransactionExitEventJob::dispatch($exitEvent->id)->afterCommit();
+
+                if ($transaction->parkingArea) {
+                    $parkingArea = ParkingArea::query()
+                        ->lockForUpdate()
+                        ->find($transaction->parkingArea->id);
+
+                    if ($parkingArea && $parkingArea->occupied > 0) {
+                        $parkingArea->update([
+                            'occupied' => max(0, (int) $parkingArea->occupied - 1),
+                        ]);
+                    }
+                }
+
+                ActivityLog::create([
+                    'user_id' => $officerId,
+                    'activity' => 'Check-out kendaraan: ' . $plate . ', biaya: Rp ' . number_format($totalFee, 0, ',', '.'),
+                    'activity_time' => now(),
+                ]);
+
+                return $transaction->fresh(['vehicle', 'parkingArea', 'parkingRate']);
+            });
+        } catch (\Throwable $throwable) {
+            $exitEvent->forceFill([
+                'status' => 'failed',
+                'processed_at' => now(),
+                'error_message' => Str::limit($throwable->getMessage(), 2000),
+            ])->save();
+
+            throw $throwable;
+        }
     }
 
     public function formatPlate(string $plate): string
@@ -429,5 +496,74 @@ class TransactionService
         }
 
         return $ratePerHour * $hours;
+    }
+
+    private function bindRfidCardToVehicle(RfidCard $rfidCard, Vehicle $vehicle, bool $strict = true): void
+    {
+        $boundVehicleId = (int) ($rfidCard->vehicle_id ?? 0);
+
+        if ($boundVehicleId > 0 && $boundVehicleId !== (int) $vehicle->id) {
+            throw ValidationException::withMessages([
+                'rfid_uid' => 'RFID ini sudah terikat ke kendaraan lain.',
+            ]);
+        }
+
+        if ($boundVehicleId <= 0) {
+            $rfidCard->forceFill([
+                'vehicle_id' => $vehicle->id,
+            ])->save();
+        }
+
+        if ($strict && (int) $rfidCard->vehicle_id !== (int) $vehicle->id) {
+            throw ValidationException::withMessages([
+                'rfid_uid' => 'RFID ini tidak cocok dengan kendaraan yang dipilih.',
+            ]);
+        }
+    }
+
+    private function assertRfidCardMatchesVehicle(RfidCard $rfidCard, Vehicle $vehicle): void
+    {
+        $boundVehicleId = (int) ($rfidCard->vehicle_id ?? 0);
+
+        if ($boundVehicleId > 0 && $boundVehicleId !== (int) $vehicle->id) {
+            throw ValidationException::withMessages([
+                'rfid_uid' => 'RFID ini sudah terikat ke kendaraan lain.',
+            ]);
+        }
+    }
+
+    private function nextSequenceNumber(string $scopeType, string $scopeKey): int
+    {
+        return DB::transaction(function () use ($scopeType, $scopeKey) {
+            $sequence = DB::table('event_sequences')
+                ->where('scope_type', $scopeType)
+                ->where('scope_key', $scopeKey)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$sequence) {
+                DB::table('event_sequences')->insert([
+                    'scope_type' => $scopeType,
+                    'scope_key' => $scopeKey,
+                    'current_sequence' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                return 1;
+            }
+
+            $nextSequence = ((int) $sequence->current_sequence) + 1;
+
+            DB::table('event_sequences')
+                ->where('scope_type', $scopeType)
+                ->where('scope_key', $scopeKey)
+                ->update([
+                    'current_sequence' => $nextSequence,
+                    'updated_at' => now(),
+                ]);
+
+            return $nextSequence;
+        });
     }
 }
