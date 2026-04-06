@@ -16,7 +16,9 @@ class Transaction extends Model
         'parking_area_id',
         'parking_rate_id',
         'rfid_card_id',
-        'rfid_uid',
+        'rate_type_snapshot',
+        'rate_per_hour_snapshot',
+        'flat_rate_snapshot',
         'entry_time',
         'entry_vehicle_photo_path',
         'exit_time',
@@ -27,6 +29,7 @@ class Transaction extends Model
 
     protected $appends = [
         'entry_vehicle_photo_url',
+        'rfid_uid',
     ];
 
     protected function casts(): array
@@ -34,6 +37,8 @@ class Transaction extends Model
         return [
             'entry_time' => 'datetime',
             'exit_time' => 'datetime',
+            'rate_per_hour_snapshot' => 'float',
+            'flat_rate_snapshot' => 'float',
             'total_hours' => 'float',
             'total_fee' => 'float',
         ];
@@ -71,5 +76,20 @@ class Transaction extends Model
         }
 
         return Storage::disk('public')->url($this->entry_vehicle_photo_path);
+    }
+
+    public function getRfidUidAttribute(): ?string
+    {
+        if ($this->relationLoaded('rfidCard') && $this->rfidCard) {
+            return $this->rfidCard->uid;
+        }
+
+        if ($this->rfid_card_id) {
+            $card = $this->rfidCard()->select('id', 'uid')->first();
+
+            return $card?->uid;
+        }
+
+        return null;
     }
 }
