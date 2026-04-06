@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasMany(RfidCard::class);
     }
 
+    public function vehicles()
+    {
+        return $this->hasMany(Vehicle::class, 'user_id');
+    }
+
     public function primaryRfidCard()
     {
         return $this->hasOne(RfidCard::class)

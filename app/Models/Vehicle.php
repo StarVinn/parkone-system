@@ -12,10 +12,21 @@ class Vehicle extends Model
     protected $fillable = [
         'license_plate',
         'vehicle_type_id',
+        'user_id',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function vehicleType()
     {
         return $this->belongsTo(VehicleType::class, 'vehicle_type_id');
+    }
+
+    public function rfidCard()
+    {
+        return $this->hasOne(RfidCard::class);
     }
 }
