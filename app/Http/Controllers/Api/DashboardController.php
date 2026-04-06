@@ -28,7 +28,8 @@ class DashboardController extends Controller
 
         $activeTransactions = Transaction::query()
             ->with([
-                'user:id,name,email,role,rfid_uid,is_active,status',
+                'user:id,name,email,role,is_active,status',
+                'user.primaryRfidCard:id,user_id,uid',
                 'vehicle.vehicleType',
                 'parkingArea.location',
                 'parkingRate.location',
@@ -43,6 +44,8 @@ class DashboardController extends Controller
 
         $transactionHistory = Transaction::query()
             ->with([
+                'user:id,name,email,role,is_active,status',
+                'user.primaryRfidCard:id,user_id,uid',
                 'vehicle.vehicleType',
                 'parkingArea.location',
                 'parkingRate.location',

@@ -10,9 +10,11 @@ use App\Models\RfidCard;
 use App\Models\User;
 use App\Notifications\AccountActivationSetPassword;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Inertia\Response;
@@ -56,8 +58,6 @@ class AdminAccountController extends Controller
             ->orderByDesc('created_at')
             ->paginate(15, ['id', 'name', 'email', 'role', 'is_active', 'status', 'created_at'])
             ->through(function (User $user) {
-                $primaryRfid = $user->primaryRfidCard?->uid;
-
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -66,7 +66,7 @@ class AdminAccountController extends Controller
                     'is_active' => $user->is_active,
                     'status' => $user->status,
                     'created_at' => $user->created_at,
-                    'rfid_uid' => $primaryRfid ?? $user->rfid_uid,
+                    'rfid_uid' => $user->primaryRfidCard?->uid,
                     'rfid_count' => (int) ($user->rfid_count ?? 0),
                 ];
             })
@@ -92,7 +92,6 @@ class AdminAccountController extends Controller
             'email' => $data['email'],
             'password' => Hash::make(Str::random(40)),
             'role' => $data['role'],
-            'rfid_uid' => null,
             'is_active' => false,
             'status' => 'pending',
             'email_verified_at' => null,
@@ -227,8 +226,6 @@ class AdminAccountController extends Controller
                         'is_active' => true,
                     ]);
                 }
-
-                $updates['rfid_uid'] = $newRfid;
             });
         }
 
@@ -283,8 +280,10 @@ class AdminAccountController extends Controller
     private function sendActivationLink(User $user): bool
     {
         try {
-            $token = Password::broker()->createToken($user);
-            $user->notify(new AccountActivationSetPassword($token));
+            /** @var PasswordBroker $broker */
+            $broker = Password::broker();
+            $token = $broker->createToken($user);
+            Notification::send($user, new AccountActivationSetPassword($token));
 
             return true;
         } catch (\Throwable $th) {
