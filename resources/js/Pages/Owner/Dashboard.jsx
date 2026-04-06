@@ -22,6 +22,7 @@ import {
     Search,
 } from "lucide-react";
 import OwnerLayout from "../Layouts/OwnerLayout";
+import useI18n from "../../hooks/useI18n";
 
 ChartJS.register(
     BarElement,
@@ -33,9 +34,9 @@ ChartJS.register(
     Legend,
 );
 
-function formatCurrencyIDR(amount) {
+function formatCurrencyIDR(amount, localeTag = "id-ID") {
     const value = Number(amount || 0);
-    return new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat(localeTag, {
         style: "currency",
         currency: "IDR",
         maximumFractionDigits: 0,
@@ -134,6 +135,9 @@ export default function Dashboard({
     recentTransactions,
     locationDetail,
 } = {}) {
+    const { t, locale } = useI18n();
+    const localeTag = locale === "en" ? "en-US" : "id-ID";
+
     const [rangeDays, setRangeDays] = useState(7);
     const [selectedLocationId, setSelectedLocationId] = useState("");
     const [hasUserInteractedLocation, setHasUserInteractedLocation] =
@@ -197,7 +201,9 @@ export default function Dashboard({
         const counts = new Map();
 
         for (const tx of transactions) {
-            const label = String(tx?.vehicle || "").trim() || "Unknown";
+            const label =
+                String(tx?.vehicle || "").trim() ||
+                t("owner.dashboard.general.unknown", "Unknown");
             if (label === "-") continue;
 
             counts.set(label, (counts.get(label) || 0) + 1);
@@ -215,11 +221,17 @@ export default function Dashboard({
 
         const rows =
             restCount > 0
-                ? [...top, { label: "Lainnya", count: restCount }]
+                ? [
+                      ...top,
+                      {
+                          label: t("owner.dashboard.general.others", "Others"),
+                          count: restCount,
+                      },
+                  ]
                 : top;
 
         return { total, rows };
-    }, [transactions]);
+    }, [transactions, t]);
 
     const chartLabelsAll = Array.isArray(charts?.labels) ? charts.labels : [];
     const chartRevenueAll = Array.isArray(charts?.revenue)
@@ -318,7 +330,7 @@ export default function Dashboard({
             labels: revenueLabels,
             datasets: [
                 {
-                    label: "Pendapatan",
+                    label: t("owner.dashboard.charts.revenue", "Revenue"),
                     data: revenueSeries,
                     backgroundColor: "rgba(31, 209, 165, 0.35)",
                     borderColor: "#1FD1A5",
@@ -329,7 +341,7 @@ export default function Dashboard({
                 },
             ],
         }),
-        [revenueLabels, revenueSeries, rangeDays],
+        [revenueLabels, revenueSeries, rangeDays, t],
     );
 
     const revenueChartOptions = useMemo(
@@ -341,7 +353,7 @@ export default function Dashboard({
                 tooltip: {
                     callbacks: {
                         label: (context) =>
-                            `${context.label}: ${formatCurrencyIDR(context.raw)}`,
+                            `${context.label}: ${formatCurrencyIDR(context.raw, localeTag)}`,
                     },
                 },
             },
@@ -364,12 +376,12 @@ export default function Dashboard({
                         color: "#94A3B8",
                         font: { size: 11 },
                         callback: (value) =>
-                            `Rp ${Number(value || 0).toLocaleString("id-ID")}`,
+                            `Rp ${Number(value || 0).toLocaleString(localeTag)}`,
                     },
                 },
             },
         }),
-        [],
+        [localeTag],
     );
 
     const occupancyChartData = useMemo(
@@ -377,7 +389,10 @@ export default function Dashboard({
             labels: revenueLabels,
             datasets: [
                 {
-                    label: "Okupansi (%)",
+                    label: t(
+                        "owner.dashboard.charts.occupancy",
+                        "Occupancy (%)",
+                    ),
                     data: occupancySeries,
                     tension: 0.35,
                     borderColor: "#1E5EFF",
@@ -388,7 +403,7 @@ export default function Dashboard({
                 },
             ],
         }),
-        [revenueLabels, occupancySeries],
+        [revenueLabels, occupancySeries, t],
     );
 
     const occupancyChartOptions = useMemo(
@@ -450,13 +465,13 @@ export default function Dashboard({
         if (!transactionsLoaded) return;
 
         const headers = [
-            "id",
-            "time",
-            "location",
-            "plate",
-            "vehicle",
-            "total",
-            "status",
+            t("owner.transactions.csv.id", "id"),
+            t("owner.transactions.csv.time", "time"),
+            t("owner.transactions.csv.location", "location"),
+            t("owner.transactions.csv.plate", "plate"),
+            t("owner.transactions.csv.vehicle", "vehicle"),
+            t("owner.transactions.csv.total", "total"),
+            t("owner.transactions.csv.status", "status"),
         ];
         const lines = [
             headers.join(","),
@@ -474,7 +489,7 @@ export default function Dashboard({
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+        anchor.download = `${t("owner.transactions.csv.filename_prefix", "transactions")}-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
@@ -487,41 +502,71 @@ export default function Dashboard({
                 <section className="space-y-6">
                     <SectionHeader
                         id="dashboard"
-                        title="Dashboard Owner"
-                        subtitle="Ringkasan performa hari ini, tren 7/30 hari, lokasi teratas, dan alert operasional."
+                        title={t("owner.dashboard.title", "Owner Dashboard")}
+                        subtitle={t(
+                            "owner.dashboard.subtitle",
+                            "Today's performance summary, 7/30 day trends, top locations, and operational alerts.",
+                        )}
                         icon={Building2}
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
-                            title="Okupansi"
+                            title={t(
+                                "owner.dashboard.stats.occupancy",
+                                "Occupancy",
+                            )}
                             value={`${Number(summary.occupancy_percent || 0)}%`}
-                            hint="Rata-rata okupansi hari ini"
+                            hint={t(
+                                "owner.dashboard.stats.occupancy_hint",
+                                "Today's average occupancy",
+                            )}
                             icon={MapPinned}
                             accentClass="text-brand.blue"
                         />
                         <StatCard
-                            title="Kendaraan Masuk"
+                            title={t(
+                                "owner.dashboard.stats.vehicle_in",
+                                "Vehicles In",
+                            )}
                             value={Number(
                                 summary.vehicle_in || 0,
-                            ).toLocaleString("id-ID")}
-                            hint="Total check-in hari ini"
+                            ).toLocaleString(localeTag)}
+                            hint={t(
+                                "owner.dashboard.stats.vehicle_in_hint",
+                                "Total check-ins today",
+                            )}
                             icon={CarFront}
                             accentClass="text-emerald-600 dark:text-emerald-400"
                         />
                         <StatCard
-                            title="Pendapatan"
-                            value={formatCurrencyIDR(summary.revenue || 0)}
-                            hint="Total pendapatan hari ini"
+                            title={t(
+                                "owner.dashboard.stats.revenue",
+                                "Revenue",
+                            )}
+                            value={formatCurrencyIDR(
+                                summary.revenue || 0,
+                                localeTag,
+                            )}
+                            hint={t(
+                                "owner.dashboard.stats.revenue_hint",
+                                "Total revenue today",
+                            )}
                             icon={Coins}
                             accentClass="text-brand.teal"
                         />
                         <StatCard
-                            title="Transaksi Gagal"
+                            title={t(
+                                "owner.dashboard.stats.failed_transactions",
+                                "Failed Transactions",
+                            )}
                             value={Number(
                                 summary.failed_transactions || 0,
-                            ).toLocaleString("id-ID")}
-                            hint="Butuh investigasi (payment/device)"
+                            ).toLocaleString(localeTag)}
+                            hint={t(
+                                "owner.dashboard.stats.failed_transactions_hint",
+                                "Need investigation (payment/device)",
+                            )}
                             icon={AlertTriangle}
                             accentClass="text-amber-600 dark:text-amber-400"
                         />
@@ -532,11 +577,23 @@ export default function Dashboard({
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-semibold font-['Poppins']">
-                                        Pendapatan ({rangeDays} hari)
+                                        {t(
+                                            "owner.dashboard.revenue_chart.title",
+                                            "Revenue",
+                                        )}{" "}
+                                        ({rangeDays}{" "}
+                                        {t(
+                                            "owner.dashboard.general.days",
+                                            "days",
+                                        )}
+                                        )
                                     </p>
                                     <p className="text-xs text-slate-600 dark:text-slate-300">
-                                        Tren pendapatan terakhir {rangeDays}{" "}
-                                        hari
+                                        {t(
+                                            "owner.dashboard.revenue_chart.subtitle",
+                                            "Revenue trend for the last {days} days",
+                                            { days: rangeDays },
+                                        )}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -549,7 +606,11 @@ export default function Dashboard({
                                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5"
                                         }`}
                                     >
-                                        7 hari
+                                        7{" "}
+                                        {t(
+                                            "owner.dashboard.general.days",
+                                            "days",
+                                        )}
                                     </button>
                                     <button
                                         type="button"
@@ -560,7 +621,11 @@ export default function Dashboard({
                                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5"
                                         }`}
                                     >
-                                        30 hari
+                                        30{" "}
+                                        {t(
+                                            "owner.dashboard.general.days",
+                                            "days",
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -575,17 +640,26 @@ export default function Dashboard({
 
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Alert Operasional
+                                {t(
+                                    "owner.dashboard.alerts.title",
+                                    "Operational Alerts",
+                                )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Slot penuh, device offline, dan warning lainnya
+                                {t(
+                                    "owner.dashboard.alerts.subtitle",
+                                    "Full slots, offline devices, and other warnings",
+                                )}
                             </p>
 
                             <WhenVisible
                                 data="alerts"
                                 fallback={
                                     <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-                                        Memuat alert...
+                                        {t(
+                                            "owner.dashboard.states.loading_alerts",
+                                            "Loading alerts...",
+                                        )}
                                     </div>
                                 }
                             >
@@ -594,7 +668,10 @@ export default function Dashboard({
                                         {!alertsLoaded ? null : alertRows.length ===
                                           0 ? (
                                             <div className="text-sm text-slate-600 dark:text-slate-300">
-                                                Tidak ada alert.
+                                                {t(
+                                                    "owner.dashboard.states.no_alerts",
+                                                    "No alerts.",
+                                                )}
                                             </div>
                                         ) : (
                                             alertRows.map((item, index) => {
@@ -640,10 +717,18 @@ export default function Dashboard({
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Okupansi ({rangeDays} hari)
+                                {t(
+                                    "owner.dashboard.occupancy_chart.title",
+                                    "Occupancy",
+                                )}{" "}
+                                ({rangeDays}{" "}
+                                {t("owner.dashboard.general.days", "days")})
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Perkiraan tren okupansi rata-rata
+                                {t(
+                                    "owner.dashboard.occupancy_chart.subtitle",
+                                    "Estimated average occupancy trend",
+                                )}
                             </p>
                             <div className="mt-4 h-56">
                                 <Line
@@ -655,10 +740,16 @@ export default function Dashboard({
 
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Lokasi Teratas
+                                {t(
+                                    "owner.dashboard.top_locations.title",
+                                    "Top Locations",
+                                )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Berdasarkan okupansi & pendapatan
+                                {t(
+                                    "owner.dashboard.top_locations.subtitle",
+                                    "Based on occupancy and revenue",
+                                )}
                             </p>
 
                             <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
@@ -666,13 +757,22 @@ export default function Dashboard({
                                     <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                         <tr>
                                             <th className="text-left px-3 py-2 font-medium">
-                                                Lokasi
+                                                {t(
+                                                    "fields.location",
+                                                    "Location",
+                                                )}
                                             </th>
                                             <th className="text-right px-3 py-2 font-medium">
-                                                Okupansi
+                                                {t(
+                                                    "owner.dashboard.stats.occupancy",
+                                                    "Occupancy",
+                                                )}
                                             </th>
                                             <th className="text-right px-3 py-2 font-medium">
-                                                Revenue
+                                                {t(
+                                                    "owner.dashboard.stats.revenue",
+                                                    "Revenue",
+                                                )}
                                             </th>
                                         </tr>
                                     </thead>
@@ -686,7 +786,10 @@ export default function Dashboard({
                                                     colSpan={3}
                                                     className="px-3 py-6 text-center text-sm text-slate-600 dark:text-slate-300"
                                                 >
-                                                    Memuat data...
+                                                    {t(
+                                                        "owner.dashboard.states.loading_data",
+                                                        "Loading data...",
+                                                    )}
                                                 </td>
                                             </tr>
                                         }
@@ -698,7 +801,10 @@ export default function Dashboard({
                                                     colSpan={3}
                                                     className="px-3 py-6 text-center text-sm text-slate-600 dark:text-slate-300"
                                                 >
-                                                    Belum ada data.
+                                                    {t(
+                                                        "owner.dashboard.states.no_data",
+                                                        "No data yet.",
+                                                    )}
                                                 </td>
                                             </tr>
                                         ) : (
@@ -722,6 +828,7 @@ export default function Dashboard({
                                                     <td className="px-3 py-2 text-right tabular-nums">
                                                         {formatCurrencyIDR(
                                                             row.revenue || 0,
+                                                            localeTag,
                                                         )}
                                                     </td>
                                                 </tr>
@@ -737,8 +844,11 @@ export default function Dashboard({
                 <section className="space-y-6">
                     <SectionHeader
                         id="lokasi"
-                        title="Lokasi Parkir"
-                        subtitle="Daftar lokasi, kapasitas, okupansi saat ini, dan detail area/tarif."
+                        title={t("owner.locations.title", "Parking Locations")}
+                        subtitle={t(
+                            "owner.locations.subtitle",
+                            "List of locations, capacity, current occupancy, and area/rate details.",
+                        )}
                         icon={MapPinned}
                     />
 
@@ -750,15 +860,20 @@ export default function Dashboard({
                         <div className="px-5 py-4 flex items-center justify-between gap-3">
                             <div>
                                 <p className="text-sm font-semibold font-['Poppins']">
-                                    Daftar Lokasi
+                                    {t(
+                                        "owner.locations.list.title",
+                                        "Location List",
+                                    )}
                                 </p>
                                 <p className="text-xs text-slate-600 dark:text-slate-300">
-                                    Quick action: lihat detail & edit
-                                    (placeholder)
+                                    {t(
+                                        "owner.locations.list.subtitle",
+                                        "Quick action: view details and edit (placeholder)",
+                                    )}
                                 </p>
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-300">
-                                Total:{" "}
+                                {t("owner.locations.list.total", "Total")}:{" "}
                                 <span className="font-medium text-slate-800 dark:text-white">
                                     {locationsLoaded ? locations.length : "-"}
                                 </span>
@@ -770,19 +885,25 @@ export default function Dashboard({
                                 <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                     <tr>
                                         <th className="text-left px-5 py-3 font-medium">
-                                            Lokasi
+                                            {t("fields.location", "Location")}
                                         </th>
                                         <th className="text-right px-5 py-3 font-medium">
-                                            Kapasitas
+                                            {t("fields.capacity", "Capacity")}
                                         </th>
                                         <th className="text-right px-5 py-3 font-medium">
-                                            Terisi
+                                            {t("fields.occupied", "Occupied")}
                                         </th>
                                         <th className="text-right px-5 py-3 font-medium">
-                                            Okupansi
+                                            {t(
+                                                "owner.dashboard.stats.occupancy",
+                                                "Occupancy",
+                                            )}
                                         </th>
                                         <th className="text-left px-5 py-3 font-medium">
-                                            Koordinat
+                                            {t(
+                                                "owner.locations.fields.coordinates",
+                                                "Coordinates",
+                                            )}
                                         </th>
                                     </tr>
                                 </thead>
@@ -793,7 +914,10 @@ export default function Dashboard({
                                                 colSpan={6}
                                                 className="px-5 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
                                             >
-                                                Memuat lokasi...
+                                                {t(
+                                                    "owner.locations.states.loading",
+                                                    "Loading locations...",
+                                                )}
                                             </td>
                                         </tr>
                                     ) : locations.length === 0 ? (
@@ -802,7 +926,10 @@ export default function Dashboard({
                                                 colSpan={6}
                                                 className="px-5 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
                                             >
-                                                Belum ada lokasi.
+                                                {t(
+                                                    "owner.locations.states.empty",
+                                                    "No locations yet.",
+                                                )}
                                             </td>
                                         </tr>
                                     ) : (
@@ -832,17 +959,21 @@ export default function Dashboard({
                                                             {location.name}
                                                         </div>
                                                         <div className="text-xs text-slate-500 dark:text-slate-300">
-                                                            ID: {location.id}
+                                                            {t(
+                                                                "owner.general.id",
+                                                                "ID",
+                                                            )}
+                                                            : {location.id}
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3 text-right tabular-nums">
                                                         {capacity.toLocaleString(
-                                                            "id-ID",
+                                                            localeTag,
                                                         )}
                                                     </td>
                                                     <td className="px-5 py-3 text-right tabular-nums">
                                                         {occupied.toLocaleString(
-                                                            "id-ID",
+                                                            localeTag,
                                                         )}
                                                     </td>
                                                     <td className="px-5 py-3 text-right tabular-nums">
@@ -866,16 +997,24 @@ export default function Dashboard({
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Detail Lokasi
+                                {t(
+                                    "owner.locations.detail.title",
+                                    "Location Details",
+                                )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Area (kapasitas/occupied) dan tarif per vehicle
-                                type.
+                                {t(
+                                    "owner.locations.detail.subtitle",
+                                    "Areas (capacity/occupied) and rates per vehicle type.",
+                                )}
                             </p>
 
                             <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
                                 <label className="text-xs text-slate-600 dark:text-slate-300">
-                                    Pilih lokasi
+                                    {t(
+                                        "owner.locations.filters.pick_location",
+                                        "Select location",
+                                    )}
                                 </label>
                                 <select
                                     value={effectiveSelectedLocationId}
@@ -888,7 +1027,12 @@ export default function Dashboard({
                                         locations.length === 0
                                     }
                                 >
-                                    <option value="">Pilih lokasi...</option>
+                                    <option value="">
+                                        {t(
+                                            "owner.locations.filters.pick_location_placeholder",
+                                            "Select location...",
+                                        )}
+                                    </option>
                                     {locations.map((location) => (
                                         <option
                                             key={location.id}
@@ -904,20 +1048,32 @@ export default function Dashboard({
                                 <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-4 bg-slate-50 dark:bg-white/5">
                                         <p className="text-sm font-medium">
-                                            Area / Zone
+                                            {t(
+                                                "owner.locations.detail.areas.title",
+                                                "Area / Zone",
+                                            )}
                                         </p>
                                         <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                                     <tr>
                                                         <th className="text-left px-3 py-2 font-medium">
-                                                            Area
+                                                            {t(
+                                                                "owner.locations.detail.areas.area",
+                                                                "Area",
+                                                            )}
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
-                                                            Kapasitas
+                                                            {t(
+                                                                "fields.capacity",
+                                                                "Capacity",
+                                                            )}
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
-                                                            Terisi
+                                                            {t(
+                                                                "fields.occupied",
+                                                                "Occupied",
+                                                            )}
                                                         </th>
                                                     </tr>
                                                 </thead>
@@ -938,7 +1094,7 @@ export default function Dashboard({
                                                                     area.capacity ||
                                                                         0,
                                                                 ).toLocaleString(
-                                                                    "id-ID",
+                                                                    localeTag,
                                                                 )}
                                                             </td>
                                                             <td className="px-3 py-2 text-right tabular-nums">
@@ -946,7 +1102,7 @@ export default function Dashboard({
                                                                     area.occupied ||
                                                                         0,
                                                                 ).toLocaleString(
-                                                                    "id-ID",
+                                                                    localeTag,
                                                                 )}
                                                             </td>
                                                         </tr>
@@ -955,7 +1111,11 @@ export default function Dashboard({
                                             </table>
                                         </div>
                                         <div className="mt-3 text-xs text-slate-600 dark:text-slate-300">
-                                            Total okupansi:{" "}
+                                            {t(
+                                                "owner.locations.detail.areas.total_occupancy",
+                                                "Total occupancy",
+                                            )}
+                                            :{" "}
                                             <span className="font-medium">
                                                 {Number(
                                                     locationDetail.occupancy_percent ||
@@ -968,23 +1128,38 @@ export default function Dashboard({
 
                                     <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-4 bg-slate-50 dark:bg-white/5">
                                         <p className="text-sm font-medium">
-                                            Tarif
+                                            {t(
+                                                "owner.locations.detail.rates.title",
+                                                "Rates",
+                                            )}
                                         </p>
                                         <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                                     <tr>
                                                         <th className="text-left px-3 py-2 font-medium">
-                                                            Vehicle Type
+                                                            {t(
+                                                                "fields.vehicle_type",
+                                                                "Vehicle Type",
+                                                            )}
                                                         </th>
                                                         <th className="text-left px-3 py-2 font-medium">
-                                                            Tipe
+                                                            {t(
+                                                                "fields.rate_type",
+                                                                "Rate Type",
+                                                            )}
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
-                                                            Per jam
+                                                            {t(
+                                                                "owner.locations.detail.rates.per_hour",
+                                                                "Per Hour",
+                                                            )}
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
-                                                            Flat
+                                                            {t(
+                                                                "owner.locations.detail.rates.flat",
+                                                                "Flat",
+                                                            )}
                                                         </th>
                                                     </tr>
                                                 </thead>
@@ -1024,45 +1199,65 @@ export default function Dashboard({
                                 </div>
                             ) : (
                                 <div className="mt-5 text-sm text-slate-600 dark:text-slate-300">
-                                    Pilih lokasi lalu klik “Detail” untuk memuat
-                                    area & tarif.
+                                    {t(
+                                        "owner.locations.detail.empty",
+                                        "Select a location to load area and rate details.",
+                                    )}
                                 </div>
                             )}
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Peta / Alamat
+                                {t("owner.map.title", "Map / Address")}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Preview lokasi berdasarkan koordinat yang
-                                tersimpan.
+                                {t(
+                                    "owner.map.subtitle",
+                                    "Location preview based on saved coordinates.",
+                                )}
                             </p>
 
                             {!hasMapSelection ? (
                                 <div className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 h-56 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm">
-                                    Pilih lokasi untuk melihat peta.
+                                    {t(
+                                        "owner.map.states.select_location",
+                                        "Select a location to view the map.",
+                                    )}
                                 </div>
                             ) : !mapLocation ? (
                                 <div className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 h-56 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm">
-                                    Memuat data lokasi...
+                                    {t(
+                                        "owner.map.states.loading",
+                                        "Loading location data...",
+                                    )}
                                 </div>
                             ) : (
                                 <div className="mt-4 space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <p className="text-sm font-medium">
-                                                {mapLocation?.name || "Lokasi"}
+                                                {mapLocation?.name ||
+                                                    t(
+                                                        "fields.location",
+                                                        "Location",
+                                                    )}
                                             </p>
                                             <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                                                 {mapLocation?.description ||
-                                                    "Alamat belum diisi."}
+                                                    t(
+                                                        "owner.map.states.address_empty",
+                                                        "Address is not filled yet.",
+                                                    )}
                                             </p>
                                             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                                                 {toFiniteNumber(mapLat) ===
                                                     null ||
                                                 toFiniteNumber(mapLng) === null
-                                                    ? "Koordinat belum diisi."
+                                                    ? t(
+                                                          "owner.map.states.coordinates_empty",
+                                                          "Coordinates are not filled yet.",
+                                                      )
                                                     : `${Number(mapLat).toFixed(6)}, ${Number(mapLng).toFixed(6)}`}
                                             </p>
                                         </div>
@@ -1075,7 +1270,10 @@ export default function Dashboard({
                                                 className="shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition"
                                             >
                                                 <MapPinned size={16} />
-                                                Buka Maps
+                                                {t(
+                                                    "actions.open_maps",
+                                                    "Open Maps",
+                                                )}
                                             </a>
                                         ) : null}
                                     </div>
@@ -1091,8 +1289,10 @@ export default function Dashboard({
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm">
-                                                Koordinat belum tersedia untuk
-                                                preview peta.
+                                                {t(
+                                                    "owner.map.states.preview_unavailable",
+                                                    "Coordinates are unavailable for map preview.",
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1105,8 +1305,14 @@ export default function Dashboard({
                 <section className="space-y-6">
                     <SectionHeader
                         id="transaksi"
-                        title="Transaksi & Riwayat"
-                        subtitle="Filter per tanggal/lokasi/metode bayar, lihat detail tiket, dan export CSV."
+                        title={t(
+                            "owner.transactions.title",
+                            "Transactions & History",
+                        )}
+                        subtitle={t(
+                            "owner.transactions.subtitle",
+                            "Filter by date/location/payment method, view ticket details, and export CSV.",
+                        )}
                         icon={ReceiptText}
                     />
 
@@ -1119,7 +1325,10 @@ export default function Dashboard({
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 flex-1">
                                 <div className="lg:col-span-2">
                                     <label className="text-xs text-slate-600 dark:text-slate-300">
-                                        Cari (ID / Plat)
+                                        {t(
+                                            "owner.transactions.filters.search",
+                                            "Search (ID / Plate)",
+                                        )}
                                     </label>
                                     <div className="mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-darkbg-secondary">
                                         <Search
@@ -1134,7 +1343,10 @@ export default function Dashboard({
                                                     query: event.target.value,
                                                 }))
                                             }
-                                            placeholder="TX-xxxx / B 1234 ABC"
+                                            placeholder={t(
+                                                "owner.transactions.filters.search_placeholder",
+                                                "TX-xxxx / B 1234 ABC",
+                                            )}
                                             className="w-full bg-transparent outline-none text-sm"
                                         />
                                     </div>
@@ -1142,7 +1354,7 @@ export default function Dashboard({
 
                                 <div>
                                     <label className="text-xs text-slate-600 dark:text-slate-300">
-                                        Lokasi
+                                        {t("fields.location", "Location")}
                                     </label>
                                     <select
                                         value={txFilters.locationId}
@@ -1154,7 +1366,9 @@ export default function Dashboard({
                                         }
                                         className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-darkbg-secondary outline-none text-sm"
                                     >
-                                        <option value="">Semua</option>
+                                        <option value="">
+                                            {t("statuses.all", "All")}
+                                        </option>
                                         {!locationsLoaded
                                             ? null
                                             : locations.map((location) => (
@@ -1170,7 +1384,10 @@ export default function Dashboard({
 
                                 <div>
                                     <label className="w-full text-xs text-slate-600 dark:text-slate-300">
-                                        Dari
+                                        {t(
+                                            "owner.transactions.filters.from",
+                                            "From",
+                                        )}
                                     </label>
                                     <input
                                         type="date"
@@ -1186,7 +1403,10 @@ export default function Dashboard({
                                 </div>
                                 <div>
                                     <label className="text-xs text-slate-600 dark:text-slate-300">
-                                        Sampai
+                                        {t(
+                                            "owner.transactions.filters.to",
+                                            "To",
+                                        )}
                                     </label>
                                     <input
                                         type="date"
@@ -1204,7 +1424,7 @@ export default function Dashboard({
 
                             <div className="flex items-center justify-between lg:justify-end gap-3">
                                 <div className="text-xs text-slate-500 dark:text-slate-300">
-                                    Result:{" "}
+                                    {t("owner.transactions.result", "Result")}:{" "}
                                     <span className="font-medium text-slate-800 dark:text-white">
                                         {transactionsLoaded
                                             ? filteredTransactions.length
@@ -1221,7 +1441,10 @@ export default function Dashboard({
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     <Download size={16} />
-                                    Export CSV
+                                    {t(
+                                        "owner.transactions.actions.export_csv",
+                                        "Export CSV",
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -1231,25 +1454,31 @@ export default function Dashboard({
                                 <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                     <tr>
                                         <th className="text-left px-4 py-3 font-medium">
-                                            Waktu
+                                            {t("fields.time", "Time")}
                                         </th>
                                         <th className="text-left px-4 py-3 font-medium">
-                                            Lokasi
+                                            {t("fields.location", "Location")}
                                         </th>
                                         <th className="text-left px-4 py-3 font-medium">
-                                            Plat
+                                            {t(
+                                                "fields.license_plate",
+                                                "License Plate",
+                                            )}
                                         </th>
                                         <th className="text-left px-4 py-3 font-medium">
-                                            Jenis
+                                            {t(
+                                                "fields.vehicle_type",
+                                                "Vehicle Type",
+                                            )}
                                         </th>
                                         <th className="text-right px-4 py-3 font-medium">
-                                            Total
+                                            {t("fields.amount", "Amount")}
                                         </th>
                                         <th className="text-left px-4 py-3 font-medium">
-                                            Status
+                                            {t("fields.status", "Status")}
                                         </th>
                                         <th className="text-right px-4 py-3 font-medium">
-                                            Aksi
+                                            {t("fields.action", "Action")}
                                         </th>
                                     </tr>
                                 </thead>
@@ -1260,7 +1489,10 @@ export default function Dashboard({
                                                 colSpan={8}
                                                 className="px-4 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
                                             >
-                                                Memuat transaksi...
+                                                {t(
+                                                    "owner.transactions.states.loading",
+                                                    "Loading transactions...",
+                                                )}
                                             </td>
                                         </tr>
                                     ) : filteredTransactions.length === 0 ? (
@@ -1269,7 +1501,10 @@ export default function Dashboard({
                                                 colSpan={8}
                                                 className="px-4 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
                                             >
-                                                Belum ada data.
+                                                {t(
+                                                    "owner.dashboard.states.no_data",
+                                                    "No data yet.",
+                                                )}
                                             </td>
                                         </tr>
                                     ) : (
@@ -1303,6 +1538,7 @@ export default function Dashboard({
                                                     <td className="px-4 py-3 text-right tabular-nums">
                                                         {formatCurrencyIDR(
                                                             tx.total,
+                                                            localeTag,
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3">
@@ -1310,8 +1546,14 @@ export default function Dashboard({
                                                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${badgeClass}`}
                                                         >
                                                             {isCompleted
-                                                                ? "Completed"
-                                                                : "Active"}
+                                                                ? t(
+                                                                      "statuses.completed",
+                                                                      "Completed",
+                                                                  )
+                                                                : t(
+                                                                      "statuses.active",
+                                                                      "Active",
+                                                                  )}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3">
@@ -1321,7 +1563,10 @@ export default function Dashboard({
                                                                 disabled
                                                                 className="px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-white/10 opacity-60 cursor-not-allowed"
                                                             >
-                                                                Detail
+                                                                {t(
+                                                                    "owner.transactions.actions.detail",
+                                                                    "Detail",
+                                                                )}
                                                             </button>
                                                         </div>
                                                     </td>
@@ -1338,43 +1583,74 @@ export default function Dashboard({
                 <section className="space-y-6">
                     <SectionHeader
                         id="laporan"
-                        title="Pendapatan & Laporan"
-                        subtitle="Revenue per hari/bulan, breakdown per metode bayar, dan download laporan."
+                        title={t("owner.reports.title", "Revenue & Reports")}
+                        subtitle={t(
+                            "owner.reports.subtitle",
+                            "Daily/monthly revenue, payment breakdown, and report downloads.",
+                        )}
                         icon={Coins}
                     />
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Ringkasan Pendapatan
+                                {t(
+                                    "owner.reports.summary.title",
+                                    "Revenue Summary",
+                                )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Ringkasan berdasarkan transaksi completed.
+                                {t(
+                                    "owner.reports.summary.subtitle",
+                                    "Summary based on completed transactions.",
+                                )}
                             </p>
 
                             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <StatCard
-                                    title="Revenue 7 hari"
-                                    value={formatCurrencyIDR(revenueTotalLast7)}
-                                    hint="Total 7 hari terakhir"
+                                    title={t(
+                                        "owner.reports.summary.revenue_7d",
+                                        "Revenue 7 Days",
+                                    )}
+                                    value={formatCurrencyIDR(
+                                        revenueTotalLast7,
+                                        localeTag,
+                                    )}
+                                    hint={t(
+                                        "owner.reports.summary.revenue_7d_hint",
+                                        "Total last 7 days",
+                                    )}
                                     icon={Coins}
                                     accentClass="text-brand.teal"
                                 />
                                 <StatCard
-                                    title="Revenue 30 hari"
+                                    title={t(
+                                        "owner.reports.summary.revenue_30d",
+                                        "Revenue 30 Days",
+                                    )}
                                     value={formatCurrencyIDR(
                                         revenueTotalLast30,
+                                        localeTag,
                                     )}
-                                    hint="Total range aktif"
+                                    hint={t(
+                                        "owner.reports.summary.revenue_30d_hint",
+                                        "Total active range",
+                                    )}
                                     icon={ReceiptText}
                                     accentClass="text-brand.blue"
                                 />
                                 <StatCard
-                                    title="Kendaraan Keluar"
+                                    title={t(
+                                        "owner.reports.summary.vehicle_out",
+                                        "Vehicles Out",
+                                    )}
                                     value={Number(
                                         summary.vehicle_out || 0,
-                                    ).toLocaleString("id-ID")}
-                                    hint="Total check-out hari ini"
+                                    ).toLocaleString(localeTag)}
+                                    hint={t(
+                                        "owner.reports.summary.vehicle_out_hint",
+                                        "Total check-outs today",
+                                    )}
                                     icon={CarFront}
                                     accentClass="text-emerald-600 dark:text-emerald-400"
                                 />
@@ -1387,7 +1663,10 @@ export default function Dashboard({
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm border border-slate-200 dark:border-white/10 opacity-60 cursor-not-allowed"
                                 >
                                     <Download size={16} />
-                                    Download PDF
+                                    {t(
+                                        "owner.reports.actions.download_pdf",
+                                        "Download PDF",
+                                    )}
                                 </button>
                                 <button
                                     type="button"
@@ -1395,26 +1674,41 @@ export default function Dashboard({
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm border border-slate-200 dark:border-white/10 opacity-60 cursor-not-allowed"
                                 >
                                     <Download size={16} />
-                                    Download CSV
+                                    {t(
+                                        "owner.reports.actions.download_csv",
+                                        "Download CSV",
+                                    )}
                                 </button>
                             </div>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                             <p className="text-sm font-semibold font-['Poppins']">
-                                Breakdown Jenis Kendaraan
+                                {t(
+                                    "owner.reports.breakdown.title",
+                                    "Vehicle Type Breakdown",
+                                )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                                Ringkasan dari 25 transaksi terakhir.
+                                {t(
+                                    "owner.reports.breakdown.subtitle",
+                                    "Summary from the latest 25 transactions.",
+                                )}
                             </p>
 
                             {!transactionsLoaded ? (
                                 <div className="mt-4 h-64 rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
-                                    Memuat transaksi...
+                                    {t(
+                                        "owner.transactions.states.loading",
+                                        "Loading transactions...",
+                                    )}
                                 </div>
                             ) : vehicleBreakdown.total <= 0 ? (
                                 <div className="mt-4 h-64 rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
-                                    Belum ada transaksi untuk dihitung.
+                                    {t(
+                                        "owner.reports.breakdown.empty",
+                                        "No transactions available for breakdown.",
+                                    )}
                                 </div>
                             ) : (
                                 <div className="mt-4 space-y-3">

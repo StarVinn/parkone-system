@@ -1,17 +1,28 @@
-import { Link, useForm, usePage } from "@inertiajs/react";
+import { Link, useForm, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
-import { ChevronDown, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronDown, Languages, LogOut, Moon, Sun } from "lucide-react";
 import useTheme from "../../hooks/useTheme";
+import useI18n from "../../hooks/useI18n";
 import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function OwnerLayout({ children }) {
     const { auth } = usePage().props;
     const { post, processing } = useForm();
     const { darkMode, setDarkMode } = useTheme();
+    const { t, locale } = useI18n();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const handleLogout = () => {
         post("/logout");
+    };
+
+    const handleLocale = (nextLocale) => {
+        router.post(
+            route("locale.update"),
+            { locale: nextLocale },
+            { preserveScroll: true },
+        );
+        setDropdownOpen(false);
     };
 
     return (
@@ -29,7 +40,7 @@ export default function OwnerLayout({ children }) {
                                 PARKONE
                             </p>
                             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                Owner Panel
+                                {t("owner.layout.panel", "Owner Panel")}
                             </p>
                         </div>
                     </div>
@@ -57,7 +68,10 @@ export default function OwnerLayout({ children }) {
                             }`}
                         >
                             <div className="px-4 py-2 text-xs text-slate-500 dark:text-slate-300">
-                                Login sebagai
+                                {t(
+                                    "layout.login_with_email",
+                                    "Login dengan email",
+                                )}
                                 <div className="text-slate-800 dark:text-white font-medium truncate">
                                     {auth?.user?.email || "-"}
                                 </div>
@@ -76,9 +90,55 @@ export default function OwnerLayout({ children }) {
                                     <Moon size={16} />
                                 )}
                                 <span>
-                                    {darkMode ? "Light Mode" : "Dark Mode"}
+                                    {darkMode
+                                        ? t("layout.light_mode", "Light Mode")
+                                        : t("layout.dark_mode", "Dark Mode")}
                                 </span>
                             </button>
+
+                            <hr className="my-2 border-slate-200 dark:border-white/10" />
+
+                            <div className="px-4 py-2">
+                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+                                    <Languages size={14} />
+                                    <span>
+                                        {t("layout.language", "Language")}
+                                    </span>
+                                    <span className="ml-auto font-semibold text-slate-700 dark:text-slate-200">
+                                        {locale === "id" ? "ID" : "EN"}
+                                    </span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between gap-3">
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                        {locale === "id"
+                                            ? t("lang.id", "Bahasa Indonesia")
+                                            : t("lang.en", "English")}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={locale === "en"}
+                                        onClick={() =>
+                                            handleLocale(
+                                                locale === "id" ? "en" : "id",
+                                            )
+                                        }
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                                            locale === "en"
+                                                ? "bg-[#1E5EFF]"
+                                                : "bg-slate-300 dark:bg-white/20"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                                locale === "en"
+                                                    ? "translate-x-6"
+                                                    : "translate-x-1"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
 
                             <hr className="my-2 border-slate-200 dark:border-white/10" />
 
@@ -90,7 +150,12 @@ export default function OwnerLayout({ children }) {
                             >
                                 <LogOut size={16} />
                                 <span>
-                                    {processing ? "Logging out..." : "Logout"}
+                                    {processing
+                                        ? t(
+                                              "states.processing",
+                                              "Processing...",
+                                          )
+                                        : t("actions.logout", "Logout")}
                                 </span>
                             </button>
                         </div>
