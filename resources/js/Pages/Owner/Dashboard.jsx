@@ -455,7 +455,6 @@ export default function Dashboard({
             "location",
             "plate",
             "vehicle",
-            "payment",
             "total",
             "status",
         ];
@@ -1243,9 +1242,6 @@ export default function Dashboard({
                                         <th className="text-left px-4 py-3 font-medium">
                                             Jenis
                                         </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Metode Bayar
-                                        </th>
                                         <th className="text-right px-4 py-3 font-medium">
                                             Total
                                         </th>
@@ -1303,9 +1299,6 @@ export default function Dashboard({
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {tx.vehicle}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {tx.payment}
                                                     </td>
                                                     <td className="px-4 py-3 text-right tabular-nums">
                                                         {formatCurrencyIDR(
