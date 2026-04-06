@@ -28,6 +28,7 @@ export default function StandbyIn({
     const { flash, errors } = usePage().props;
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
+    const [rfidVehicle, setRfidVehicle] = useState(null);
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
     const [showVisitorModal, setShowVisitorModal] = useState(false);
@@ -68,11 +69,23 @@ export default function StandbyIn({
             return;
         }
 
-        setVisitorData("license_plate", formatLicensePlate(payload.license_plate));
+        setVisitorData(
+            "license_plate",
+            formatLicensePlate(payload.license_plate),
+        );
         setVisitorData("vehicle_type_id", "");
         setVisitorData("next_action", payload.next_action || "entry");
-        setVisitorData("parking_area_id", payload.parking_area_id || scope.parking_area_id || "");
+        setVisitorData(
+            "parking_area_id",
+            payload.parking_area_id || scope.parking_area_id || "",
+        );
         setVisitorData("rfid_uid", payload.rfid_uid || "");
+        setVisitorData(
+            "license_plate",
+            formatLicensePlate(
+                payload.license_plate || payload.vehicle?.license_plate || "",
+            ),
+        );
         setShowVisitorModal(true);
     }, [flash?.visitor_vehicle]);
 
@@ -99,7 +112,9 @@ export default function StandbyIn({
                 setCameraError("");
             } catch {
                 setCameraReady(false);
-                setCameraError("Izin kamera ditolak atau kamera tidak tersedia.");
+                setCameraError(
+                    "Izin kamera ditolak atau kamera tidak tersedia.",
+                );
             }
         };
 
@@ -134,25 +149,31 @@ export default function StandbyIn({
             }
 
             context.drawImage(video, 0, 0, width, height);
-            canvas.toBlob(
-                (blob) => resolve(blob),
-                "image/jpeg",
-                0.92,
-            );
+            canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.92);
         });
     };
 
     const submit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const licensePlate = formData.get("license_plate");
+        const licensePlate = formatLicensePlate(formData.get("license_plate"));
+
+        if (rfidVehicle?.license_plate) {
+            const boundPlate = formatLicensePlate(rfidVehicle.license_plate);
+            if (boundPlate && licensePlate && boundPlate !== licensePlate) {
+                setRfidError("RFID ini terikat ke kendaraan lain.");
+                return;
+            }
+        }
 
         if (rfidUid.trim() && !rfidUser) {
             setRfidError("RFID belum terverifikasi.");
             return;
         }
         if (!entryReady) {
-            setPhotoError(entryBlockers[0] || "Area belum siap untuk transaksi masuk.");
+            setPhotoError(
+                entryBlockers[0] || "Area belum siap untuk transaksi masuk.",
+            );
             return;
         }
 
@@ -170,9 +191,13 @@ export default function StandbyIn({
                 license_plate: String(licensePlate || ""),
                 parking_area_id: String(scope.parking_area_id || ""),
                 rfid_uid: String(rfidUid || "").trim(),
-                vehicle_photo: new File([photoBlob], `entry-${Date.now()}.jpg`, {
-                    type: "image/jpeg",
-                }),
+                vehicle_photo: new File(
+                    [photoBlob],
+                    `entry-${Date.now()}.jpg`,
+                    {
+                        type: "image/jpeg",
+                    },
+                ),
             },
             { forceFormData: true },
         );
@@ -184,6 +209,7 @@ export default function StandbyIn({
             setLookupLoading(false);
             setRfidError("");
             setRfidUser(null);
+            setRfidVehicle(null);
             return;
         }
 
@@ -193,6 +219,7 @@ export default function StandbyIn({
         setLookupLoading(true);
         setRfidError("");
         setRfidUser(null);
+        setRfidVehicle(null);
 
         try {
             const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(normalizedUid)}`;
@@ -213,6 +240,14 @@ export default function StandbyIn({
             }
 
             setRfidUser(payload.user);
+            setRfidVehicle(payload.vehicle || null);
+
+            if (payload.vehicle?.license_plate) {
+                setVisitorData(
+                    "license_plate",
+                    formatLicensePlate(payload.vehicle.license_plate),
+                );
+            }
         } catch {
             if (latestLookupRef.current !== lookupId) {
                 return;
@@ -242,9 +277,13 @@ export default function StandbyIn({
             return;
         }
         setPhotoError("");
-        const visitorPhotoFile = new File([photoBlob], `entry-visitor-${Date.now()}.jpg`, {
-            type: "image/jpeg",
-        });
+        const visitorPhotoFile = new File(
+            [photoBlob],
+            `entry-visitor-${Date.now()}.jpg`,
+            {
+                type: "image/jpeg",
+            },
+        );
 
         transformVisitorData((data) => ({
             ...data,

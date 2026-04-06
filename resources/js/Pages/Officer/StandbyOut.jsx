@@ -24,16 +24,21 @@ const canonicalize = (value) =>
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, "");
 
-export default function StandbyOut({ activeTransactions = [], selectedParkingArea = null }) {
+export default function StandbyOut({
+    activeTransactions = [],
+    selectedParkingArea = null,
+}) {
     const { flash, errors } = usePage().props;
     const [licensePlate, setLicensePlate] = useState("");
     const [plateSource, setPlateSource] = useState("none");
     const [plateError, setPlateError] = useState("");
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
+    const [rfidVehicle, setRfidVehicle] = useState(null);
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
-    const [selectedActiveTransaction, setSelectedActiveTransaction] = useState(null);
+    const [selectedActiveTransaction, setSelectedActiveTransaction] =
+        useState(null);
     const [activePlateSearch, setActivePlateSearch] = useState("");
     const latestLookupRef = useRef(0);
 
@@ -83,6 +88,7 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             setLookupLoading(false);
             setRfidError("");
             setRfidUser(null);
+            setRfidVehicle(null);
             return;
         }
 
@@ -92,6 +98,7 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
         setLookupLoading(true);
         setRfidError("");
         setRfidUser(null);
+        setRfidVehicle(null);
 
         try {
             const url = `${route("officer.rfid.lookup")}?rfid_uid=${encodeURIComponent(normalizedUid)}`;
@@ -112,6 +119,15 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
             }
 
             setRfidUser(payload.user);
+            setRfidVehicle(payload.vehicle || null);
+
+            if (payload.vehicle?.license_plate) {
+                setLicensePlate(
+                    formatLicensePlate(payload.vehicle.license_plate),
+                );
+                setPlateSource("rfid");
+                setPlateError("");
+            }
 
             const matched = activeTransactions.find((tx) => {
                 const txUid = String(tx.rfidCard?.uid || tx.rfid_uid || "")
@@ -119,8 +135,11 @@ export default function StandbyOut({ activeTransactions = [], selectedParkingAre
                     .toUpperCase();
                 return txUid && txUid === normalizedUid.toUpperCase();
             });
-            if (matched?.vehicle?.license_plate) {
-                setLicensePlate(formatLicensePlate(matched.vehicle.license_plate));
+            const matchedPlate =
+                payload.vehicle?.license_plate ||
+                matched?.vehicle?.license_plate;
+            if (matchedPlate) {
+                setLicensePlate(formatLicensePlate(matchedPlate));
                 setPlateSource("rfid");
                 setPlateError("");
             }
