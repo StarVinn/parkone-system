@@ -12,15 +12,15 @@ class VehicleTypeSeeder extends Seeder
         $vehicleTypes = [
             [
                 'name' => 'Motor',
-                'description' => 'Kendaraan roda dua',
+                'description' => 'Kendaraan roda dua untuk siswa, guru, dan staf sekolah',
             ],
             [
                 'name' => 'Mobil',
-                'description' => 'Kendaraan roda empat',
+                'description' => 'Kendaraan roda empat untuk guru, tamu, dan operasional sekolah',
             ],
             [
-                'name' => 'Truk',
-                'description' => 'Kendaraan angkut barang',
+                'name' => 'Bus',
+                'description' => 'Bus sekolah untuk antar jemput siswa dan kegiatan sekolah',
             ],
         ];
 

@@ -11,16 +11,22 @@ class ParkingLocationSeeder extends Seeder
     {
         $locations = [
             [
-                'name' => 'ParkOne Pusat',
-                'latitude' => '-6.200000',
-                'longitude' => '106.816666',
-                'description' => 'Lokasi utama area parkir pusat kota',
+                'name' => 'SMA Nusantara',
+                'latitude' => '-6.201200',
+                'longitude' => '106.818900',
+                'description' => 'Area parkir utama lingkungan SMA Nusantara',
             ],
             [
-                'name' => 'ParkOne Utara',
-                'latitude' => '-6.138000',
-                'longitude' => '106.860000',
-                'description' => 'Lokasi parkir cabang utara',
+                'name' => 'SMK Bina Karya',
+                'latitude' => '-6.157300',
+                'longitude' => '106.852100',
+                'description' => 'Area parkir sekolah kejuruan untuk siswa, guru, dan tamu',
+            ],
+            [
+                'name' => 'SMK Taruna Bhakti Depok',
+                'latitude' => '-6.3842636',
+                'longitude' => '106.8700270',
+                'description' => 'Area parkir lingkungan SMK Taruna Bhakti Depok',
             ],
         ];
 
