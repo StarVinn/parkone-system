@@ -24,6 +24,7 @@ class AuthController extends Controller
                 'admin'   => redirect('/admin'),
                 'officer' => redirect('/officer'),
                 'owner'   => redirect('/owner'),
+                'user'    => redirect('/user'),
             };
         } else {
             return Inertia::render('Auth/Login');
@@ -38,6 +39,7 @@ class AuthController extends Controller
                 'admin'   => redirect('/admin'),
                 'officer' => redirect('/officer'),
                 'owner'   => redirect('/owner'),
+                'user'    => redirect('/user'),
             };
         } else {
             return Inertia::render('Auth/Register');
@@ -58,6 +60,7 @@ class AuthController extends Controller
             'admin'   => redirect()->intended('/admin'),
             'officer' => redirect()->intended('/officer'),
             'owner'   => redirect()->intended('/owner'),
+            'user'    => redirect()->intended('/user'),
         };
     }
 

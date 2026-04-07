@@ -24,11 +24,6 @@ class AdminDashboardController extends Controller
             })
             ->count();
 
-        $mobileLogins = ActivityLog::query()
-            ->where('activity', 'like', 'User login%')
-            ->where('activity', 'like', '%(mobile)%')
-            ->count();
-
         $vehicleCreatedThisMonth = Vehicle::query()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
@@ -100,8 +95,7 @@ class AdminDashboardController extends Controller
         return inertia('Admin/Dashboard', [
             'loginChart' => [
                 'web' => $webLogins,
-                'mobile' => $mobileLogins,
-                'total' => $webLogins + $mobileLogins,
+                'total' => $webLogins,
             ],
             'creationChart' => [
                 'vehicle' => $vehicleCreatedThisMonth,
