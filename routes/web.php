@@ -15,6 +15,7 @@ use App\Http\Controllers\Web\OwnerDashboardController;
 use App\Http\Controllers\Web\AdminCustomizationController;
 use App\Http\Controllers\Web\CustomizationApiController;
 use App\Http\Controllers\Web\LocaleController;
+use App\Http\Controllers\Web\UserDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -158,5 +159,17 @@ Route::middleware(['auth', 'role:officer'])->group(function () {
 Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::prefix('owner')->group(function () {
         Route::get('/', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| USER
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:user'])->group(function () {
+    Route::prefix('user')->group(function () {
+        Route::get('/', [UserDashboardController::class, 'index'])->name('user.dashboard');
     });
 });
