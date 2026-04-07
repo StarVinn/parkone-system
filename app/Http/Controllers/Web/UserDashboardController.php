@@ -17,7 +17,14 @@ class UserDashboardController extends Controller
             'primaryRfidCard:id,user_id,uid',
         ]);
 
-        $transactionsQuery = Transaction::query()->where('user_id', $user->id);
+        $transactionsQuery = Transaction::query()
+            ->where(function ($query) use ($user) {
+                $query->whereHas('vehicle', function ($vehicleQuery) use ($user) {
+                    $vehicleQuery->where('user_id', $user->id);
+                })->orWhereHas('rfidCard', function ($rfidQuery) use ($user) {
+                    $rfidQuery->where('user_id', $user->id);
+                });
+            });
 
         $totalTransactions = (clone $transactionsQuery)->count();
         $activeTransactions = (clone $transactionsQuery)
