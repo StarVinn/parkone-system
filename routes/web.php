@@ -80,7 +80,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/', [VehicleController::class, 'index'])->name('admin.vehicles.index');
             Route::post('/', [VehicleController::class, 'store'])->name('admin.vehicles.store');
             Route::put('/{id}', [VehicleController::class, 'update'])->name('admin.vehicles.update');
+            Route::put('/{id}/rfid', [VehicleController::class, 'assignRfid'])->name('admin.vehicles.assign-rfid');
             Route::delete('/{id}', [VehicleController::class, 'destroy'])->name('admin.vehicles.destroy');
+
+                Route::prefix('rfid-cards')->group(function () {
+                    Route::get('/available', [VehicleController::class, 'getAvailableRfidCards'])->name('admin.rfid-cards.available');
+                });
         });
 
         Route::prefix('parking-locations')->group(function () {
