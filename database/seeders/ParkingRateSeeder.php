@@ -27,13 +27,6 @@ class ParkingRateSeeder extends Seeder
                 'flat_rate' => null,
             ],
             [
-                'location_name' => 'SMA Nusantara',
-                'vehicle_type_name' => 'Bus',
-                'rate_type' => 'flat',
-                'rate_per_hour' => null,
-                'flat_rate' => 10000,
-            ],
-            [
                 'location_name' => 'SMK Bina Karya',
                 'vehicle_type_name' => 'Motor',
                 'rate_type' => 'hourly',
@@ -46,13 +39,6 @@ class ParkingRateSeeder extends Seeder
                 'rate_type' => 'hourly',
                 'rate_per_hour' => 3000,
                 'flat_rate' => null,
-            ],
-            [
-                'location_name' => 'SMK Bina Karya',
-                'vehicle_type_name' => 'Bus',
-                'rate_type' => 'flat',
-                'rate_per_hour' => null,
-                'flat_rate' => 8500,
             ],
             [
                 'location_name' => 'SMK Taruna Bhakti Depok',
