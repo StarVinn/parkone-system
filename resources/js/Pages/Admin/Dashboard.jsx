@@ -31,7 +31,7 @@ ChartJS.register(
 );
 
 export default function Dashboard({
-    loginChart = { web: 0, mobile: 0, total: 0 },
+    loginChart = { web: 0, total: 0 },
     creationChart = { vehicle: 0, parking: 0 },
     adminCards = {
         setupReadiness: {
@@ -110,7 +110,10 @@ export default function Dashboard({
     const masterDataCards = [
         {
             key: "location-total",
-            title: t("admin.dashboard.master.location_total", "Parking Location"),
+            title: t(
+                "admin.dashboard.master.location_total",
+                "Parking Location",
+            ),
             value: Number(masterDataHealth.location_total || 0),
             subtitle: t(
                 "admin.dashboard.master.location_total_subtitle",
@@ -132,7 +135,10 @@ export default function Dashboard({
         },
         {
             key: "vehicle-type-total",
-            title: t("admin.dashboard.master.vehicle_type_total", "Vehicle Type"),
+            title: t(
+                "admin.dashboard.master.vehicle_type_total",
+                "Vehicle Type",
+            ),
             value: Number(masterDataHealth.vehicle_type_total || 0),
             subtitle: t(
                 "admin.dashboard.master.vehicle_type_total_subtitle",
@@ -160,21 +166,19 @@ export default function Dashboard({
     ];
 
     const webCount = Number(loginChart.web || 0);
-    const mobileCount = Number(loginChart.mobile || 0);
     const totalCount = Number(loginChart.total || 0);
     const safeTotal = totalCount > 0 ? totalCount : 1;
     const webPercent = Math.round((webCount / safeTotal) * 100);
-    const mobilePercent = Math.round((mobileCount / safeTotal) * 100);
     const vehicleCreated = Number(creationChart.vehicle || 0);
     const parkingCreated = Number(creationChart.parking || 0);
 
     const loginChartData = {
-        labels: ["Web", "Mobile"],
+        labels: ["Web"],
         datasets: [
             {
-                data: [webCount, mobileCount],
-                backgroundColor: ["#3B82F6", "#10B981"],
-                borderColor: ["#3B82F6", "#10B981"],
+                data: [webCount],
+                backgroundColor: ["#3B82F6"],
+                borderColor: ["#3B82F6"],
                 borderWidth: 0,
             },
         ],
@@ -306,7 +310,9 @@ export default function Dashboard({
                                     <div className="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                                         <div
                                             className={`h-full ${card.progressClass}`}
-                                            style={{ width: `${card.progress}%` }}
+                                            style={{
+                                                width: `${card.progress}%`,
+                                            }}
                                         />
                                     </div>
                                     <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
@@ -350,7 +356,9 @@ export default function Dashboard({
                                     <div className="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                                         <div
                                             className={`h-full ${card.progressClass}`}
-                                            style={{ width: `${card.progress}%` }}
+                                            style={{
+                                                width: `${card.progress}%`,
+                                            }}
                                         />
                                     </div>
                                     <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
@@ -382,7 +390,10 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex items-center justify-center py-2">
-                        <div className="relative h-56 w-56" aria-label="Pie chart login source web dan mobile">
+                        <div
+                            className="relative h-56 w-56"
+                            aria-label="Pie chart login source web"
+                        >
                             <Doughnut
                                 data={loginChartData}
                                 options={loginChartOptions}
@@ -403,10 +414,6 @@ export default function Dashboard({
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                             Web: {webCount} ({webPercent}%)
                         </span>
-                        <span className="inline-flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                            Mobile: {mobileCount} ({mobilePercent}%)
-                        </span>
                     </div>
                 </div>
 
@@ -421,13 +428,16 @@ export default function Dashboard({
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                             {t(
                                 "admin.dashboard.chart.statistic.span",
-                                "Bulan Ini"
+                                "Bulan Ini",
                             )}
                         </span>
                     </div>
 
                     <div className="h-56 border-b border-slate-200 dark:border-white/10 pb-3">
-                        <Bar data={creationChartData} options={creationChartOptions} />
+                        <Bar
+                            data={creationChartData}
+                            options={creationChartOptions}
+                        />
                     </div>
                 </div>
             </div>
