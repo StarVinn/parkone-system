@@ -13,34 +13,6 @@ class ParkingRateSeeder extends Seeder
     {
         $rates = [
             [
-                'location_name' => 'SMA Nusantara',
-                'vehicle_type_name' => 'Motor',
-                'rate_type' => 'hourly',
-                'rate_per_hour' => 2000,
-                'flat_rate' => null,
-            ],
-            [
-                'location_name' => 'SMA Nusantara',
-                'vehicle_type_name' => 'Mobil',
-                'rate_type' => 'hourly',
-                'rate_per_hour' => 3500,
-                'flat_rate' => null,
-            ],
-            [
-                'location_name' => 'SMK Bina Karya',
-                'vehicle_type_name' => 'Motor',
-                'rate_type' => 'hourly',
-                'rate_per_hour' => 1500,
-                'flat_rate' => null,
-            ],
-            [
-                'location_name' => 'SMK Bina Karya',
-                'vehicle_type_name' => 'Mobil',
-                'rate_type' => 'hourly',
-                'rate_per_hour' => 3000,
-                'flat_rate' => null,
-            ],
-            [
                 'location_name' => 'SMK Taruna Bhakti Depok',
                 'vehicle_type_name' => 'Motor',
                 'rate_type' => 'flat',

@@ -18,10 +18,6 @@ class VehicleTypeSeeder extends Seeder
                 'name' => 'Mobil',
                 'description' => 'Kendaraan roda empat untuk guru, tamu, dan operasional sekolah',
             ],
-            [
-                'name' => 'Bus',
-                'description' => 'Bus sekolah untuk antar jemput siswa dan kegiatan sekolah',
-            ],
         ];
 
         foreach ($vehicleTypes as $type) {

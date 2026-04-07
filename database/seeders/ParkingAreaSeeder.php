@@ -12,30 +12,6 @@ class ParkingAreaSeeder extends Seeder
     {
         $areas = [
             [
-                'location_name' => 'SMA Nusantara',
-                'name' => 'Area Guru',
-                'capacity' => 70,
-                'ticket_penalty' => 10000,
-            ],
-            [
-                'location_name' => 'SMA Nusantara',
-                'name' => 'Area Siswa',
-                'capacity' => 140,
-                'ticket_penalty' => 12000,
-            ],
-            [
-                'location_name' => 'SMK Bina Karya',
-                'name' => 'Area Tamu',
-                'capacity' => 50,
-                'ticket_penalty' => 8000,
-            ],
-            [
-                'location_name' => 'SMK Bina Karya',
-                'name' => 'Area Bus Sekolah',
-                'capacity' => 30,
-                'ticket_penalty' => 9000,
-            ],
-            [
                 'location_name' => 'SMK Taruna Bhakti Depok',
                 'name' => 'Parkiran Babeh',
                 'capacity' => 80,
