@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
-    public function login(array $credentials, string $source = 'web')
+    public function login(array $credentials)
     {
         $user = User::where('email', $credentials['email'])->first();
 
@@ -30,25 +30,27 @@ class AuthService
         if (!$user->is_active) {
             Auth::logout();
             throw ValidationException::withMessages([
-                'email' => 'Akun Anda tidak aktif. Silakan hubungi administrator.',
+                'email' => 'Akun Anda tidak aktif. Silakan hubungi admin.',
             ]);
         }
 
-        if (!in_array($user->role, ['admin', 'officer', 'owner'])) {
+        if (!in_array($user->role, ['admin', 'officer', 'owner', 'user'])) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => 'Akun Anda tidak memiliki akses ke sistem.',
             ]);
         }
 
-        $normalizedSource = strtolower($source);
-        if (!in_array($normalizedSource, ['web', 'mobile'])) {
-            $normalizedSource = 'web';
+        if ($user->role === 'user' && !$user->primaryRfidCard()->exists()) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'RFID belum terdaftar. Silakan hubungi admin.',
+            ]);
         }
 
         ActivityLog::create([
             'user_id' => $user->id,
-            'activity' => 'User login (' . $normalizedSource . ')',
+            'activity' => 'User login (web)',
             'activity_time' => now(),
         ]);
 
