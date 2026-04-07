@@ -74,7 +74,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(RfidCard::class)
             ->where('is_active', true)
-            ->latestOfMany();
+            ->latest('id');
     }
 
     public function getRfidUidAttribute(): ?string

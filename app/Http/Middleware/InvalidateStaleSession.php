@@ -16,7 +16,7 @@ class InvalidateStaleSession
         }
 
         $user = Auth::user();
-        $validRole = in_array((string) ($user->role ?? ''), ['admin', 'officer', 'owner'], true);
+        $validRole = in_array((string) ($user->role ?? ''), ['admin', 'officer', 'owner', 'user'], true);
         $validSessionUser = $user && $user->id && (bool) ($user->is_active ?? false) && $validRole;
 
         if ($validSessionUser) {
