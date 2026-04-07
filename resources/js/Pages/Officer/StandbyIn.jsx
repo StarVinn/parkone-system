@@ -31,6 +31,7 @@ export default function StandbyIn({
     const [rfidVehicle, setRfidVehicle] = useState(null);
     const [rfidError, setRfidError] = useState("");
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [licensePlate, setLicensePlate] = useState("");
     const [showVisitorModal, setShowVisitorModal] = useState(false);
     const [cameraError, setCameraError] = useState("");
     const [cameraReady, setCameraReady] = useState(false);
@@ -156,11 +157,13 @@ export default function StandbyIn({
     const submit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const licensePlate = formatLicensePlate(formData.get("license_plate"));
+        const normalizedLicensePlate = formatLicensePlate(
+            formData.get("license_plate"),
+        );
 
         if (rfidVehicle?.license_plate) {
             const boundPlate = formatLicensePlate(rfidVehicle.license_plate);
-            if (boundPlate && licensePlate && boundPlate !== licensePlate) {
+            if (boundPlate && normalizedLicensePlate && boundPlate !== normalizedLicensePlate) {
                 setRfidError("RFID ini terikat ke kendaraan lain.");
                 return;
             }
@@ -188,7 +191,7 @@ export default function StandbyIn({
             route("officer.transactions.store"),
             {
                 action: "entry",
-                license_plate: String(licensePlate || ""),
+                license_plate: String(normalizedLicensePlate || ""),
                 parking_area_id: String(scope.parking_area_id || ""),
                 rfid_uid: String(rfidUid || "").trim(),
                 vehicle_photo: new File(
@@ -243,10 +246,7 @@ export default function StandbyIn({
             setRfidVehicle(payload.vehicle || null);
 
             if (payload.vehicle?.license_plate) {
-                setVisitorData(
-                    "license_plate",
-                    formatLicensePlate(payload.vehicle.license_plate),
-                );
+                setLicensePlate(formatLicensePlate(payload.vehicle.license_plate));
             }
         } catch {
             if (latestLookupRef.current !== lookupId) {
@@ -370,6 +370,11 @@ export default function StandbyIn({
                         Jika diisi, RFID diverifikasi otomatis. Jika kosong,
                         transaksi tetap diproses pakai plat.
                     </p>
+                    {rfidVehicle?.license_plate && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                            RFID terhubung ke kendaraan dengan plat {formatLicensePlate(rfidVehicle.license_plate)}.
+                        </p>
+                    )}
                     {lookupLoading && (
                         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                             Mencari data RFID...
@@ -396,10 +401,14 @@ export default function StandbyIn({
                     </label>
                     <input
                         name="license_plate"
+                        value={licensePlate}
                         onInput={(event) => {
-                            event.target.value = formatLicensePlate(
-                                event.target.value,
-                            );
+                            const normalized = formatLicensePlate(event.target.value);
+                            event.target.value = normalized;
+                            setLicensePlate(normalized);
+                        }}
+                        onChange={(event) => {
+                            setLicensePlate(formatLicensePlate(event.target.value));
                         }}
                         placeholder="Contoh: AD 45 ID"
                         className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
