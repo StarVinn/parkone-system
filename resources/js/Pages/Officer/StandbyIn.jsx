@@ -163,7 +163,11 @@ export default function StandbyIn({
 
         if (rfidVehicle?.license_plate) {
             const boundPlate = formatLicensePlate(rfidVehicle.license_plate);
-            if (boundPlate && normalizedLicensePlate && boundPlate !== normalizedLicensePlate) {
+            if (
+                boundPlate &&
+                normalizedLicensePlate &&
+                boundPlate !== normalizedLicensePlate
+            ) {
                 setRfidError("RFID ini terikat ke kendaraan lain.");
                 return;
             }
@@ -246,7 +250,9 @@ export default function StandbyIn({
             setRfidVehicle(payload.vehicle || null);
 
             if (payload.vehicle?.license_plate) {
-                setLicensePlate(formatLicensePlate(payload.vehicle.license_plate));
+                setLicensePlate(
+                    formatLicensePlate(payload.vehicle.license_plate),
+                );
             }
         } catch {
             if (latestLookupRef.current !== lookupId) {
@@ -372,7 +378,8 @@ export default function StandbyIn({
                     </p>
                     {rfidVehicle?.license_plate && (
                         <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                            RFID terhubung ke kendaraan dengan plat {formatLicensePlate(rfidVehicle.license_plate)}.
+                            RFID terhubung ke kendaraan dengan plat{" "}
+                            {formatLicensePlate(rfidVehicle.license_plate)}.
                         </p>
                     )}
                     {lookupLoading && (
@@ -403,12 +410,16 @@ export default function StandbyIn({
                         name="license_plate"
                         value={licensePlate}
                         onInput={(event) => {
-                            const normalized = formatLicensePlate(event.target.value);
+                            const normalized = formatLicensePlate(
+                                event.target.value,
+                            );
                             event.target.value = normalized;
                             setLicensePlate(normalized);
                         }}
                         onChange={(event) => {
-                            setLicensePlate(formatLicensePlate(event.target.value));
+                            setLicensePlate(
+                                formatLicensePlate(event.target.value),
+                            );
                         }}
                         placeholder="Contoh: AD 45 ID"
                         className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
