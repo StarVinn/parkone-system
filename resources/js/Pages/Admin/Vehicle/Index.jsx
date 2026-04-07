@@ -1,6 +1,6 @@
 import { Link, usePage, router, useForm } from "@inertiajs/react";
 import AdminLayout from "../../Layouts/AdminLayout";
-import { Plus, Edit3, Trash2, Info, X } from "lucide-react";
+import { Plus, Edit3, Trash2, Info, X, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import useI18n from "../../../hooks/useI18n";
 
@@ -58,9 +58,15 @@ export default function Index({
     const didMountRef = useRef(false);
     const debounceRef = useRef(null);
 
-    // Modal states
+    // Modal states for vehicle create/edit
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+
+    // RFID assignment modal state
+    const [isRfidModalOpen, setIsRfidModalOpen] = useState(false);
+    const [rfidAssignVehicle, setRfidAssignVehicle] = useState(null);
+    const [availableRfidCards, setAvailableRfidCards] = useState([]);
+    const [rfidLoading, setRfidLoading] = useState(false);
 
     // Form state for create/edit
     const [formData, setFormData] = useState({
@@ -146,12 +152,49 @@ export default function Index({
         resetForm();
     };
 
+    // RFID assignment modal functions
+    const openRfidModal = async (vehicle) => {
+        setRfidAssignVehicle(vehicle);
+        setRfidLoading(true);
+        setIsRfidModalOpen(true);
+
+        try {
+            const response = await fetch(route("admin.rfid-cards.available"));
+            const data = await response.json();
+            setAvailableRfidCards(data.rfidCards || []);
+        } catch (error) {
+            console.error("Failed to fetch RFID cards:", error);
+            setAvailableRfidCards([]);
+        } finally {
+            setRfidLoading(false);
+        }
+    };
+
+    const closeRfidModal = () => {
+        setIsRfidModalOpen(false);
+        setRfidAssignVehicle(null);
+        setAvailableRfidCards([]);
+    };
+
+    const handleAssignRfid = (rfidCardId) => {
+        router.put(
+            route("admin.vehicles.assign-rfid", rfidAssignVehicle.id),
+            { rfid_card_id: rfidCardId },
+            {
+                onSuccess: () => {
+                    closeRfidModal();
+                },
+            },
+        );
+    };
+
     // Form row functions
     const updateRow = (index, field, value) => {
         const nextRows = [...formData.vehicles];
         nextRows[index] = {
             ...nextRows[index],
-            [field]: field === "license_plate" ? formatLicensePlate(value) : value,
+            [field]:
+                field === "license_plate" ? formatLicensePlate(value) : value,
         };
         setFormData({ vehicles: nextRows });
     };
@@ -206,7 +249,14 @@ export default function Index({
     };
 
     const handleDelete = (id) => {
-        if (confirm(t("admin.vehicles.confirm_delete", "Yakin ingin menghapus kendaraan ini?"))) {
+        if (
+            confirm(
+                t(
+                    "admin.vehicles.confirm_delete",
+                    "Yakin ingin menghapus kendaraan ini?",
+                ),
+            )
+        ) {
             router.delete(route("admin.vehicles.destroy", id));
         }
     };
@@ -246,6 +296,129 @@ export default function Index({
                         )}
                     </p>
                 </div>
+
+                {/* RFID Assignment Modal */}
+                {isRfidModalOpen && rfidAssignVehicle && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
+                            onClick={closeRfidModal}
+                        />
+
+                        {/* Modal Content */}
+                        <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+                            {/* Modal Header */}
+                            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#111633] rounded-t-2xl">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">
+                                        {t(
+                                            "admin.vehicles.rfid.title",
+                                            "Assign RFID Card",
+                                        )}
+                                    </h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                        {t(
+                                            "admin.vehicles.rfid.subtitle",
+                                            "Vehicle: {plate}",
+                                            {
+                                                plate: formatLicensePlate(
+                                                    rfidAssignVehicle.license_plate,
+                                                ),
+                                            },
+                                        )}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={closeRfidModal}
+                                    className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="p-6">
+                                {rfidLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="w-8 h-8 border-4 border-slate-200 dark:border-slate-700 border-t-[#1E5EFF] rounded-full animate-spin" />
+                                    </div>
+                                ) : availableRfidCards.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <Tag
+                                            size={32}
+                                            className="mx-auto text-slate-300 dark:text-slate-600 mb-3"
+                                        />
+                                        <p className="text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "admin.vehicles.rfid.no_available",
+                                                "No available RFID cards",
+                                            )}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {availableRfidCards.map((rfidCard) => (
+                                            <button
+                                                key={rfidCard.id}
+                                                onClick={() =>
+                                                    handleAssignRfid(
+                                                        rfidCard.id,
+                                                    )
+                                                }
+                                                className="w-full flex items-center gap-3 p-4 text-left border border-slate-200 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors hover:border-emerald-300 dark:hover:border-emerald-500/50 cursor-pointer group"
+                                            >
+                                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-colors">
+                                                    <Tag
+                                                        size={18}
+                                                        className="text-emerald-600 dark:text-emerald-400"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-mono font-semibold text-slate-900 dark:text-white truncate">
+                                                        {rfidCard.uid}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                        {rfidCard.user?.email ||
+                                                            t(
+                                                                "states.unassigned",
+                                                                "Unassigned",
+                                                            )}
+                                                    </p>
+                                                </div>
+                                                <div className="flex-shrink-0">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="20"
+                                                        height="20"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="text-slate-400 group-hover:text-emerald-500 transition-colors"
+                                                    >
+                                                        <polyline points="20 12 20 22 4 22 4 12" />
+                                                        <rect
+                                                            x="2"
+                                                            y="7"
+                                                            width="20"
+                                                            height="5"
+                                                        />
+                                                        <path d="M12 9V5" />
+                                                        <path d="M9 5H9.01" />
+                                                        <path d="M15 5H15.01" />
+                                                    </svg>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <button
                     onClick={openCreateModal}
@@ -324,15 +497,15 @@ export default function Index({
                         <thead>
                             <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    {t(
-                                        "fields.license_plate",
-                                        "License Plate",
-                                    )}
+                                    {t("fields.license_plate", "License Plate")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     {t(
                                         "fields.vehicle_type",
                                         "Vehicle Type",
+                                        <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            {t("fields.rfid", "RFID")}
+                                        </th>,
                                     )}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
@@ -344,7 +517,7 @@ export default function Index({
                             {rows.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan="3"
+                                        colSpan="4"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
                                         {t(
@@ -361,16 +534,54 @@ export default function Index({
                                     >
                                         <td className="px-6 py-4">
                                             <span className="font-medium text-slate-900 dark:text-slate-200 uppercase">
-                                                {formatLicensePlate(item.license_plate)}
+                                                {formatLicensePlate(
+                                                    item.license_plate,
+                                                )}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-slate-600 dark:text-slate-400 text-sm">
                                                 {item.vehicle_type?.name || "-"}
+                                                <td className="px-6 py-4">
+                                                    {item.rfid_card ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Tag
+                                                                size={14}
+                                                                className="text-green-500"
+                                                            />
+                                                            <span className="text-sm font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg">
+                                                                {
+                                                                    item
+                                                                        .rfid_card
+                                                                        .uid
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                                                            {t(
+                                                                "states.not_assigned",
+                                                                "Not assigned",
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                </td>
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-3">
+                                                <button
+                                                    onClick={() =>
+                                                        openRfidModal(item)
+                                                    }
+                                                    title={t(
+                                                        "actions.assign_rfid",
+                                                        "Assign RFID",
+                                                    )}
+                                                    className="p-2 rounded-lg text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors cursor-pointer"
+                                                >
+                                                    <Tag size={18} />
+                                                </button>
                                                 <button
                                                     onClick={() =>
                                                         openEditModal(item)

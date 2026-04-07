@@ -287,7 +287,10 @@ export default function Customization({ navbar, translations }) {
                         {t("customization.title", "Kustomisasi")}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {t("customization.description", "Atur terjemahan dan label navbar.")}
+                        {t(
+                            "customization.description",
+                            "Atur terjemahan dan label navbar.",
+                        )}
                     </p>
                 </div>
             </div>
@@ -318,8 +321,8 @@ export default function Customization({ navbar, translations }) {
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                         tab === "translations"
                             ? "bg-[#1E5EFF] text-white"
-                            : "bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5"
-                }`}
+                            : "bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"
+                    }`}
                 >
                     {t("customization.tab.translations", "Terjemahan")}
                 </button>
@@ -329,8 +332,8 @@ export default function Customization({ navbar, translations }) {
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                         tab === "navbar"
                             ? "bg-[#1E5EFF] text-white"
-                            : "bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5"
-                }`}
+                            : "bg-white dark:bg-[#111633] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"
+                    }`}
                 >
                     {t("customization.tab.navbar", "Navbar")}
                 </button>
@@ -341,7 +344,10 @@ export default function Customization({ navbar, translations }) {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <div>
                             <h2 className="font-semibold text-slate-900 dark:text-white">
-                                {t("customization.translations.title", "Terjemahan")}
+                                {t(
+                                    "customization.translations.title",
+                                    "Terjemahan",
+                                )}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 {t(
@@ -355,7 +361,7 @@ export default function Customization({ navbar, translations }) {
                                 type="button"
                                 onClick={saveTranslationsAll}
                                 disabled={processing}
-                                className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 {t("actions.save", "Simpan")}
                             </button>
@@ -410,13 +416,22 @@ export default function Customization({ navbar, translations }) {
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/10">
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[28%]">
-                                        {t("customization.translations.key", "Key")}
+                                        {t(
+                                            "customization.translations.key",
+                                            "Key",
+                                        )}
                                     </th>
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[36%]">
-                                        {t("customization.translations.id", "ID")}
+                                        {t(
+                                            "customization.translations.id",
+                                            "ID",
+                                        )}
                                     </th>
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[36%]">
-                                        {t("customization.translations.en", "EN")}
+                                        {t(
+                                            "customization.translations.en",
+                                            "EN",
+                                        )}
                                     </th>
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[1%]">
                                         &nbsp;
@@ -515,7 +530,9 @@ export default function Customization({ navbar, translations }) {
                                         <button
                                             key={`page-${it}`}
                                             type="button"
-                                            onClick={() => setTranslationPage(it)}
+                                            onClick={() =>
+                                                setTranslationPage(it)
+                                            }
                                             className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                                                 it === safeTranslationPage
                                                     ? "bg-[#1E5EFF] text-white border-[#1E5EFF]"
@@ -542,7 +559,9 @@ export default function Customization({ navbar, translations }) {
                                         Math.min(translationTotalPages, p + 1),
                                     )
                                 }
-                                disabled={safeTranslationPage >= translationTotalPages}
+                                disabled={
+                                    safeTranslationPage >= translationTotalPages
+                                }
                                 className="px-3 py-1.5 rounded-lg text-sm border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {t("pagination.next", "Next")}
@@ -574,7 +593,7 @@ export default function Customization({ navbar, translations }) {
                             type="button"
                             onClick={saveNavbar}
                             disabled={processing}
-                            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#1E5EFF] hover:bg-[#194FD8] transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {t("actions.save", "Simpan")}
                         </button>
@@ -614,14 +633,12 @@ export default function Customization({ navbar, translations }) {
                                                 e.preventDefault()
                                             }
                                             onDrop={() => onDrop(path)}
-                                            className={`rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] transition-shadow ${
+                                            className={`rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] transition-shadow cursor-pointer ${
                                                 isDragOver
                                                     ? "ring-2 ring-[#1FD1A5]/40 shadow-lg shadow-[#1FD1A5]/10"
                                                     : "shadow-sm"
                                             } ${
-                                                item.active
-                                                    ? ""
-                                                    : "opacity-60"
+                                                item.active ? "" : "opacity-60"
                                             }`}
                                         >
                                             <div className="flex items-center justify-between gap-2 px-3 py-2">
@@ -651,7 +668,9 @@ export default function Customization({ navbar, translations }) {
                                             </div>
 
                                             {isGroup &&
-                                                Array.isArray(item.children) && (
+                                                Array.isArray(
+                                                    item.children,
+                                                ) && (
                                                     <div className="pb-2 pl-6 pr-3 space-y-1">
                                                         {item.children.map(
                                                             (child, cIdx) => {
