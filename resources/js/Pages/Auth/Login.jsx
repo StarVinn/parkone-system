@@ -1,8 +1,11 @@
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function Login() {
     const { flash } = usePage().props;
+    const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -54,18 +57,63 @@ export default function Login() {
                     </svg>
 
                     <div className="absolute inset-0 opacity-20">
-                        <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                            className="h-full w-full"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
                             <defs>
-                                <pattern id="parkone-topo" width="220" height="220" patternUnits="userSpaceOnUse">
-                                    <path d="M10 30C35 10 85 10 115 30C145 50 195 50 215 30" stroke="#5AA8FF" strokeOpacity="0.22" fill="none" />
-                                    <path d="M0 90C35 60 85 60 120 90C155 120 205 120 220 90" stroke="#69E7C7" strokeOpacity="0.18" fill="none" />
-                                    <path d="M15 150C45 125 95 125 125 150C155 175 205 175 220 150" stroke="#8AC3FF" strokeOpacity="0.15" fill="none" />
-                                    <circle cx="38" cy="44" r="2.2" fill="#1FD1A5" fillOpacity="0.32" />
-                                    <circle cx="162" cy="102" r="2.2" fill="#1E5EFF" fillOpacity="0.34" />
-                                    <circle cx="90" cy="168" r="2.2" fill="#1FD1A5" fillOpacity="0.28" />
+                                <pattern
+                                    id="parkone-topo"
+                                    width="220"
+                                    height="220"
+                                    patternUnits="userSpaceOnUse"
+                                >
+                                    <path
+                                        d="M10 30C35 10 85 10 115 30C145 50 195 50 215 30"
+                                        stroke="#5AA8FF"
+                                        strokeOpacity="0.22"
+                                        fill="none"
+                                    />
+                                    <path
+                                        d="M0 90C35 60 85 60 120 90C155 120 205 120 220 90"
+                                        stroke="#69E7C7"
+                                        strokeOpacity="0.18"
+                                        fill="none"
+                                    />
+                                    <path
+                                        d="M15 150C45 125 95 125 125 150C155 175 205 175 220 150"
+                                        stroke="#8AC3FF"
+                                        strokeOpacity="0.15"
+                                        fill="none"
+                                    />
+                                    <circle
+                                        cx="38"
+                                        cy="44"
+                                        r="2.2"
+                                        fill="#1FD1A5"
+                                        fillOpacity="0.32"
+                                    />
+                                    <circle
+                                        cx="162"
+                                        cy="102"
+                                        r="2.2"
+                                        fill="#1E5EFF"
+                                        fillOpacity="0.34"
+                                    />
+                                    <circle
+                                        cx="90"
+                                        cy="168"
+                                        r="2.2"
+                                        fill="#1FD1A5"
+                                        fillOpacity="0.28"
+                                    />
                                 </pattern>
                             </defs>
-                            <rect width="100%" height="100%" fill="url(#parkone-topo)" />
+                            <rect
+                                width="100%"
+                                height="100%"
+                                fill="url(#parkone-topo)"
+                            />
                         </svg>
                     </div>
 
@@ -126,17 +174,38 @@ export default function Login() {
                             <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Password
                             </label>
-                            <input
-                                type="password"
-                                value={data.password}
-                                onChange={(e) =>
-                                    setData("password", e.target.value)
-                                }
-                                placeholder="Password"
-                                autoComplete="current-password"
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={data.password}
+                                    onChange={(e) =>
+                                        setData("password", e.target.value)
+                                    }
+                                    placeholder="Password"
+                                    autoComplete="current-password"
+                                    className="w-full px-4 py-2 pr-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPassword((current) => !current)
+                                    }
+                                    disabled={processing}
+                                    aria-label={
+                                        showPassword
+                                            ? "Hide password"
+                                            : "Show password"
+                                    }
+                                    className="absolute inset-y-0 right-0 flex items-center justify-center w-11 text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff size={18} />
+                                    ) : (
+                                        <Eye size={18} />
+                                    )}
+                                </button>
+                            </div>
                             {errors.password && (
                                 <p className="text-red-500 text-sm mt-1">
                                     {errors.password}
