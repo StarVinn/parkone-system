@@ -212,8 +212,72 @@ export default function Dashboard({
                             )}
                         </h2>
 
-                        <div className="mt-4 overflow-x-auto">
-                            <table className="w-full min-w-170 text-sm">
+                        <div className="mt-4 space-y-3 md:hidden">
+                            {rows.length > 0 ? (
+                                rows.map((tx) => (
+                                    <div
+                                        key={tx.id}
+                                        className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                                    {tx.plate || "-"}
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                                                    {formatDateTime(
+                                                        tx.exit_time ||
+                                                            tx.entry_time,
+                                                        locale,
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <p className="shrink-0 text-sm font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                                                {formatCurrency(
+                                                    tx.total_fee,
+                                                    locale,
+                                                )}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-200">
+                                            <div className="min-w-0">
+                                                <p className="text-slate-500 dark:text-slate-300">
+                                                    {t(
+                                                        "fields.location",
+                                                        "Lokasi",
+                                                    )}
+                                                </p>
+                                                <p className="truncate">
+                                                    {tx.location || "-"}
+                                                </p>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-slate-500 dark:text-slate-300">
+                                                    {t(
+                                                        "fields.status",
+                                                        "Status",
+                                                    )}
+                                                </p>
+                                                <p className="capitalize truncate">
+                                                    {tx.status || "-"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">
+                                    {t(
+                                        "user.dashboard.recent.empty",
+                                        "Belum ada transaksi.",
+                                    )}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="mt-4 hidden md:block overflow-x-auto">
+                            <table className="w-full min-w-[42rem] text-sm">
                                 <thead>
                                     <tr className="text-left text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-white/10">
                                         <th className="py-2 pr-3">
@@ -240,7 +304,7 @@ export default function Dashboard({
                                                 key={tx.id}
                                                 className="border-b border-slate-100 dark:border-white/5 text-slate-700 dark:text-slate-200"
                                             >
-                                                <td className="py-3 pr-3">
+                                                <td className="py-3 pr-3 whitespace-nowrap">
                                                     {formatDateTime(
                                                         tx.exit_time ||
                                                             tx.entry_time,
@@ -250,13 +314,13 @@ export default function Dashboard({
                                                 <td className="py-3 pr-3">
                                                     {tx.location}
                                                 </td>
-                                                <td className="py-3 pr-3">
+                                                <td className="py-3 pr-3 whitespace-nowrap">
                                                     {tx.plate}
                                                 </td>
-                                                <td className="py-3 pr-3 capitalize">
+                                                <td className="py-3 pr-3 capitalize whitespace-nowrap">
                                                     {tx.status}
                                                 </td>
-                                                <td className="py-3 text-right font-medium">
+                                                <td className="py-3 text-right font-medium whitespace-nowrap">
                                                     {formatCurrency(
                                                         tx.total_fee,
                                                         locale,

@@ -1,5 +1,5 @@
 import { useForm, usePage, router } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Languages, LogOut, Moon, Sun, User } from "lucide-react";
 import useTheme from "../../hooks/useTheme";
 import useI18n from "../../hooks/useI18n";
@@ -11,8 +11,10 @@ export default function UserLayout({ children }) {
     const { darkMode, setDarkMode } = useTheme();
     const { locale, t } = useI18n();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
     const handleLogout = () => {
+        setDropdownOpen(false);
         post("/logout");
     };
 
@@ -25,34 +27,48 @@ export default function UserLayout({ children }) {
         setDropdownOpen(false);
     };
 
+    useEffect(() => {
+        if (!dropdownOpen) return;
+
+        const handlePointerDown = (event) => {
+            if (!dropdownRef.current) return;
+            if (dropdownRef.current.contains(event.target)) return;
+            setDropdownOpen(false);
+        };
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        return () =>
+            document.removeEventListener("pointerdown", handlePointerDown);
+    }, [dropdownOpen]);
+
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-[#0C122B] text-slate-900 dark:text-slate-100 transition-colors duration-300">
+        <div className="min-h-screen w-full overflow-x-hidden bg-slate-100 dark:bg-[#0C122B] text-slate-900 dark:text-slate-100 transition-colors duration-300">
             <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0C122B]/90 backdrop-blur">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-                    <div className="flex items-center gap-3">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-8">
+                    <div className="flex flex-1 min-w-0 items-center gap-3">
                         <img
                             src={logo}
                             alt="PARKONE"
                             className="h-10 w-10 rounded-xl"
                         />
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                                 ParkOne
                             </p>
-                            <p className="text-sm font-semibold font-['Poppins']">
+                            <p className="text-sm font-semibold font-['Poppins'] truncate">
                                 {t("user.layout.title", "User Dashboard")}
                             </p>
                         </div>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative shrink-0" ref={dropdownRef}>
                         <button
                             type="button"
                             onClick={() => setDropdownOpen((open) => !open)}
                             className="flex items-center gap-2 text-sm font-medium hover:text-[#1E5EFF] font-['Poppins'] transition cursor-pointer"
                         >
                             <User size={16} />
-                            <span className="max-w-36 truncate">
+                            <span className="max-w-[12rem] sm:max-w-[16rem] truncate">
                                 {auth?.user?.name}
                             </span>
                             <ChevronDown
@@ -62,7 +78,7 @@ export default function UserLayout({ children }) {
                         </button>
 
                         <div
-                            className={`absolute right-0 mt-3 w-64 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#121A3A] shadow-2xl py-2 transition-all duration-200 origin-top ${
+                            className={`absolute right-0 mt-3 w-[min(16rem,calc(100vw-2rem))] sm:w-64 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#121A3A] shadow-2xl py-2 transition-all duration-200 origin-top ${
                                 dropdownOpen
                                     ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
                                     : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
@@ -73,7 +89,7 @@ export default function UserLayout({ children }) {
                                     "layout.login_with_email",
                                     "Login dengan email",
                                 )}
-                                <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white break-all">
                                     {auth?.user?.email || "-"}
                                 </div>
                             </div>
@@ -81,7 +97,10 @@ export default function UserLayout({ children }) {
                             <hr className="my-2 border-slate-200 dark:border-white/10" />
 
                             <button
-                                onClick={() => setDarkMode(!darkMode)}
+                                onClick={() => {
+                                    setDarkMode(!darkMode);
+                                    setDropdownOpen(false);
+                                }}
                                 className="w-full flex items-center gap-2 text-sm font-semibold text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
                             >
                                 {darkMode
