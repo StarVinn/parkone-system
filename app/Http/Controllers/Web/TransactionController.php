@@ -404,7 +404,11 @@ class TransactionController extends Controller
             }
         }
 
-        return redirect()->route('officer.dashboard')
+        $redirectRoute = $validated['type'] === 'entry'
+            ? 'officer.standby.in'
+            : 'officer.standby.out';
+
+        return redirect()->route($redirectRoute)
             ->with('success', 'Konfirmasi struk berhasil.');
     }
 
