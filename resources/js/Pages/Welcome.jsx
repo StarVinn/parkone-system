@@ -147,9 +147,43 @@ export default function Welcome() {
                                     Lihat Fitur
                                 </a> */}
                             </div>
+                            <div className="mt-6 grid max-w-xl grid-cols-1 gap-3 text-xs text-slate-200 sm:grid-cols-3">
+                                <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-300">
+                                        Uptime Operasional
+                                    </p>
+                                    <p className="mt-1 text-lg font-bold text-white">
+                                        99.9%
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-300">
+                                        Monitoring
+                                    </p>
+                                    <p className="mt-1 text-lg font-bold text-white">
+                                        Realtime
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-300">
+                                        Integrasi
+                                    </p>
+                                    <p className="mt-1 text-lg font-bold text-white">
+                                        RFID + Camera
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="rounded-3xl border border-white/15 bg-white/10 p-5 backdrop-blur-xl">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">
+                                    Role Akses
+                                </h3>
+                                <span className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-200">
+                                    4 Role Aktif
+                                </span>
+                            </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="rounded-2xl border border-white/15 bg-[#0B1432]/70 p-4">
                                     <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-200">
@@ -199,7 +233,7 @@ export default function Welcome() {
                                         cetak receipt.
                                     </p>
                                 </div>
-                                <div className="rounded-2xl border border-white/15 bg-[#0B1432]/70 p-4 sm:col-span-2">
+                                <div className="rounded-2xl border border-white/15 bg-[#0B1432]/70 p-4">
                                     <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-200">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -222,6 +256,32 @@ export default function Welcome() {
                                     <p className="mt-2 text-xs text-slate-300">
                                         Pantau status operasional dan performa
                                         parkir.
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-white/15 bg-[#0B1432]/70 p-4">
+                                    <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/20 text-violet-200">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-4 w-4"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                        >
+                                            <path d="M4 5h16" />
+                                            <path d="M4 12h16" />
+                                            <path d="M4 19h10" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-xs uppercase tracking-wide text-slate-300">
+                                        User
+                                    </p>
+                                    <p className="mt-2 text-sm font-semibold text-white">
+                                        Riwayat & Profil Kendaraan
+                                    </p>
+                                    <p className="mt-2 text-xs text-slate-300">
+                                        Lihat histori parkir, status akun, dan
+                                        informasi kendaraan terdaftar.
                                     </p>
                                 </div>
                             </div>
