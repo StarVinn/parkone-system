@@ -20,6 +20,34 @@ const formatLicensePlate = (value) => {
     return [match[1], match[2], match[3]].filter(Boolean).join(" ");
 };
 
+const extractLicensePlateFromText = (value) => {
+    const text = String(value || "").toUpperCase();
+    const compact = text.replace(/[^A-Z0-9]/g, " ");
+    const tokens = compact.split(/\s+/).filter(Boolean);
+
+    for (let i = 0; i < tokens.length; i += 1) {
+        const first = tokens[i] || "";
+        const second = tokens[i + 1] || "";
+        const third = tokens[i + 2] || "";
+
+        const candidate = `${first}${second}${third}`;
+        const normalized = formatLicensePlate(candidate);
+        if (
+            normalized &&
+            /^[A-Z]{1,2}\s[0-9]{1,4}(\s[A-Z]{1,3})?$/.test(normalized)
+        ) {
+            return normalized;
+        }
+    }
+
+    const fallback = formatLicensePlate(compact.replace(/\s+/g, ""));
+    if (fallback && /^[A-Z]{1,2}\s[0-9]{1,4}(\s[A-Z]{1,3})?$/.test(fallback)) {
+        return fallback;
+    }
+
+    return "";
+};
+
 export default function StandbyIn({
     selectedParkingArea = null,
     scope = { parking_area_id: "" },
@@ -38,7 +66,17 @@ export default function StandbyIn({
     const [showVisitorModal, setShowVisitorModal] = useState(false);
     const [cameraError, setCameraError] = useState("");
     const [cameraReady, setCameraReady] = useState(false);
+    const [cameraDevices, setCameraDevices] = useState([]);
+    const [selectedCameraId, setSelectedCameraId] = useState("");
     const [photoError, setPhotoError] = useState("");
+    const [ocrLoading, setOcrLoading] = useState(false);
+    const [ocrError, setOcrError] = useState("");
+    const [ocrResult, setOcrResult] = useState("");
+    const [plateSource, setPlateSource] = useState("none");
+    const hasRfidInput = String(rfidUid || "").trim() !== "";
+    const hasPlateInput = String(licensePlate || "").trim() !== "";
+    const hideRfidInput =
+        hasPlateInput && (plateSource === "manual" || plateSource === "ocr");
     const entryReady = Boolean(readiness?.entry_ready);
     const entryBlockers = Array.isArray(readiness?.entry_blockers)
         ? readiness.entry_blockers
@@ -94,6 +132,34 @@ export default function StandbyIn({
     }, [flash?.visitor_vehicle]);
 
     useEffect(() => {
+        let active = true;
+
+        const stopStream = () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+            }
+        };
+
+        const loadCameraDevices = async () => {
+            if (!navigator?.mediaDevices?.enumerateDevices) {
+                setCameraDevices([]);
+                return;
+            }
+
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                if (!active) return;
+                const videoInputs = devices.filter(
+                    (device) => device.kind === "videoinput",
+                );
+                setCameraDevices(videoInputs);
+            } catch {
+                if (!active) return;
+                setCameraDevices([]);
+            }
+        };
+
         const startCamera = async () => {
             if (!navigator?.mediaDevices?.getUserMedia) {
                 setCameraError(
@@ -105,11 +171,30 @@ export default function StandbyIn({
                 return;
             }
 
+            stopStream();
+            setCameraReady(false);
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: false,
-                });
+                let stream;
+                if (selectedCameraId) {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: selectedCameraId },
+                        },
+                        audio: false,
+                    });
+                } else {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: "environment" } },
+                        audio: false,
+                    });
+                }
+
+                if (!active) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    return;
+                }
+
                 streamRef.current = stream;
 
                 if (videoRef.current) {
@@ -117,9 +202,19 @@ export default function StandbyIn({
                     await videoRef.current.play();
                 }
 
+                await loadCameraDevices();
+
+                const currentTrackDeviceId =
+                    stream.getVideoTracks()?.[0]?.getSettings?.()?.deviceId ||
+                    "";
+                if (!selectedCameraId && currentTrackDeviceId && active) {
+                    setSelectedCameraId(currentTrackDeviceId);
+                }
+
                 setCameraReady(true);
                 setCameraError("");
             } catch {
+                if (!active) return;
                 setCameraReady(false);
                 setCameraError(
                     tr(
@@ -133,11 +228,10 @@ export default function StandbyIn({
         startCamera();
 
         return () => {
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop());
-            }
+            active = false;
+            stopStream();
         };
-    }, []);
+    }, [selectedCameraId]);
 
     const capturePhotoBlob = () => {
         const video = videoRef.current;
@@ -243,6 +337,59 @@ export default function StandbyIn({
         );
     };
 
+    const handleDetectLicensePlate = async () => {
+        setOcrError("");
+        setOcrResult("");
+
+        const photoBlob = await capturePhotoBlob();
+        if (!photoBlob) {
+            setOcrError(
+                tr(
+                    "Kamera belum siap, tunggu sebentar lalu coba lagi.",
+                    "Camera is not ready yet, please wait and try again.",
+                ),
+            );
+            return;
+        }
+
+        setOcrLoading(true);
+        let worker = null;
+        try {
+            const { createWorker } = await import("tesseract.js");
+            worker = await createWorker("eng");
+            const {
+                data: { text },
+            } = await worker.recognize(photoBlob);
+
+            const detectedPlate = extractLicensePlateFromText(text);
+            if (!detectedPlate) {
+                setOcrError(
+                    tr(
+                        "Plat nomor belum terbaca jelas. Coba dekatkan kamera atau ulangi scan.",
+                        "License plate is not clearly readable yet. Try moving the camera closer or scan again.",
+                    ),
+                );
+                return;
+            }
+
+            setLicensePlate(detectedPlate);
+            setPlateSource("ocr");
+            setOcrResult(detectedPlate);
+        } catch {
+            setOcrError(
+                tr(
+                    "Gagal memproses OCR kamera.",
+                    "Failed to process camera OCR.",
+                ),
+            );
+        } finally {
+            if (worker) {
+                await worker.terminate();
+            }
+            setOcrLoading(false);
+        }
+    };
+
     const handleLookupRfid = async (uid) => {
         const normalizedUid = String(uid || "").trim();
         if (!normalizedUid) {
@@ -250,6 +397,10 @@ export default function StandbyIn({
             setRfidError("");
             setRfidUser(null);
             setRfidVehicle(null);
+            if (plateSource === "rfid") {
+                setLicensePlate("");
+                setPlateSource("none");
+            }
             return;
         }
 
@@ -293,6 +444,7 @@ export default function StandbyIn({
                 setLicensePlate(
                     formatLicensePlate(payload.vehicle.license_plate),
                 );
+                setPlateSource("rfid");
             }
         } catch {
             if (latestLookupRef.current !== lookupId) {
@@ -427,66 +579,70 @@ export default function StandbyIn({
                 onSubmit={submit}
                 className="rounded-2xl border border-[#1E5EFF]/20 dark:border-white/10 bg-white dark:bg-[#111633] p-6 space-y-4"
             >
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                {!hideRfidInput && (
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                                {tr(
+                                    "officer.common.rfid_optional",
+                                    "RFID UID (Opsional)",
+                                    "RFID UID (Optional)",
+                                )}
+                            </label>
+                            <input
+                                value={rfidUid}
+                                onChange={(event) =>
+                                    setRfidUid(event.target.value)
+                                }
+                                placeholder={tr(
+                                    "officer.common.rfid_placeholder",
+                                    "Scan / input RFID UID (boleh kosong)",
+                                    "Scan / input RFID UID (optional)",
+                                )}
+                                className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                             {tr(
-                                "officer.common.rfid_optional",
-                                "RFID UID (Opsional)",
-                                "RFID UID (Optional)",
+                                "Jika diisi, RFID diverifikasi otomatis. Jika kosong, transaksi tetap diproses pakai plat.",
+                                "If filled, RFID is verified automatically. If empty, transaction still proceeds using plate.",
                             )}
-                        </label>
-                        <input
-                            value={rfidUid}
-                            onChange={(event) => setRfidUid(event.target.value)}
-                            placeholder={tr(
-                                "officer.common.rfid_placeholder",
-                                "Scan / input RFID UID (boleh kosong)",
-                                "Scan / input RFID UID (optional)",
-                            )}
-                            className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
-                        />
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {tr(
-                            "Jika diisi, RFID diverifikasi otomatis. Jika kosong, transaksi tetap diproses pakai plat.",
-                            "If filled, RFID is verified automatically. If empty, transaction still proceeds using plate.",
-                        )}
-                    </p>
-                    {rfidVehicle?.license_plate && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                            {tr(
-                                "RFID terhubung ke kendaraan dengan plat",
-                                "RFID linked to vehicle plate",
-                            )}{" "}
-                            {formatLicensePlate(rfidVehicle.license_plate)}.
                         </p>
-                    )}
-                    {lookupLoading && (
-                        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                            {tr(
-                                "Mencari data RFID...",
-                                "Searching RFID data...",
-                            )}
-                        </div>
-                    )}
+                        {rfidVehicle?.license_plate && (
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                {tr(
+                                    "RFID terhubung ke kendaraan dengan plat",
+                                    "RFID linked to vehicle plate",
+                                )}{" "}
+                                {formatLicensePlate(rfidVehicle.license_plate)}.
+                            </p>
+                        )}
+                        {lookupLoading && (
+                            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                {tr(
+                                    "Mencari data RFID...",
+                                    "Searching RFID data...",
+                                )}
+                            </div>
+                        )}
 
-                    {rfidUser && (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            {tr(
-                                "RFID cocok dengan user:",
-                                "RFID matched with user:",
-                            )}{" "}
-                            <strong>{rfidUser.name}</strong>
-                        </div>
-                    )}
+                        {rfidUser && (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                {tr(
+                                    "RFID cocok dengan user:",
+                                    "RFID matched with user:",
+                                )}{" "}
+                                <strong>{rfidUser.name}</strong>
+                            </div>
+                        )}
 
-                    {rfidError && (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {rfidError}
-                        </div>
-                    )}
-                </div>
+                        {rfidError && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {rfidError}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
@@ -499,24 +655,28 @@ export default function StandbyIn({
                     <input
                         name="license_plate"
                         value={licensePlate}
+                        disabled={hasRfidInput}
                         onInput={(event) => {
                             const normalized = formatLicensePlate(
                                 event.target.value,
                             );
                             event.target.value = normalized;
                             setLicensePlate(normalized);
+                            setPlateSource(normalized ? "manual" : "none");
                         }}
                         onChange={(event) => {
-                            setLicensePlate(
-                                formatLicensePlate(event.target.value),
+                            const normalized = formatLicensePlate(
+                                event.target.value,
                             );
+                            setLicensePlate(normalized);
+                            setPlateSource(normalized ? "manual" : "none");
                         }}
                         placeholder={tr(
                             "officer.common.example_plate_ad",
                             "Contoh: AD 45 ID",
                             "Example: AD 45 ID",
                         )}
-                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30 disabled:bg-slate-100 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400 disabled:cursor-not-allowed"
                         required
                     />
                 </div>
@@ -563,6 +723,45 @@ export default function StandbyIn({
                         </span>
                     </div>
 
+                    <div>
+                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                            {tr(
+                                "officer.standby_in.camera_device",
+                                "Perangkat Kamera",
+                                "Camera Device",
+                            )}
+                        </label>
+                        <select
+                            value={selectedCameraId}
+                            onChange={(event) =>
+                                setSelectedCameraId(event.target.value)
+                            }
+                            className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                            disabled={cameraDevices.length === 0}
+                        >
+                            {cameraDevices.length === 0 && (
+                                <option value="">
+                                    {tr(
+                                        "officer.standby_in.no_camera_detected",
+                                        "Kamera belum terdeteksi",
+                                        "No camera detected",
+                                    )}
+                                </option>
+                            )}
+                            {cameraDevices.map((device, index) => (
+                                <option
+                                    key={device.deviceId || `camera-${index}`}
+                                    value={device.deviceId}
+                                >
+                                    {device.label ||
+                                        (locale === "id"
+                                            ? `Kamera ${index + 1}`
+                                            : `Camera ${index + 1}`)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="relative rounded-xl border border-slate-300 dark:border-white/15 overflow-hidden bg-slate-100 dark:bg-[#0B1026]">
                         <video
                             ref={videoRef}
@@ -574,11 +773,36 @@ export default function StandbyIn({
                         <canvas ref={canvasRef} className="hidden" />
                     </div>
 
+                    {!hasRfidInput && (
+                        <button
+                            type="button"
+                            onClick={handleDetectLicensePlate}
+                            disabled={!cameraReady || ocrLoading}
+                            className="w-full rounded-xl border border-[#1E5EFF]/30 bg-[#1E5EFF]/10 px-4 py-2.5 text-sm font-semibold text-[#1E5EFF] hover:bg-[#1E5EFF]/15 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            {ocrLoading
+                                ? tr("Memproses OCR...", "Processing OCR...")
+                                : tr(
+                                      "Deteksi Plat Otomatis",
+                                      "Auto Detect License Plate",
+                                  )}
+                        </button>
+                    )}
+
                     {cameraError && (
                         <p className="text-sm text-red-600">{cameraError}</p>
                     )}
                     {photoError && (
                         <p className="text-sm text-red-600">{photoError}</p>
+                    )}
+                    {ocrError && (
+                        <p className="text-sm text-red-600">{ocrError}</p>
+                    )}
+                    {ocrResult && (
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                            {tr("Plat terdeteksi:", "Detected plate:")}{" "}
+                            <span className="font-semibold">{ocrResult}</span>
+                        </p>
                     )}
                 </div>
 
