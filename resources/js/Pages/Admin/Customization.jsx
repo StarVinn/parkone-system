@@ -1,5 +1,14 @@
 import { router, useForm, usePage } from "@inertiajs/react";
-import { Eye, EyeOff, GripVertical, Info, MoreVertical, Trash2 } from "lucide-react";
+import {
+    ArrowDown,
+    ArrowUp,
+    Eye,
+    EyeOff,
+    GripVertical,
+    Info,
+    MoreVertical,
+    Trash2,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import AdminLayout from "../Layouts/AdminLayout";
 import useI18n from "../../hooks/useI18n";
@@ -66,7 +75,12 @@ export default function Customization({ navbar, translations }) {
 
         router.put(
             route("admin.customization.translations.bulk"),
-            { translations: { id: buildTranslationMap("id"), en: buildTranslationMap("en") } },
+            {
+                translations: {
+                    id: buildTranslationMap("id"),
+                    en: buildTranslationMap("en"),
+                },
+            },
             { preserveScroll: true },
         );
     };
@@ -74,7 +88,11 @@ export default function Customization({ navbar, translations }) {
     const saveNavbar = () => {
         setLocalError(null);
         clearErrors();
-        router.put(route("admin.customization.navbar.update"), { navbar: navState }, { preserveScroll: true });
+        router.put(
+            route("admin.customization.navbar.update"),
+            { navbar: navState },
+            { preserveScroll: true },
+        );
     };
 
     const updateRow = (index, patch) => {
@@ -113,6 +131,37 @@ export default function Customization({ navbar, translations }) {
                 if (child) child.active = !child.active;
             }
 
+            return next;
+        });
+    };
+
+    const moveNavEntry = (path, direction) => {
+        setNavState((prev) => {
+            const next = structuredClone(prev);
+            const [type, parentIndex, childIndex] = path;
+
+            if (type === "item") {
+                const items = Array.isArray(next.items) ? [...next.items] : [];
+                const targetIndex = parentIndex + direction;
+                if (targetIndex < 0 || targetIndex >= items.length) return prev;
+                const [moved] = items.splice(parentIndex, 1);
+                items.splice(targetIndex, 0, moved);
+                next.items = items;
+                return next;
+            }
+
+            const children =
+                next.items?.[parentIndex] &&
+                Array.isArray(next.items[parentIndex].children)
+                    ? [...next.items[parentIndex].children]
+                    : [];
+
+            const targetIndex = childIndex + direction;
+            if (targetIndex < 0 || targetIndex >= children.length) return prev;
+
+            const [moved] = children.splice(childIndex, 1);
+            children.splice(targetIndex, 0, moved);
+            next.items[parentIndex].children = children;
             return next;
         });
     };
@@ -183,7 +232,10 @@ export default function Customization({ navbar, translations }) {
                     >
                         {isActive ? <EyeOff size={16} /> : <Eye size={16} />}
                         {isActive
-                            ? t("customization.navbar.deactivate", "Nonaktifkan")
+                            ? t(
+                                  "customization.navbar.deactivate",
+                                  "Nonaktifkan",
+                              )
                             : t("customization.navbar.activate", "Aktifkan")}
                     </button>
                 </div>
@@ -191,10 +243,35 @@ export default function Customization({ navbar, translations }) {
         </div>
     );
 
+    const renderMoveButtons = (path, index, total) => (
+        <div className="flex items-center gap-1">
+            <button
+                type="button"
+                onClick={() => moveNavEntry(path, -1)}
+                disabled={index <= 0}
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-white/5 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                title={t("actions.move_up", "Naik")}
+            >
+                <ArrowUp size={14} />
+            </button>
+            <button
+                type="button"
+                onClick={() => moveNavEntry(path, 1)}
+                disabled={index >= total - 1}
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-white/5 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                title={t("actions.move_down", "Turun")}
+            >
+                <ArrowDown size={14} />
+            </button>
+        </div>
+    );
+
     const navItems = Array.isArray(navState?.items) ? navState.items : [];
 
     const filteredTranslationRows = useMemo(() => {
-        const q = String(translationSearch || "").trim().toLowerCase();
+        const q = String(translationSearch || "")
+            .trim()
+            .toLowerCase();
         const indexed = translationRows.map((row, idx) => ({ row, idx }));
         if (!q) return indexed;
 
@@ -241,20 +318,16 @@ export default function Customization({ navbar, translations }) {
             if (items[items.length - 1] !== p) items.push(p);
         };
 
-        // Always show first page
         pushPage(1);
 
-        // Middle window size depends on current position (show up to 3 pages around current)
         let start = Math.max(2, current - 1);
         let end = Math.min(last - 1, current + 1);
 
-        // If we're near the start, show first 4 pages then dots + last
         if (current <= 3) {
             start = 2;
             end = 4;
         }
 
-        // If we're near the end, show dots + last 4 pages
         if (current >= last - 2) {
             start = last - 3;
             end = last - 1;
@@ -264,15 +337,13 @@ export default function Customization({ navbar, translations }) {
         for (let p = start; p <= end; p += 1) pushPage(p);
         if (end < last - 1) pushDotsIfNeeded();
 
-        // Always show last page
         pushPage(last);
 
-        // Enforce max page numbers (excluding dots) to 5 by trimming inner window if needed
         const pageNumbers = items.filter((it) => typeof it === "number");
         if (pageNumbers.length > maxPages) {
-            // Fallback: simplest compact set: 1, …, current, …, last OR 1..4, …, last
             if (current <= 3) return [1, 2, 3, 4, "…", last];
-            if (current >= last - 2) return [1, "…", last - 3, last - 2, last - 1, last];
+            if (current >= last - 2)
+                return [1, "…", last - 3, last - 2, last - 1, last];
             return [1, "…", current - 1, current, current + 1, "…", last];
         }
 
@@ -314,7 +385,7 @@ export default function Customization({ navbar, translations }) {
                 </div>
             )}
 
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
                 <button
                     type="button"
                     onClick={() => setTab("translations")}
@@ -414,7 +485,7 @@ export default function Customization({ navbar, translations }) {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/10">
+                                <tr className="bg-slate-50 dark:bg-white/2 border-b border-slate-200 dark:border-white/10">
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-[28%]">
                                         {t(
                                             "customization.translations.key",
@@ -599,7 +670,7 @@ export default function Customization({ navbar, translations }) {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] p-4">
                             <div className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                                 {t(
@@ -633,7 +704,7 @@ export default function Customization({ navbar, translations }) {
                                                 e.preventDefault()
                                             }
                                             onDrop={() => onDrop(path)}
-                                            className={`rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] transition-shadow cursor-pointer ${
+                                            className={`rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/2 transition-shadow cursor-pointer ${
                                                 isDragOver
                                                     ? "ring-2 ring-[#1FD1A5]/40 shadow-lg shadow-[#1FD1A5]/10"
                                                     : "shadow-sm"
@@ -661,10 +732,17 @@ export default function Customization({ navbar, translations }) {
                                                         </span>
                                                     )}
                                                 </div>
-                                                {renderMenuButton(
-                                                    path,
-                                                    Boolean(item.active),
-                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    {renderMoveButtons(
+                                                        path,
+                                                        idx,
+                                                        navItems.length,
+                                                    )}
+                                                    {renderMenuButton(
+                                                        path,
+                                                        Boolean(item.active),
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {isGroup &&
@@ -723,7 +801,7 @@ export default function Customization({ navbar, translations }) {
                                                                         }
                                                                         className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition ${
                                                                             isChildDragOver
-                                                                                ? "ring-2 ring-[#1FD1A5]/40 bg-slate-100/70 dark:bg-white/[0.03]"
+                                                                                ? "ring-2 ring-[#1FD1A5]/40 bg-slate-100/70 dark:bg-white/3"
                                                                                 : ""
                                                                         } ${
                                                                             child.active
@@ -744,12 +822,21 @@ export default function Customization({ navbar, translations }) {
                                                                                     child.key}
                                                                             </span>
                                                                         </div>
-                                                                        {renderMenuButton(
-                                                                            cPath,
-                                                                            Boolean(
-                                                                                child.active,
-                                                                            ),
-                                                                        )}
+                                                                        <div className="flex items-center gap-1">
+                                                                            {renderMoveButtons(
+                                                                                cPath,
+                                                                                cIdx,
+                                                                                item
+                                                                                    .children
+                                                                                    .length,
+                                                                            )}
+                                                                            {renderMenuButton(
+                                                                                cPath,
+                                                                                Boolean(
+                                                                                    child.active,
+                                                                                ),
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 );
                                                             },
@@ -759,73 +846,6 @@ export default function Customization({ navbar, translations }) {
                                         </div>
                                     );
                                 })}
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] p-4">
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                                {t(
-                                    "customization.navbar.label_key",
-                                    "Label Key / URL",
-                                )}
-                            </div>
-                            <div className="space-y-3">
-                                {navItems.map((item, idx) => (
-                                    <div
-                                        key={`edit-${item.key || idx}`}
-                                        className="rounded-xl border border-slate-200 dark:border-white/10 p-3"
-                                    >
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                                            {item.type === "group"
-                                                ? t(
-                                                      "customization.navbar.group",
-                                                      "Group",
-                                                  )
-                                                : t(
-                                                      "customization.navbar.link",
-                                                      "Link",
-                                                  )}
-                                        </div>
-                                        <input
-                                            value={item.label_key || ""}
-                                            onChange={(e) =>
-                                                setNavState((prev) => {
-                                                    const next =
-                                                        structuredClone(prev);
-                                                    next.items[idx].label_key =
-                                                        e.target.value;
-                                                    return next;
-                                                })
-                                            }
-                                            placeholder={t(
-                                                "customization.navbar.label_key_placeholder",
-                                                "contoh: nav.vehicle",
-                                            )}
-                                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] text-sm"
-                                        />
-                                        {item.type !== "group" && (
-                                            <input
-                                                value={item.href || ""}
-                                                onChange={(e) =>
-                                                    setNavState((prev) => {
-                                                        const next =
-                                                            structuredClone(
-                                                                prev,
-                                                            );
-                                                        next.items[idx].href =
-                                                            e.target.value;
-                                                        return next;
-                                                    })
-                                                }
-                                                placeholder={t(
-                                                    "customization.navbar.href_placeholder",
-                                                    "/admin/vehicles",
-                                                )}
-                                                className="w-full mt-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B1026] text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5] text-sm"
-                                            />
-                                        )}
-                                    </div>
-                                ))}
                             </div>
                         </div>
                     </div>
