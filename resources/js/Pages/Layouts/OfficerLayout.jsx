@@ -1,20 +1,31 @@
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronDown, Languages, LogOut, Moon, Sun } from "lucide-react";
 import logo from "../../Assets/Images/logo-parkone.png";
 import useTheme from "../../hooks/useTheme";
+import useI18n from "../../hooks/useI18n";
 
 export default function OfficerLayout({ children }) {
     const page = usePage();
     const { auth } = page.props;
     const { post, processing } = useForm();
     const { darkMode, setDarkMode } = useTheme();
+    const { t, locale } = useI18n();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
     const handleLogout = () => {
         setDropdownOpen(false);
         post("/logout");
+    };
+
+    const handleLocale = (nextLocale) => {
+        router.post(
+            route("locale.update"),
+            { locale: nextLocale },
+            { preserveScroll: true },
+        );
+        setDropdownOpen(false);
     };
 
     useEffect(() => {
@@ -32,31 +43,33 @@ export default function OfficerLayout({ children }) {
     }, [dropdownOpen]);
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-[#0B1026] transition-colors duration-300">
+        <div className="min-h-screen w-full overflow-x-hidden bg-slate-100 dark:bg-[#0B1026] transition-colors duration-300">
             <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0B1026]/90 backdrop-blur transition-colors duration-300">
-                <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-8">
-                    <div className="flex items-center gap-3">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-8">
+                    <div className="flex flex-1 min-w-0 items-center gap-3">
                         <img
                             src={logo}
                             alt="Logo"
                             className="h-9 w-9 rounded-xl"
                         />
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                 PARKONE
                             </p>
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                Officer Panel
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                {t("officer.layout.panel", "Officer Panel")}
                             </p>
                         </div>
                     </div>
 
-                    <div className="relative" ref={dropdownRef}>
+                    <div className="relative shrink-0" ref={dropdownRef}>
                         <button
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-[#1FD1A5] font-['Poppins'] transition cursor-pointer"
                         >
-                            {auth?.user?.name}
+                            <span className="max-w-[12rem] sm:max-w-[16rem] truncate">
+                                {auth?.user?.name}
+                            </span>
                             <ChevronDown
                                 size={14}
                                 className={`transition-transform duration-300 ${
@@ -66,7 +79,7 @@ export default function OfficerLayout({ children }) {
                         </button>
 
                         <div
-                            className={`absolute right-0 mt-4 w-48 bg-white dark:bg-[#111633]
+                            className={`absolute right-0 mt-4 w-[min(14rem,calc(100vw-2rem))] sm:w-56 bg-white dark:bg-[#111633]
                                 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl py-2 text-sm ring-1 ring-black/5 dark:ring-white/10
                                 transition-all duration-300 origin-top ${
                                     dropdownOpen
@@ -75,8 +88,11 @@ export default function OfficerLayout({ children }) {
                                 }`}
                         >
                             <div className="px-4 py-2 text-xs text-slate-500 dark:text-slate-300">
-                                Login dengan email
-                                <div className="text-slate-800 dark:text-white font-medium truncate">
+                                {t(
+                                    "layout.login_with_email",
+                                    "Login dengan email",
+                                )}
+                                <div className="text-slate-800 dark:text-white font-medium break-all">
                                     {auth?.user?.email || "-"}
                                 </div>
                             </div>
@@ -91,9 +107,59 @@ export default function OfficerLayout({ children }) {
                                 }}
                                 className="w-full text-left px-4 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer inline-flex items-center gap-2"
                             >
-                                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-                                {darkMode ? "Light Mode" : "Dark Mode"}
+                                {darkMode ? (
+                                    <Sun size={16} />
+                                ) : (
+                                    <Moon size={16} />
+                                )}
+                                {darkMode
+                                    ? t("layout.light_mode", "Light Mode")
+                                    : t("layout.dark_mode", "Dark Mode")}
                             </button>
+
+                            <hr className="my-2 border-slate-200 dark:border-white/10" />
+
+                            <div className="px-4 py-2">
+                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+                                    <Languages size={14} />
+                                    <span>
+                                        {t("layout.language", "Language")}
+                                    </span>
+                                    <span className="ml-auto font-semibold text-slate-700 dark:text-slate-200">
+                                        {locale === "id" ? "ID" : "EN"}
+                                    </span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between gap-3">
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                        {locale === "id"
+                                            ? t("lang.id", "Bahasa Indonesia")
+                                            : t("lang.en", "English")}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={locale === "en"}
+                                        onClick={() =>
+                                            handleLocale(
+                                                locale === "id" ? "en" : "id",
+                                            )
+                                        }
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                                            locale === "en"
+                                                ? "bg-[#1E5EFF]"
+                                                : "bg-slate-300 dark:bg-white/20"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                                locale === "en"
+                                                    ? "translate-x-6"
+                                                    : "translate-x-1"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
 
                             <hr className="my-2 border-slate-200 dark:border-white/10" />
 
@@ -103,7 +169,9 @@ export default function OfficerLayout({ children }) {
                                 className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer inline-flex items-center gap-2 disabled:opacity-60"
                             >
                                 <LogOut size={16} />
-                                {processing ? "Logging out..." : "Logout"}
+                                {processing
+                                    ? t("states.processing", "Processing...")
+                                    : t("actions.logout", "Logout")}
                             </button>
                         </div>
                     </div>

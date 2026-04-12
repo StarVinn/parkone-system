@@ -1,6 +1,7 @@
 import { Link, router, useForm, usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
+import useI18n from "../../hooks/useI18n";
 
 const formatLicensePlate = (value) => {
     const cleaned = String(value || "")
@@ -26,6 +27,8 @@ export default function StandbyIn({
     readiness = { entry_ready: false, entry_blockers: [] },
 }) {
     const { flash, errors } = usePage().props;
+    const { locale, t } = useI18n();
+    const tr = (key, id, en) => t(key, locale === "id" ? id : en);
     const [rfidUid, setRfidUid] = useState("");
     const [rfidUser, setRfidUser] = useState(null);
     const [rfidVehicle, setRfidVehicle] = useState(null);
@@ -93,7 +96,12 @@ export default function StandbyIn({
     useEffect(() => {
         const startCamera = async () => {
             if (!navigator?.mediaDevices?.getUserMedia) {
-                setCameraError("Browser tidak mendukung akses kamera.");
+                setCameraError(
+                    tr(
+                        "Browser tidak mendukung akses kamera.",
+                        "Browser does not support camera access.",
+                    ),
+                );
                 return;
             }
 
@@ -114,7 +122,10 @@ export default function StandbyIn({
             } catch {
                 setCameraReady(false);
                 setCameraError(
-                    "Izin kamera ditolak atau kamera tidak tersedia.",
+                    tr(
+                        "Izin kamera ditolak atau kamera tidak tersedia.",
+                        "Camera permission denied or camera is unavailable.",
+                    ),
                 );
             }
         };
@@ -168,25 +179,47 @@ export default function StandbyIn({
                 normalizedLicensePlate &&
                 boundPlate !== normalizedLicensePlate
             ) {
-                setRfidError("RFID ini terikat ke kendaraan lain.");
+                setRfidError(
+                    t(
+                        "officer.common.rfid_bound_other_vehicle",
+                        locale === "id"
+                            ? "RFID ini terikat ke kendaraan lain."
+                            : "This RFID is bound to another vehicle.",
+                    ),
+                );
                 return;
             }
         }
 
         if (rfidUid.trim() && !rfidUser) {
-            setRfidError("RFID belum terverifikasi.");
+            setRfidError(
+                tr(
+                    "officer.common.rfid_not_verified",
+                    "RFID belum terverifikasi.",
+                    "RFID is not verified yet.",
+                ),
+            );
             return;
         }
         if (!entryReady) {
             setPhotoError(
-                entryBlockers[0] || "Area belum siap untuk transaksi masuk.",
+                entryBlockers[0] ||
+                    tr(
+                        "Area belum siap untuk transaksi masuk.",
+                        "Area is not ready for entry transaction.",
+                    ),
             );
             return;
         }
 
         const photoBlob = await capturePhotoBlob();
         if (!photoBlob) {
-            setPhotoError("Kamera belum siap, tunggu sebentar lalu coba lagi.");
+            setPhotoError(
+                tr(
+                    "Kamera belum siap, tunggu sebentar lalu coba lagi.",
+                    "Camera is not ready yet, please wait and try again.",
+                ),
+            );
             return;
         }
         setPhotoError("");
@@ -242,7 +275,14 @@ export default function StandbyIn({
             }
 
             if (!response.ok) {
-                setRfidError(payload.message || "RFID tidak ditemukan.");
+                setRfidError(
+                    payload.message ||
+                        tr(
+                            "officer.common.rfid_not_found",
+                            "RFID tidak ditemukan.",
+                            "RFID not found.",
+                        ),
+                );
                 return;
             }
 
@@ -258,7 +298,14 @@ export default function StandbyIn({
             if (latestLookupRef.current !== lookupId) {
                 return;
             }
-            setRfidError("Gagal melakukan lookup RFID.");
+            setRfidError(
+                t(
+                    "officer.common.rfid_lookup_failed",
+                    locale === "id"
+                        ? "Gagal melakukan lookup RFID."
+                        : "Failed to lookup RFID.",
+                ),
+            );
         } finally {
             if (latestLookupRef.current === lookupId) {
                 setLookupLoading(false);
@@ -279,7 +326,12 @@ export default function StandbyIn({
 
         const photoBlob = await capturePhotoBlob();
         if (!photoBlob) {
-            setPhotoError("Kamera belum siap, tunggu sebentar lalu coba lagi.");
+            setPhotoError(
+                tr(
+                    "Kamera belum siap, tunggu sebentar lalu coba lagi.",
+                    "Camera is not ready yet, please wait and try again.",
+                ),
+            );
             return;
         }
         setPhotoError("");
@@ -312,17 +364,29 @@ export default function StandbyIn({
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Standby IN
+                        {tr(
+                            "officer.standby_in.title",
+                            "Standby IN",
+                            "Standby IN",
+                        )}
                     </h1>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                        Mode cepat untuk transaksi kendaraan masuk.
+                        {tr(
+                            "officer.standby_in.subtitle",
+                            "Mode cepat untuk transaksi kendaraan masuk.",
+                            "Fast mode for vehicle entry transactions.",
+                        )}
                     </p>
                 </div>
                 <Link
                     href="/officer"
                     className="text-sm text-[#1E5EFF] hover:underline"
                 >
-                    Kembali ke Dashboard
+                    {tr(
+                        "officer.common.back_dashboard",
+                        "Kembali ke Dashboard",
+                        "Back to Dashboard",
+                    )}
                 </Link>
             </div>
 
@@ -346,7 +410,10 @@ export default function StandbyIn({
             {!entryReady && entryBlockers.length > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <p className="font-semibold mb-1">
-                        Transaksi masuk belum bisa diproses.
+                        {tr(
+                            "Transaksi masuk belum bisa diproses.",
+                            "Entry transaction cannot be processed yet.",
+                        )}
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
                         {entryBlockers.map((item, index) => (
@@ -363,34 +430,53 @@ export default function StandbyIn({
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                            RFID UID (Opsional)
+                            {tr(
+                                "officer.common.rfid_optional",
+                                "RFID UID (Opsional)",
+                                "RFID UID (Optional)",
+                            )}
                         </label>
                         <input
                             value={rfidUid}
                             onChange={(event) => setRfidUid(event.target.value)}
-                            placeholder="Scan / input RFID UID (boleh kosong)"
+                            placeholder={tr(
+                                "officer.common.rfid_placeholder",
+                                "Scan / input RFID UID (boleh kosong)",
+                                "Scan / input RFID UID (optional)",
+                            )}
                             className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                         />
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Jika diisi, RFID diverifikasi otomatis. Jika kosong,
-                        transaksi tetap diproses pakai plat.
+                        {tr(
+                            "Jika diisi, RFID diverifikasi otomatis. Jika kosong, transaksi tetap diproses pakai plat.",
+                            "If filled, RFID is verified automatically. If empty, transaction still proceeds using plate.",
+                        )}
                     </p>
                     {rfidVehicle?.license_plate && (
                         <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                            RFID terhubung ke kendaraan dengan plat{" "}
+                            {tr(
+                                "RFID terhubung ke kendaraan dengan plat",
+                                "RFID linked to vehicle plate",
+                            )}{" "}
                             {formatLicensePlate(rfidVehicle.license_plate)}.
                         </p>
                     )}
                     {lookupLoading && (
                         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                            Mencari data RFID...
+                            {tr(
+                                "Mencari data RFID...",
+                                "Searching RFID data...",
+                            )}
                         </div>
                     )}
 
                     {rfidUser && (
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            RFID cocok dengan user:{" "}
+                            {tr(
+                                "RFID cocok dengan user:",
+                                "RFID matched with user:",
+                            )}{" "}
                             <strong>{rfidUser.name}</strong>
                         </div>
                     )}
@@ -404,7 +490,11 @@ export default function StandbyIn({
 
                 <div>
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                        Plat Nomor
+                        {tr(
+                            "officer.common.license_plate",
+                            "Plat Nomor",
+                            "License Plate",
+                        )}
                     </label>
                     <input
                         name="license_plate"
@@ -421,7 +511,11 @@ export default function StandbyIn({
                                 formatLicensePlate(event.target.value),
                             );
                         }}
-                        placeholder="Contoh: AD 45 ID"
+                        placeholder={tr(
+                            "officer.common.example_plate_ad",
+                            "Contoh: AD 45 ID",
+                            "Example: AD 45 ID",
+                        )}
                         className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                         required
                     />
@@ -429,7 +523,11 @@ export default function StandbyIn({
 
                 <div>
                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                        Area Parkir
+                        {tr(
+                            "officer.common.parking_area",
+                            "Area Parkir",
+                            "Parking Area",
+                        )}
                     </label>
                     <input
                         value={
@@ -441,17 +539,27 @@ export default function StandbyIn({
                         className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-100 dark:bg-white/10 px-3 py-2.5 text-slate-700 dark:text-slate-200"
                     />
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Area ditentukan dari dashboard officer.
+                        {tr(
+                            "Area ditentukan dari dashboard officer.",
+                            "Area is set from officer dashboard.",
+                        )}
                     </p>
                 </div>
 
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <label className="block text-sm text-slate-600 dark:text-slate-300">
-                            Foto Kendaraan Masuk
+                            {tr(
+                                "officer.standby_in.entry_vehicle_photo",
+                                "Foto Kendaraan Masuk",
+                                "Entry Vehicle Photo",
+                            )}
                         </label>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                            Otomatis capture saat proses masuk
+                            {tr(
+                                "Otomatis capture saat proses masuk",
+                                "Auto capture during entry process",
+                            )}
                         </span>
                     </div>
 
@@ -479,7 +587,11 @@ export default function StandbyIn({
                     disabled={!entryReady}
                     className="w-full rounded-xl bg-[#1FD1A5] px-4 py-2.5 text-white font-semibold hover:bg-[#14A886] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    Proses Kendaraan Masuk
+                    {tr(
+                        "officer.standby_in.process_entry",
+                        "Proses Kendaraan Masuk",
+                        "Process Vehicle Entry",
+                    )}
                 </button>
             </form>
 
@@ -489,11 +601,17 @@ export default function StandbyIn({
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                    Kendaraan Belum Terdaftar
+                                    {tr(
+                                        "officer.standby_in.unregistered_vehicle",
+                                        "Kendaraan Belum Terdaftar",
+                                        "Vehicle Not Registered",
+                                    )}
                                 </h2>
                                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                                    Lengkapi data kendaraan, lalu sistem akan
-                                    lanjutkan transaksi masuk.
+                                    {tr(
+                                        "Lengkapi data kendaraan, lalu sistem akan lanjutkan transaksi masuk.",
+                                        "Complete vehicle data, then the system will continue entry transaction.",
+                                    )}
                                 </p>
                             </div>
                             <button
@@ -501,7 +619,7 @@ export default function StandbyIn({
                                 onClick={() => setShowVisitorModal(false)}
                                 className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
                             >
-                                Tutup
+                                {tr("officer.common.close", "Tutup", "Close")}
                             </button>
                         </div>
 
@@ -511,7 +629,11 @@ export default function StandbyIn({
                         >
                             <div>
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                    Plat Nomor
+                                    {tr(
+                                        "officer.common.license_plate",
+                                        "Plat Nomor",
+                                        "License Plate",
+                                    )}
                                 </label>
                                 <input
                                     value={visitorData.license_plate}
@@ -536,7 +658,10 @@ export default function StandbyIn({
                             {visitorData.rfid_uid && (
                                 <div>
                                     <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                        RFID UID (Dari Form Sebelumnya)
+                                        {tr(
+                                            "RFID UID (Dari Form Sebelumnya)",
+                                            "RFID UID (From Previous Form)",
+                                        )}
                                     </label>
                                     <input
                                         value={visitorData.rfid_uid}
@@ -553,7 +678,11 @@ export default function StandbyIn({
 
                             <div>
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                    Tipe Kendaraan
+                                    {tr(
+                                        "officer.common.vehicle_type",
+                                        "Tipe Kendaraan",
+                                        "Vehicle Type",
+                                    )}
                                 </label>
                                 <select
                                     value={visitorData.vehicle_type_id}
@@ -567,7 +696,11 @@ export default function StandbyIn({
                                     required
                                 >
                                     <option value="">
-                                        Pilih tipe kendaraan
+                                        {tr(
+                                            "officer.common.select_vehicle_type",
+                                            "Pilih tipe kendaraan",
+                                            "Select vehicle type",
+                                        )}
                                     </option>
                                     {entryVehicleTypes.map((type) => (
                                         <option key={type.id} value={type.id}>
@@ -582,8 +715,10 @@ export default function StandbyIn({
                                 )}
                                 {entryVehicleTypes.length === 0 && (
                                     <p className="mt-1 text-sm text-red-600">
-                                        Belum ada tipe kendaraan yang punya
-                                        tarif di area ini.
+                                        {tr(
+                                            "Belum ada tipe kendaraan yang punya tarif di area ini.",
+                                            "No vehicle types with rate are available in this area.",
+                                        )}
                                     </p>
                                 )}
                             </div>
@@ -613,8 +748,16 @@ export default function StandbyIn({
                                 className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 font-semibold text-white hover:bg-[#194FD8] transition disabled:opacity-60 cursor-pointer"
                             >
                                 {visitorProcessing
-                                    ? "Menyimpan..."
-                                    : "Simpan & Lanjutkan Masuk"}
+                                    ? tr(
+                                          "states.saving",
+                                          "Menyimpan...",
+                                          "Saving...",
+                                      )
+                                    : tr(
+                                          "officer.standby_in.save_continue_entry",
+                                          "Simpan & Lanjutkan Masuk",
+                                          "Save & Continue Entry",
+                                      )}
                             </button>
                         </form>
                     </div>

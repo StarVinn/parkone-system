@@ -1,6 +1,7 @@
 import { Link, router, usePage } from "@inertiajs/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
+import useI18n from "../../hooks/useI18n";
 
 const formatLicensePlate = (value) => {
     const cleaned = String(value || "")
@@ -29,6 +30,8 @@ export default function StandbyOut({
     selectedParkingArea = null,
 }) {
     const { flash, errors } = usePage().props;
+    const { locale, t } = useI18n();
+    const tr = (key, id, en) => t(key, locale === "id" ? id : en);
     const [licensePlate, setLicensePlate] = useState("");
     const [plateSource, setPlateSource] = useState("none");
     const [plateError, setPlateError] = useState("");
@@ -114,7 +117,14 @@ export default function StandbyOut({
             }
 
             if (!response.ok) {
-                setRfidError(payload.message || "RFID tidak ditemukan.");
+                setRfidError(
+                    payload.message ||
+                        tr(
+                            "officer.common.rfid_not_found",
+                            "RFID tidak ditemukan.",
+                            "RFID not found.",
+                        ),
+                );
                 return;
             }
 
@@ -147,7 +157,14 @@ export default function StandbyOut({
             if (latestLookupRef.current !== lookupId) {
                 return;
             }
-            setRfidError("Gagal melakukan lookup RFID.");
+            setRfidError(
+                t(
+                    "officer.common.rfid_lookup_failed",
+                    locale === "id"
+                        ? "Gagal melakukan lookup RFID."
+                        : "Failed to lookup RFID.",
+                ),
+            );
         } finally {
             if (latestLookupRef.current === lookupId) {
                 setLookupLoading(false);
@@ -168,12 +185,24 @@ export default function StandbyOut({
         const normalizedPlate = String(licensePlate || "").trim();
 
         if (!normalizedPlate) {
-            setPlateError("Plat nomor wajib diisi.");
+            setPlateError(
+                tr(
+                    "officer.common.license_plate_required",
+                    "Plat nomor wajib diisi.",
+                    "License plate is required.",
+                ),
+            );
             return;
         }
 
         if (rfidUid.trim() && !rfidUser) {
-            setRfidError("RFID belum terverifikasi.");
+            setRfidError(
+                tr(
+                    "officer.common.rfid_not_verified",
+                    "RFID belum terverifikasi.",
+                    "RFID is not verified yet.",
+                ),
+            );
             return;
         }
 
@@ -194,13 +223,24 @@ export default function StandbyOut({
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Standby OUT
+                        {tr(
+                            "officer.standby_out.title",
+                            "Standby OUT",
+                            "Standby OUT",
+                        )}
                     </h1>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                        Mode cepat untuk transaksi kendaraan keluar.
+                        {tr(
+                            "Mode cepat untuk transaksi kendaraan keluar.",
+                            "Fast mode for vehicle exit transactions.",
+                        )}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Area aktif:{" "}
+                        {tr(
+                            "officer.dashboard.active_area",
+                            "Area aktif:",
+                            "Active area:",
+                        )}{" "}
                         <strong>{selectedParkingArea?.name || "-"}</strong>
                     </p>
                 </div>
@@ -208,7 +248,11 @@ export default function StandbyOut({
                     href="/officer"
                     className="text-sm text-[#1E5EFF] hover:underline"
                 >
-                    Kembali ke Dashboard
+                    {tr(
+                        "officer.common.back_dashboard",
+                        "Kembali ke Dashboard",
+                        "Back to Dashboard",
+                    )}
                 </Link>
             </div>
 
@@ -232,7 +276,11 @@ export default function StandbyOut({
                     <div className="space-y-3">
                         <div>
                             <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                RFID UID (Opsional)
+                                {tr(
+                                    "officer.common.rfid_optional",
+                                    "RFID UID (Opsional)",
+                                    "RFID UID (Optional)",
+                                )}
                             </label>
                             <input
                                 value={rfidUid}
@@ -248,23 +296,35 @@ export default function StandbyOut({
                                         setPlateError("");
                                     }
                                 }}
-                                placeholder="Scan / input RFID UID (boleh kosong)"
+                                placeholder={tr(
+                                    "officer.common.rfid_placeholder",
+                                    "Scan / input RFID UID (boleh kosong)",
+                                    "Scan / input RFID UID (optional)",
+                                )}
                                 className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                             />
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Jika transaksi masuk memakai RFID, saat keluar RFID
-                            yang sama harus diinput.
+                            {tr(
+                                "Jika transaksi masuk memakai RFID, saat keluar RFID yang sama harus diinput.",
+                                "If entry used RFID, the same RFID must be provided on exit.",
+                            )}
                         </p>
                         {lookupLoading && (
                             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                Mencari data RFID...
+                                {tr(
+                                    "Mencari data RFID...",
+                                    "Searching RFID data...",
+                                )}
                             </div>
                         )}
 
                         {rfidUser && (
                             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                                RFID cocok dengan user:{" "}
+                                {tr(
+                                    "RFID cocok dengan user:",
+                                    "RFID matched with user:",
+                                )}{" "}
                                 <strong>{rfidUser.name}</strong>
                             </div>
                         )}
@@ -283,7 +343,11 @@ export default function StandbyOut({
                     <div className="space-y-2">
                         <div>
                             <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                Plat Nomor
+                                {tr(
+                                    "officer.common.license_plate",
+                                    "Plat Nomor",
+                                    "License Plate",
+                                )}
                             </label>
                             <input
                                 name="license_plate"
@@ -300,7 +364,10 @@ export default function StandbyOut({
                                         setRfidError("");
                                     }
                                 }}
-                                placeholder="Contoh: B 1018 PIA"
+                                placeholder={tr(
+                                    "Contoh: B 1018 PIA",
+                                    "Example: B 1018 PIA",
+                                )}
                                 className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
                                 required
                             />
@@ -320,7 +387,11 @@ export default function StandbyOut({
                         />
                         <div className="space-y-1">
                             <p className="text-sm text-slate-600 dark:text-slate-300">
-                                Plat Nomor (Otomatis)
+                                {tr(
+                                    "officer.common.plate_auto",
+                                    "Plat Nomor (Otomatis)",
+                                    "License Plate (Auto)",
+                                )}
                             </p>
                             <div className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white px-3 py-2.5 text-sm font-semibold uppercase">
                                 {licensePlate || "-"}
@@ -338,14 +409,22 @@ export default function StandbyOut({
                     type="submit"
                     className="w-full rounded-xl bg-[#1E5EFF] px-4 py-2.5 text-white font-semibold hover:bg-[#194FD8] transition cursor-pointer"
                 >
-                    Proses Kendaraan Keluar
+                    {tr(
+                        "officer.standby_out.process_exit",
+                        "Proses Kendaraan Keluar",
+                        "Process Vehicle Exit",
+                    )}
                 </button>
             </form>
 
             <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111633] p-5">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        Transaksi Aktif
+                        {tr(
+                            "officer.common.active_transactions",
+                            "Transaksi Aktif",
+                            "Active Transactions",
+                        )}
                     </h2>
                     {/* <input
                         value={activePlateSearch}
@@ -361,7 +440,11 @@ export default function StandbyOut({
                 <div className="space-y-2 max-h-72 overflow-auto pr-1">
                     {filteredActiveTransactions.length === 0 && (
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Tidak ada transaksi aktif.
+                            {tr(
+                                "officer.common.no_active_transactions",
+                                "Tidak ada transaksi aktif.",
+                                "No active transactions.",
+                            )}
                         </p>
                     )}
                     {filteredActiveTransactions.map((item) => (
@@ -379,7 +462,11 @@ export default function StandbyOut({
                                 {item.parking_area?.name || "-"}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Masuk:{" "}
+                                {tr(
+                                    "officer.common.entry_colon",
+                                    "Masuk:",
+                                    "Entry:",
+                                )}{" "}
                                 {item.entry_time
                                     ? new Date(item.entry_time).toLocaleString(
                                           "id-ID",
@@ -397,11 +484,17 @@ export default function StandbyOut({
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                    Detail Kendaraan Aktif
+                                    {tr(
+                                        "officer.standby_out.active_vehicle_detail",
+                                        "Detail Kendaraan Aktif",
+                                        "Active Vehicle Detail",
+                                    )}
                                 </h2>
                                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                                    Preview foto kendaraan masuk dan data
-                                    transaksi.
+                                    {tr(
+                                        "Preview foto kendaraan masuk dan data transaksi.",
+                                        "Preview entry vehicle photo and transaction data.",
+                                    )}
                                 </p>
                             </div>
                             <button
@@ -411,7 +504,7 @@ export default function StandbyOut({
                                 }
                                 className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
                             >
-                                Tutup
+                                {tr("officer.common.close", "Tutup", "Close")}
                             </button>
                         </div>
 
@@ -427,14 +520,21 @@ export default function StandbyOut({
                                     />
                                 ) : (
                                     <div className="h-64 w-full flex items-center justify-center text-sm text-slate-500 dark:text-slate-400 px-4 text-center">
-                                        Foto kendaraan masuk belum tersedia.
+                                        {tr(
+                                            "Foto kendaraan masuk belum tersedia.",
+                                            "Entry vehicle photo is not available yet.",
+                                        )}
                                     </div>
                                 )}
                             </div>
 
                             <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-2">
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Plat Nomor
+                                    {tr(
+                                        "officer.common.license_plate",
+                                        "Plat Nomor",
+                                        "License Plate",
+                                    )}
                                 </p>
                                 <p className="text-lg font-semibold text-slate-900 dark:text-white uppercase">
                                     {selectedActiveTransaction.vehicle
@@ -442,7 +542,11 @@ export default function StandbyOut({
                                 </p>
 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                    Tipe Kendaraan
+                                    {tr(
+                                        "officer.common.vehicle_type",
+                                        "Tipe Kendaraan",
+                                        "Vehicle Type",
+                                    )}
                                 </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.vehicle
@@ -450,7 +554,11 @@ export default function StandbyOut({
                                 </p>
 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                    Area Parkir
+                                    {tr(
+                                        "officer.common.parking_area",
+                                        "Area Parkir",
+                                        "Parking Area",
+                                    )}
                                 </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.parking_area
@@ -458,7 +566,11 @@ export default function StandbyOut({
                                 </p>
 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                    RFID Card ID
+                                    {tr(
+                                        "officer.common.rfid_card_id",
+                                        "RFID Card ID",
+                                        "RFID Card ID",
+                                    )}
                                 </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.rfid_card?.id
@@ -467,7 +579,11 @@ export default function StandbyOut({
                                 </p>
 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                    Waktu Masuk
+                                    {tr(
+                                        "officer.common.entry_time",
+                                        "Waktu Masuk",
+                                        "Entry Time",
+                                    )}
                                 </p>
                                 <p className="text-sm text-slate-800 dark:text-slate-200">
                                     {selectedActiveTransaction.entry_time

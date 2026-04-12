@@ -1,6 +1,7 @@
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { useEffect, useRef } from "react";
 import OfficerLayout from "../Layouts/OfficerLayout";
+import useI18n from "../../hooks/useI18n";
 
 const currency = new Intl.NumberFormat("id-ID");
 const padLine = (label, value) => `${label.padEnd(10, " ")}: ${value}`;
@@ -16,6 +17,8 @@ export default function Receipt({
 }) {
     const { errors } = usePage().props;
     const { auth } = usePage().props;
+    const { locale, t } = useI18n();
+    const tr = (key, id, en) => t(key, locale === "id" ? id : en);
     const isExit = receiptType === "exit";
     const isExitPaymentStep = isExit && step === "payment";
     const isExitPreviewStep = isExit && step === "preview";
@@ -59,7 +62,11 @@ export default function Receipt({
     if (!transaction) {
         return (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-                Data transaksi tidak ditemukan.
+                {tr(
+                    "officer.receipt.not_found",
+                    "Data transaksi tidak ditemukan.",
+                    "Transaction data not found.",
+                )}
             </div>
         );
     }
@@ -89,7 +96,13 @@ export default function Receipt({
 
     return (
         <>
-            <Head title="Struk Transaksi | PARKONE" />
+            <Head
+                title={tr(
+                    "officer.receipt.head_title",
+                    "Struk Transaksi | PARKONE",
+                    "Transaction Receipt | PARKONE",
+                )}
+            />
             <style>{`
                 @page {
                     size: ${pageSize};
@@ -131,13 +144,23 @@ export default function Receipt({
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                             {isExitPaymentStep
-                                ? "Konfirmasi Uang Masuk"
-                                : `Struk ${receiptType === "entry" ? "Kendaraan Masuk" : "Kendaraan Keluar"}`}
+                                ? tr(
+                                      "officer.receipt.confirm_payment",
+                                      "Konfirmasi Uang Masuk",
+                                      "Confirm Received Payment",
+                                  )
+                                : `${tr("officer.receipt.receipt_label", "Struk", "Receipt")} ${receiptType === "entry" ? tr("officer.receipt.vehicle_entry", "Kendaraan Masuk", "Vehicle Entry") : tr("officer.receipt.vehicle_exit", "Kendaraan Keluar", "Vehicle Exit")}`}
                         </h1>
                         <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                             {isExitPaymentStep
-                                ? "Isi nominal uang masuk sebelum preview struk."
-                                : "Preview nominal dan konfirmasi transaksi."}
+                                ? tr(
+                                      "Isi nominal uang masuk sebelum preview struk.",
+                                      "Enter received amount before receipt preview.",
+                                  )
+                                : tr(
+                                      "Preview nominal dan konfirmasi transaksi.",
+                                      "Preview amount and confirm transaction.",
+                                  )}
                         </p>
                     </div>
                     {isExitPaymentStep ? (
@@ -145,7 +168,11 @@ export default function Receipt({
                             href={route("officer.standby.out")}
                             className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
                         >
-                            Kembali ke Standby OUT
+                            {tr(
+                                "officer.receipt.back_standby_out",
+                                "Kembali ke Standby OUT",
+                                "Back to Standby OUT",
+                            )}
                         </Link>
                     ) : null}
                 </div>
@@ -168,33 +195,114 @@ export default function Receipt({
                             <div className="my-3 border-t border-slate-700" />
 
                             <p>{padLine("NO KARCIS", ticketNumber)}</p>
-                            <p>{padLine("PLAT", plate)}</p>
                             <p>
                                 {padLine(
-                                    "JENIS KENDARAAN",
-                                    transaction.vehicle?.vehicle_type?.name || "-",
+                                    tr(
+                                        "officer.receipt.label_plate",
+                                        "PLAT",
+                                        "PLATE",
+                                    ),
+                                    plate,
+                                )}
+                            </p>
+                            <p>
+                                {padLine(
+                                    tr(
+                                        "officer.receipt.label_vehicle_type",
+                                        "JENIS KENDARAAN",
+                                        "VEHICLE TYPE",
+                                    ),
+                                    transaction.vehicle?.vehicle_type?.name ||
+                                        "-",
                                 )}
                             </p>
                             {isExit ? (
                                 <>
-                                    <p>{padLine("MASUK", entryDate)}</p>
-                                    <p>{padLine("KELUAR", exitDate)}</p>
+                                    <p>
+                                        {padLine(
+                                            tr(
+                                                "officer.receipt.label_entry",
+                                                "MASUK",
+                                                "ENTRY",
+                                            ),
+                                            entryDate,
+                                        )}
+                                    </p>
+                                    <p>
+                                        {padLine(
+                                            tr(
+                                                "officer.receipt.label_exit",
+                                                "KELUAR",
+                                                "EXIT",
+                                            ),
+                                            exitDate,
+                                        )}
+                                    </p>
                                 </>
                             ) : null}
-                            <p>{padLine("GERBANG", parkingGate)}</p>
-                            <p>{padLine("PETUGAS", operatorName)}</p>
+                            <p>
+                                {padLine(
+                                    tr(
+                                        "officer.receipt.label_gate",
+                                        "GERBANG",
+                                        "GATE",
+                                    ),
+                                    parkingGate,
+                                )}
+                            </p>
+                            <p>
+                                {padLine(
+                                    tr(
+                                        "officer.receipt.label_officer",
+                                        "PETUGAS",
+                                        "OFFICER",
+                                    ),
+                                    operatorName,
+                                )}
+                            </p>
 
                             {isExit ? (
                                 <>
                                     <div className="my-2 border-t border-slate-700" />
-                                    <p>{padLine("PARKIR", baseTotalText)}</p>
-                                    {penaltyAmount > 0 ? (
-                                        <p>{padLine("DENDA", penaltyText)}</p>
-                                    ) : null}
-                                    <p>{padLine("TOTAL", totalText)}</p>
                                     <p>
                                         {padLine(
-                                            "TUNAI",
+                                            tr(
+                                                "officer.receipt.label_parking",
+                                                "PARKIR",
+                                                "PARKING",
+                                            ),
+                                            baseTotalText,
+                                        )}
+                                    </p>
+                                    {penaltyAmount > 0 ? (
+                                        <p>
+                                            {padLine(
+                                                tr(
+                                                    "officer.receipt.label_penalty",
+                                                    "DENDA",
+                                                    "PENALTY",
+                                                ),
+                                                penaltyText,
+                                            )}
+                                        </p>
+                                    ) : null}
+                                    <p>
+                                        {padLine(
+                                            tr(
+                                                "officer.receipt.label_total",
+                                                "TOTAL",
+                                                "TOTAL",
+                                            ),
+                                            totalText,
+                                        )}
+                                    </p>
+                                    <p>
+                                        {padLine(
+                                            tr(
+                                                "officer.receipt.label_cash",
+                                                "TUNAI",
+                                                "CASH",
+                                            ),
                                             `Rp ${currency.format(Number(data.received_amount || 0))}`,
                                         )}
                                     </p>
@@ -203,13 +311,36 @@ export default function Receipt({
                             <div className="my-3 border-t border-slate-700" />
                             {isExit ? (
                                 <p className="text-center">
-                                    TERIMA KASIH - SELAMAT JALAN
+                                    {tr(
+                                        "officer.receipt.thank_you",
+                                        "TERIMA KASIH - SELAMAT JALAN",
+                                        "THANK YOU - HAVE A SAFE TRIP",
+                                    )}
                                 </p>
                             ) : (
                                 <>
-                                    <p className="text-center">SELAMAT DATANG</p>
+                                    <p className="text-center">
+                                        {tr(
+                                            "officer.receipt.welcome",
+                                            "SELAMAT DATANG",
+                                            "WELCOME",
+                                        )}
+                                    </p>
                                     <p className="mt-1 text-center text-[11px] text-slate-500">
-                                        Denda Rp {currency.format(Number(ticketPenalty || 0))} jika tiket hilang
+                                        {tr(
+                                            "officer.receipt.penalty",
+                                            "Denda",
+                                            "Penalty",
+                                        )}{" "}
+                                        Rp{" "}
+                                        {currency.format(
+                                            Number(ticketPenalty || 0),
+                                        )}{" "}
+                                        {tr(
+                                            "officer.receipt.lost_ticket_suffix",
+                                            "jika tiket hilang",
+                                            "for lost ticket",
+                                        )}
                                     </p>
                                 </>
                             )}
@@ -220,16 +351,33 @@ export default function Receipt({
                         {isExitPaymentStep && (
                             <div>
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
-                                    Uang Masuk
+                                    {tr(
+                                        "officer.receipt.received_amount",
+                                        "Uang Masuk",
+                                        "Received Amount",
+                                    )}
                                 </label>
                                 {data.checkout_mode === "ticket" ? (
                                     <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                                        Jika struk hilang, silahkan tambahkan denda Rp{" "}
-                                        {currency.format(Number(ticketPenalty || 0))} dari nominal awal
+                                        {tr(
+                                            "Jika struk hilang, silahkan tambahkan denda Rp",
+                                            "If receipt is lost, add penalty Rp",
+                                        )}{" "}
+                                        {currency.format(
+                                            Number(ticketPenalty || 0),
+                                        )}{" "}
+                                        {tr(
+                                            "dari nominal awal",
+                                            "to the base amount",
+                                        )}
                                     </p>
                                 ) : (
                                     <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                                        Mode RFID: nominal harus pas ({baseTotalText}).
+                                        {tr(
+                                            "Mode RFID: nominal harus pas",
+                                            "RFID mode: amount must match",
+                                        )}{" "}
+                                        ({baseTotalText}).
                                     </p>
                                 )}
                                 <input
@@ -261,7 +409,11 @@ export default function Receipt({
                                     onClick={handlePrint}
                                     className="flex-1 rounded-xl border border-[#1E5EFF] px-4 py-2.5 font-semibold text-[#1E5EFF] hover:bg-[#1E5EFF]/5 transition cursor-pointer"
                                 >
-                                    Cetak Struk
+                                    {tr(
+                                        "officer.receipt.print",
+                                        "Cetak Struk",
+                                        "Print Receipt",
+                                    )}
                                 </button>
                             ) : null}
                             <button
@@ -269,7 +421,17 @@ export default function Receipt({
                                 disabled={processing}
                                 className="flex-1 rounded-xl bg-[#1E5EFF] px-4 py-2.5 font-semibold text-white hover:bg-[#194FD8] transition disabled:opacity-60 cursor-pointer"
                             >
-                                {processing ? "Memproses..." : "Selesai"}
+                                {processing
+                                    ? tr(
+                                          "states.processing",
+                                          "Memproses...",
+                                          "Processing...",
+                                      )
+                                    : tr(
+                                          "officer.receipt.done",
+                                          "Selesai",
+                                          "Done",
+                                      )}
                             </button>
                         </div>
                     </form>
