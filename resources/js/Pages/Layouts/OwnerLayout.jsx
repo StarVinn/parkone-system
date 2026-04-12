@@ -84,11 +84,6 @@ export default function OwnerLayout({ children }) {
                                 onClick={() => setDarkMode(!darkMode)}
                                 className="w-full flex items-center gap-2 text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer"
                             >
-                                {darkMode ? (
-                                    <Sun size={16} />
-                                ) : (
-                                    <Moon size={16} />
-                                )}
                                 <span>
                                     {darkMode
                                         ? t("layout.light_mode", "Light Mode")

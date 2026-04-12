@@ -107,11 +107,6 @@ export default function OfficerLayout({ children }) {
                                 }}
                                 className="w-full text-left px-4 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition cursor-pointer inline-flex items-center gap-2"
                             >
-                                {darkMode ? (
-                                    <Sun size={16} />
-                                ) : (
-                                    <Moon size={16} />
-                                )}
                                 {darkMode
                                     ? t("layout.light_mode", "Light Mode")
                                     : t("layout.dark_mode", "Dark Mode")}
