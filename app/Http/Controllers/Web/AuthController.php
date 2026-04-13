@@ -56,6 +56,10 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if ($user->role === 'user' && !$user->primaryRfidCard()->exists()) {
+            return redirect()->intended(route('user.rfid.setup'));
+        }
+
         return match ($user->role) {
             'admin'   => redirect()->intended('/admin'),
             'officer' => redirect()->intended('/officer'),

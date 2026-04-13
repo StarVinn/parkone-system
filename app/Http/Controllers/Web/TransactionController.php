@@ -39,7 +39,12 @@ class TransactionController extends Controller
                 ->with('error', 'Area belum siap untuk transaksi masuk: ' . implode(' ', $readiness['entry_blockers'] ?? []));
         }
 
-        return inertia('Officer/StandbyIn', $transactionService->getOfficerDashboardData($locationId, $areaId));
+        return inertia('Officer/StandbyIn', array_merge(
+            $transactionService->getOfficerDashboardData($locationId, $areaId),
+            [
+                'initialRfidUid' => (string) $request->query('rfid_uid', ''),
+            ],
+        ));
     }
 
     public function standbyOut(Request $request, TransactionService $transactionService)
@@ -50,16 +55,41 @@ class TransactionController extends Controller
                 ->with('error', 'Pilih lokasi dan area parkir terlebih dahulu.');
         }
 
-        return inertia('Officer/StandbyOut', $transactionService->getOfficerDashboardData($locationId, $areaId));
+        return inertia('Officer/StandbyOut', array_merge(
+            $transactionService->getOfficerDashboardData($locationId, $areaId),
+            [
+                'initialRfidUid' => (string) $request->query('rfid_uid', ''),
+            ],
+        ));
     }
 
-    public function lookupVehiclesByRfid(Request $request)
+    public function showRfidKiosk(Request $request, TransactionService $transactionService)
+    {
+        [$locationId, $areaId] = $this->resolveScope($request);
+        if (!$areaId) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'Pilih lokasi dan area parkir terlebih dahulu.');
+        }
+
+        return inertia('Officer/RfidScan', array_merge(
+            $transactionService->getOfficerDashboardData($locationId, $areaId),
+            [
+                'mode' => in_array((string) $request->query('mode', 'entry'), ['entry', 'exit'], true)
+                    ? (string) $request->query('mode', 'entry')
+                    : 'entry',
+            ],
+        ));
+    }
+
+    public function lookupVehiclesByRfid(Request $request, TransactionService $transactionService)
     {
         $validated = $request->validate([
             'rfid_uid' => ['required', 'string', 'max:255'],
         ]);
 
         $rfid = trim($validated['rfid_uid']);
+        $parkingAreaId = (int) $request->query('parking_area_id', 0);
+        $parkingAreaId = $parkingAreaId > 0 ? $parkingAreaId : null;
         $card = RfidCard::query()
             ->with([
                 'user:id,name,email,is_active',
@@ -78,6 +108,31 @@ class TransactionController extends Controller
             ], 404);
         }
 
+        $activeTransactionQuery = Transaction::query()
+            ->with([
+                'vehicle:id,license_plate,vehicle_type_id',
+                'vehicle.vehicleType:id,name',
+                'parkingArea:id,name,ticket_penalty',
+                'parkingRate:id,rate_type,rate_per_hour,flat_rate',
+                'rfidCard:id,uid,user_id,vehicle_id',
+            ])
+            ->where('status', 'active')
+            ->when($parkingAreaId, fn($query) => $query->where('parking_area_id', $parkingAreaId))
+            ->where(function ($query) use ($card) {
+                if ($card->vehicle_id) {
+                    $query->where('vehicle_id', $card->vehicle_id);
+                }
+
+                $query->orWhere('rfid_card_id', $card->id);
+            })
+            ->latest('entry_time');
+
+        $activeTransaction = $activeTransactionQuery->first();
+        $activeTransactionPreview = null;
+        if ($activeTransaction) {
+            $activeTransactionPreview = $transactionService->previewExitCharge($activeTransaction);
+        }
+
         return response()->json([
             'message' => 'RFID ditemukan.',
             'user' => [
@@ -94,6 +149,18 @@ class TransactionController extends Controller
                     'name' => $card->vehicle->vehicleType->name,
                 ] : null,
             ] : null,
+            'active_transaction' => $activeTransaction ? [
+                'id' => $activeTransaction->id,
+                'parking_area_id' => $activeTransaction->parking_area_id,
+                'entry_time' => $activeTransaction->entry_time?->toDateTimeString(),
+                'license_plate' => $activeTransaction->vehicle?->license_plate,
+                'parking_area_name' => $activeTransaction->parkingArea?->name,
+                'hours' => $activeTransactionPreview['hours'] ?? null,
+                'estimated_total_fee' => $activeTransactionPreview['total_fee'] ?? null,
+                'estimated_total_fee_label' => isset($activeTransactionPreview['total_fee'])
+                    ? 'Rp ' . number_format((float) $activeTransactionPreview['total_fee'], 0, ',', '.')
+                    : null,
+            ] : null,
             'vehicles' => $card->vehicle ? [$card->vehicle->id] : [],
         ]);
     }
@@ -102,6 +169,7 @@ class TransactionController extends Controller
     {
         $validated = $request->validated();
         $action = $validated['action'];
+        $source = $this->resolveReceiptSource((string) $request->input('source', ''));
         $requestedCheckoutMode = $validated['checkout_mode'] ?? 'ticket';
         $checkoutMode = in_array($requestedCheckoutMode, ['ticket', 'rfid'], true)
             ? $requestedCheckoutMode
@@ -140,6 +208,7 @@ class TransactionController extends Controller
                 return redirect()->route('officer.transactions.receipt', [
                     'transaction' => $transaction->id,
                     'type' => 'entry',
+                    'source' => $source,
                 ]);
             }
 
@@ -150,6 +219,7 @@ class TransactionController extends Controller
                 'type' => 'exit',
                 'checkout_mode' => $checkoutMode,
                 'step' => 'payment',
+                'source' => $source,
             ]);
         } catch (VehicleNotRegisteredException $exception) {
             if ($action !== 'entry') {
@@ -319,6 +389,7 @@ class TransactionController extends Controller
             : 'preview';
         $receivedAmount = $request->query('received_amount');
         $receivedAmount = is_numeric($receivedAmount) ? (float) $receivedAmount : null;
+        $source = $this->resolveReceiptSource((string) $request->query('source', ''));
 
         $transaction->load([
             'vehicle:id,license_plate,vehicle_type_id',
@@ -339,6 +410,7 @@ class TransactionController extends Controller
             'ticketPenalty' => $ticketPenalty,
             'step' => $step,
             'receivedAmount' => $receivedAmount,
+            'source' => $source,
         ]);
     }
 
@@ -349,12 +421,16 @@ class TransactionController extends Controller
             'received_amount' => 'nullable|numeric|min:0',
             'checkout_mode' => 'nullable|in:ticket,rfid',
             'step' => 'nullable|in:payment,preview',
+            'source' => 'nullable|in:standby_in,standby_out,rfid',
         ], [
             'received_amount.numeric' => 'Nominal uang masuk harus angka.',
             'received_amount.min' => 'Nominal uang masuk tidak boleh minus.',
             'checkout_mode.in' => 'Mode checkout tidak valid.',
             'step.in' => 'Langkah konfirmasi tidak valid.',
+            'source.in' => 'Sumber halaman receipt tidak valid.',
         ]);
+
+        $source = $this->resolveReceiptSource((string) ($validated['source'] ?? ''));
 
         if ($validated['type'] === 'exit') {
             if ($request->input('received_amount') === null || $request->input('received_amount') === '') {
@@ -400,16 +476,24 @@ class TransactionController extends Controller
                     'checkout_mode' => $checkoutMode,
                     'step' => 'preview',
                     'received_amount' => $received,
+                    'source' => $source,
                 ]);
             }
         }
 
-        $redirectRoute = $validated['type'] === 'entry'
-            ? 'officer.standby.in'
-            : 'officer.standby.out';
+        $redirectRoute = $source === 'rfid'
+            ? 'officer.rfid.scan'
+            : ($source === 'standby_in' ? 'officer.standby.in' : 'officer.standby.out');
 
         return redirect()->route($redirectRoute)
             ->with('success', 'Konfirmasi struk berhasil.');
+    }
+
+    private function resolveReceiptSource(string $source): string
+    {
+        return in_array($source, ['standby_in', 'standby_out', 'rfid'], true)
+            ? $source
+            : 'standby_out';
     }
 
     private function resolveScope(Request $request): array
