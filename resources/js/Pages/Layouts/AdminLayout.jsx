@@ -57,7 +57,19 @@ export default function AdminLayout({ children }) {
         return roles.includes(role);
     };
 
-    const itemLabel = (item) => t(item?.label_key, item?.label_key || item?.key || "-");
+    const itemLabel = (item) =>
+        t(item?.label_key, item?.label_key || item?.key || "-");
+
+    const isPathActive = (href, allowNested = true) => {
+        const path = String(currentPath || "");
+        const target = String(href || "");
+        if (!target) return false;
+
+        if (path === target) return true;
+        if (!allowNested) return false;
+
+        return path.startsWith(`${target}/`);
+    };
 
     return (
         <div className="min-h-screen bg-white dark:bg-[#0B1026] text-slate-900 dark:text-[#F5F7FA] font-['Inter'] transition-colors duration-300">
@@ -217,14 +229,14 @@ export default function AdminLayout({ children }) {
                 <nav className="space-y-3 text-sm">
                     {navItems.filter(canSeeItem).map((item) => {
                         if (item.type === "group") {
+                            const isGroupActive = Array.isArray(item.children)
+                                ? item.children.some((c) =>
+                                      isPathActive(c?.href, true),
+                                  )
+                                : false;
                             const open =
                                 Boolean(navGroupOpen[item.key]) ||
-                                (Array.isArray(item.children) &&
-                                    item.children.some((c) =>
-                                        String(currentPath).startsWith(
-                                            String(c.href || ""),
-                                        ),
-                                    ));
+                                isGroupActive;
 
                             return (
                                 <div key={item.key}>
@@ -236,7 +248,11 @@ export default function AdminLayout({ children }) {
                                                 [item.key]: !open,
                                             }))
                                         }
-                                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition cursor-pointer"
+                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border-l-2 transition cursor-pointer ${
+                                            isGroupActive
+                                                ? "border-[#1FD1A5] bg-slate-200/70 dark:bg-white/10 text-slate-900 dark:text-white"
+                                                : "border-transparent hover:bg-slate-200 dark:hover:bg-white/5"
+                                        }`}
                                     >
                                         <span>{itemLabel(item)}</span>
                                         <ChevronDown
@@ -258,32 +274,51 @@ export default function AdminLayout({ children }) {
                                             : []
                                         )
                                             .filter((c) => c?.active)
-                                            .map((child) => (
-                                                <Link
-                                                    key={
-                                                        child.key || child.href
-                                                    }
-                                                    href={child.href}
-                                                    className="block px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 transition"
-                                                >
-                                                    {t(
-                                                        child.label_key,
-                                                        child.label_key ||
+                                            .map((child) => {
+                                                const isChildActive =
+                                                    isPathActive(
+                                                        child?.href,
+                                                        true,
+                                                    );
+
+                                                return (
+                                                    <Link
+                                                        key={
                                                             child.key ||
-                                                            "-",
-                                                    )}
-                                                </Link>
-                                            ))}
+                                                            child.href
+                                                        }
+                                                        href={child.href}
+                                                        className={`block px-3 py-2 rounded-lg border-l-2 transition ${
+                                                            isChildActive
+                                                                ? "border-[#1FD1A5] bg-slate-200/70 dark:bg-white/10 text-slate-900 dark:text-white"
+                                                                : "border-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5"
+                                                        }`}
+                                                    >
+                                                        {t(
+                                                            child.label_key,
+                                                            child.label_key ||
+                                                                child.key ||
+                                                                "-",
+                                                        )}
+                                                    </Link>
+                                                );
+                                            })}
                                     </div>
                                 </div>
                             );
                         }
 
+                        const isItemActive = isPathActive(item?.href, false);
+
                         return (
                             <Link
                                 key={item.key || item.href}
                                 href={item.href}
-                                className="block px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 transition"
+                                className={`block px-3 py-2 rounded-lg border-l-2 transition ${
+                                    isItemActive
+                                        ? "border-[#1FD1A5] bg-slate-200/70 dark:bg-white/10 text-slate-900 dark:text-white"
+                                        : "border-transparent hover:bg-slate-200 dark:hover:bg-white/5"
+                                }`}
                             >
                                 {itemLabel(item)}
                             </Link>
@@ -309,5 +344,3 @@ export default function AdminLayout({ children }) {
         </div>
     );
 }
-
-
