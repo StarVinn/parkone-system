@@ -263,7 +263,7 @@ export default function StandbyIn({
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const normalizedLicensePlate = formatLicensePlate(
-            formData.get("license_plate"),
+            hasRfidInput ? licensePlate : formData.get("license_plate"),
         );
 
         if (rfidVehicle?.license_plate) {
@@ -291,6 +291,16 @@ export default function StandbyIn({
                     "officer.common.rfid_not_verified",
                     "RFID belum terverifikasi.",
                     "RFID is not verified yet.",
+                ),
+            );
+            return;
+        }
+        if (!normalizedLicensePlate) {
+            setPhotoError(
+                tr(
+                    "officer.common.license_plate_required",
+                    "Plat nomor wajib diisi.",
+                    "License plate is required.",
                 ),
             );
             return;
