@@ -53,11 +53,14 @@ export default function StandbyIn({
     scope = { parking_area_id: "" },
     entryVehicleTypes = [],
     readiness = { entry_ready: false, entry_blockers: [] },
+    initialRfidUid = "",
 }) {
     const { flash, errors } = usePage().props;
     const { locale, t } = useI18n();
     const tr = (key, id, en) => t(key, locale === "id" ? id : en);
-    const [rfidUid, setRfidUid] = useState("");
+    const [rfidUid, setRfidUid] = useState(() =>
+        String(initialRfidUid || "").trim(),
+    );
     const [rfidUser, setRfidUser] = useState(null);
     const [rfidVehicle, setRfidVehicle] = useState(null);
     const [rfidError, setRfidError] = useState("");
@@ -335,6 +338,7 @@ export default function StandbyIn({
                 license_plate: String(normalizedLicensePlate || ""),
                 parking_area_id: String(scope.parking_area_id || ""),
                 rfid_uid: String(rfidUid || "").trim(),
+                source: "standby_in",
                 vehicle_photo: new File(
                     [photoBlob],
                     `entry-${Date.now()}.jpg`,
@@ -539,6 +543,15 @@ export default function StandbyIn({
                             "Fast mode for vehicle entry transactions.",
                         )}
                     </p>
+                    <Link
+                        href={route("officer.rfid.scan", {
+                            location_id: scope.location_id,
+                            parking_area_id: scope.parking_area_id,
+                        })}
+                        className="mt-2 inline-flex text-sm font-semibold text-[#1E5EFF] hover:underline"
+                    >
+                        Buka label scan RFID
+                    </Link>
                 </div>
                 <Link
                     href="/officer"

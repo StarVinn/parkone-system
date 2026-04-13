@@ -141,6 +141,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'role:officer'])->group(function () {
     Route::prefix('officer')->group(function () {
         Route::get('/', [TransactionController::class, 'index'])->name('officer.dashboard');
+        Route::get('/rfid-scan', [TransactionController::class, 'showRfidKiosk'])->name('officer.rfid.scan');
         Route::get('/standby/in', [TransactionController::class, 'standbyIn'])->name('officer.standby.in');
         Route::get('/standby/out', [TransactionController::class, 'standbyOut'])->name('officer.standby.out');
         Route::get('/rfid-lookup', [TransactionController::class, 'lookupVehiclesByRfid'])->name('officer.rfid.lookup');
@@ -176,5 +177,7 @@ Route::middleware(['auth', 'role:owner'])->group(function () {
 Route::middleware(['auth', 'role:user'])->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('/', [UserDashboardController::class, 'index'])->name('user.dashboard');
+        Route::get('/rfid', [UserDashboardController::class, 'showRfidSetup'])->name('user.rfid.setup');
+        Route::post('/rfid', [UserDashboardController::class, 'storeRfidSetup'])->name('user.rfid.setup.store');
     });
 });

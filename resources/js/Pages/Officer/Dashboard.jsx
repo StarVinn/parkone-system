@@ -308,6 +308,48 @@ export default function Dashboard({
                                 )}
                             </Link>
                         </div>
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            <div>
+                                <span className="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                    RFID
+                                </span>
+                                <Link
+                                    href={
+                                        entryReady
+                                            ? route("officer.rfid.scan", {
+                                                  location_id:
+                                                      scope.location_id,
+                                                  parking_area_id:
+                                                      scope.parking_area_id,
+                                              })
+                                            : "#"
+                                    }
+                                    className="inline-flex text-[#1E5EFF] hover:underline font-semibold"
+                                >
+                                    Buka halaman scan RFID untuk IN
+                                </Link>
+                            </div>
+                            <div>
+                                <span className="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                    RFID
+                                </span>
+                                <Link
+                                    href={
+                                        scope.is_selected
+                                            ? route("officer.rfid.scan", {
+                                                  location_id:
+                                                      scope.location_id,
+                                                  parking_area_id:
+                                                      scope.parking_area_id,
+                                              })
+                                            : "#"
+                                    }
+                                    className="inline-flex text-[#1E5EFF] hover:underline font-semibold"
+                                >
+                                    Buka halaman scan RFID untuk OUT
+                                </Link>
+                            </div>
+                        </div>
                         {!entryReady && entryBlockers.length > 0 && (
                             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                                 <p className="font-semibold mb-1">
@@ -405,7 +447,7 @@ export default function Dashboard({
                                 )}
                             </h2>
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[40rem] text-sm">
+                                <table className="w-full min-w-160 text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400">
                                             <th className="text-left py-2">

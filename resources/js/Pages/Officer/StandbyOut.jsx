@@ -28,6 +28,8 @@ const canonicalize = (value) =>
 export default function StandbyOut({
     activeTransactions = [],
     selectedParkingArea = null,
+    scope = { location_id: "", parking_area_id: "" },
+    initialRfidUid = "",
 }) {
     const { flash, errors } = usePage().props;
     const { locale, t } = useI18n();
@@ -35,7 +37,9 @@ export default function StandbyOut({
     const [licensePlate, setLicensePlate] = useState("");
     const [plateSource, setPlateSource] = useState("none");
     const [plateError, setPlateError] = useState("");
-    const [rfidUid, setRfidUid] = useState("");
+    const [rfidUid, setRfidUid] = useState(() =>
+        String(initialRfidUid || "").trim(),
+    );
     const [rfidUser, setRfidUser] = useState(null);
     const [rfidVehicle, setRfidVehicle] = useState(null);
     const [rfidError, setRfidError] = useState("");
@@ -211,6 +215,7 @@ export default function StandbyOut({
             license_plate: normalizedPlate,
             checkout_mode: String(rfidUid || "").trim() ? "rfid" : "ticket",
             rfid_uid: String(rfidUid || "").trim(),
+            source: "standby_out",
         });
     };
 
@@ -235,6 +240,15 @@ export default function StandbyOut({
                             "Fast mode for vehicle exit transactions.",
                         )}
                     </p>
+                    <Link
+                        href={route("officer.rfid.scan", {
+                            location_id: scope.location_id,
+                            parking_area_id: scope.parking_area_id,
+                        })}
+                        className="mt-2 inline-flex text-sm font-semibold text-[#1E5EFF] hover:underline"
+                    >
+                        Buka label scan RFID
+                    </Link>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         {tr(
                             "officer.dashboard.active_area",

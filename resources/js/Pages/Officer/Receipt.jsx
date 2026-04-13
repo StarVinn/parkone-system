@@ -14,6 +14,7 @@ export default function Receipt({
     ticketPenalty = 10000,
     step = "preview",
     receivedAmount = null,
+    source = "standby_out",
 }) {
     const { errors } = usePage().props;
     const { auth } = usePage().props;
@@ -28,6 +29,7 @@ export default function Receipt({
         received_amount: receivedAmount ?? nominal,
         checkout_mode: checkoutMode,
         step: isExit ? step : "preview",
+        source,
     });
     const pageSize = `80mm auto`;
 
@@ -35,11 +37,33 @@ export default function Receipt({
         setData("type", receiptType);
         setData("checkout_mode", checkoutMode);
         setData("step", isExit ? step : "preview");
+        setData("source", source);
 
         if (receivedAmount !== null && receivedAmount !== undefined) {
             setData("received_amount", receivedAmount);
         }
-    }, [checkoutMode, isExit, receivedAmount, receiptType, setData, step]);
+    }, [
+        checkoutMode,
+        isExit,
+        receivedAmount,
+        receiptType,
+        setData,
+        source,
+        step,
+    ]);
+
+    const backRouteName =
+        source === "rfid"
+            ? "officer.rfid.scan"
+            : source === "standby_in"
+              ? "officer.standby.in"
+              : "officer.standby.out";
+    const backLabel =
+        source === "rfid"
+            ? "Kembali ke RFID"
+            : source === "standby_in"
+              ? "Kembali ke Standby IN"
+              : "Kembali ke Standby OUT";
 
     useEffect(() => {
         if (isExitPaymentStep || hasAutoPrinted.current) {
@@ -165,19 +189,54 @@ export default function Receipt({
                     </div>
                     {isExitPaymentStep ? (
                         <Link
-                            href={route("officer.standby.out")}
+                            href={route(backRouteName)}
                             className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
                         >
-                            {tr(
-                                "officer.receipt.back_standby_out",
-                                "Kembali ke Standby OUT",
-                                "Back to Standby OUT",
-                            )}
+                            {backLabel}
                         </Link>
                     ) : null}
                 </div>
 
                 <div className="space-y-4">
+                    {isExitPaymentStep ? (
+                        <div className="rounded-3xl border border-[#1E5EFF]/20 bg-[#1E5EFF]/8 px-4 py-4 shadow-sm sm:px-5 sm:py-5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#1E5EFF]">
+                                Preview biaya keluar
+                            </p>
+                            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
+                                        Total yang harus dibayar sebelum struk
+                                        diproses.
+                                    </p>
+                                    <p className="mt-2 text-s font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl xl:text-3xl">
+                                        {baseTotalText}
+                                    </p>
+                                </div>
+                                <div className="grid gap-1.5 text-xs text-slate-600 dark:text-slate-300 sm:text-right sm:text-sm">
+                                    <p>
+                                        Kendaraan:{" "}
+                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                            {plate}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        Area:{" "}
+                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                            {parkingGate}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        Lama parkir:{" "}
+                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                            {transaction.total_hours || "-"} jam
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
                     {!isExitPaymentStep ? (
                         <div
                             id="receipt-print"
@@ -353,7 +412,7 @@ export default function Receipt({
                                 <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                                     {tr(
                                         "officer.receipt.received_amount",
-                                        "Uang Masuk",
+                                        "Nominal Pembayaran",
                                         "Received Amount",
                                     )}
                                 </label>
