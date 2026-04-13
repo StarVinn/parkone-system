@@ -1,0 +1,19 @@
+<?php
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Resources\UserResource;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+});
+
+Route::get('/user', function (Request $request) {
+    return new UserResource($request->user());
+})->middleware('auth:sanctum');
+
+Route::get('/dashboard', DashboardController::class)->middleware('auth:sanctum');
