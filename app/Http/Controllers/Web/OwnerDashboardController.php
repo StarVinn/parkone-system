@@ -219,32 +219,66 @@ class OwnerDashboardController extends Controller
     {
         return Transaction::query()
             ->with([
+                'user:id,name',
                 'vehicle:id,license_plate,vehicle_type_id',
                 'vehicle.vehicleType:id,name',
                 'parkingArea:id,name,parking_location_id',
                 'parkingArea.location:id,name',
+                'parkingRate:id,rate_type,rate_per_hour,flat_rate',
+                'rfidCard:id,uid,vehicle_id',
             ])
             ->latest('exit_time')
             ->limit(25)
             ->get([
                 'id',
+                'user_id',
                 'vehicle_id',
                 'parking_area_id',
+                'parking_rate_id',
                 'entry_time',
+                'entry_vehicle_photo_path',
                 'exit_time',
+                'total_hours',
                 'total_fee',
+                'parking_rate_rule_key_snapshot',
+                'parking_rate_version_number_snapshot',
+                'rate_type_snapshot',
+                'rate_per_hour_snapshot',
+                'flat_rate_snapshot',
+                'exit_sync_status',
+                'exit_synced_at',
+                'exit_sync_error',
                 'status',
             ])
             ->map(fn (Transaction $tx) => [
                 'id' => (string) $tx->id,
+                'user_name' => (string) ($tx->user?->name ?? '-'),
                 'time' => $tx->exit_time
                     ? Carbon::parse($tx->exit_time)->format('Y-m-d H:i')
                     : Carbon::parse($tx->entry_time)->format('Y-m-d H:i'),
+                'entry_time' => Carbon::parse($tx->entry_time)->format('Y-m-d H:i'),
+                'exit_time' => $tx->exit_time
+                    ? Carbon::parse($tx->exit_time)->format('Y-m-d H:i')
+                    : '-',
                 'location' => (string) ($tx->parkingArea?->location?->name ?? '-'),
+                'parking_area' => (string) ($tx->parkingArea?->name ?? '-'),
                 'plate' => (string) ($tx->vehicle?->license_plate ?? '-'),
                 'vehicle' => (string) ($tx->vehicle?->vehicleType?->name ?? '-'),
                 'payment' => '-',
                 'total' => (float) ($tx->total_fee ?? 0),
+                'total_hours' => (float) ($tx->total_hours ?? 0),
+                'parking_rate_rule_key_snapshot' => (string) ($tx->parking_rate_rule_key_snapshot ?? '-'),
+                'parking_rate_version_number_snapshot' => $tx->parking_rate_version_number_snapshot,
+                'rate_type_snapshot' => (string) ($tx->rate_type_snapshot ?? '-'),
+                'rate_per_hour_snapshot' => (float) ($tx->rate_per_hour_snapshot ?? 0),
+                'flat_rate_snapshot' => (float) ($tx->flat_rate_snapshot ?? 0),
+                'rfid_uid' => (string) ($tx->rfid_uid ?? '-'),
+                'entry_vehicle_photo_url' => $tx->entry_vehicle_photo_url,
+                'exit_sync_status' => (string) ($tx->exit_sync_status ?? '-'),
+                'exit_synced_at' => $tx->exit_synced_at
+                    ? Carbon::parse($tx->exit_synced_at)->format('Y-m-d H:i')
+                    : '-',
+                'exit_sync_error' => (string) ($tx->exit_sync_error ?? ''),
                 'status' => (string) ($tx->status ?? '-'),
             ])
             ->all();

@@ -43,6 +43,20 @@ function formatCurrencyIDR(amount, localeTag = "id-ID") {
     }).format(value);
 }
 
+function formatDateTime(value, localeTag = "id-ID") {
+    if (!value) return "-";
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return String(value);
+    }
+
+    return new Intl.DateTimeFormat(localeTag, {
+        dateStyle: "medium",
+        timeStyle: "short",
+    }).format(parsed);
+}
+
 function toFiniteNumber(value) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
@@ -142,6 +156,7 @@ export default function Dashboard({
     const [selectedLocationId, setSelectedLocationId] = useState("");
     const [hasUserInteractedLocation, setHasUserInteractedLocation] =
         useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [txFilters, setTxFilters] = useState({
         query: "",
         locationId: "",
@@ -495,6 +510,19 @@ export default function Dashboard({
         anchor.remove();
         URL.revokeObjectURL(url);
     };
+
+    useEffect(() => {
+        if (!selectedTransaction) return;
+
+        const onKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setSelectedTransaction(null);
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [selectedTransaction]);
 
     return (
         <OwnerLayout>
@@ -1560,8 +1588,12 @@ export default function Dashboard({
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
                                                                 type="button"
-                                                                disabled
-                                                                className="px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-white/10 opacity-60 cursor-not-allowed"
+                                                                onClick={() =>
+                                                                    setSelectedTransaction(
+                                                                        tx,
+                                                                    )
+                                                                }
+                                                                className="px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition"
                                                             >
                                                                 {t(
                                                                     "owner.transactions.actions.detail",
@@ -1578,6 +1610,192 @@ export default function Dashboard({
                             </table>
                         </div>
                     </div>
+
+                    {selectedTransaction ? (
+                        <div
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm"
+                            onClick={() => setSelectedTransaction(null)}
+                        >
+                            <div
+                                className="w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card shadow-2xl"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 dark:border-white/10 bg-white/95 px-6 py-4 dark:bg-darkbg-card/95 backdrop-blur">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.title",
+                                                "Transaction Detail",
+                                            )}
+                                        </p>
+                                        <p className="text-lg font-semibold font-['Poppins'] text-slate-900 dark:text-slate-100">
+                                            TX-
+                                            {String(
+                                                selectedTransaction.id,
+                                            ).padStart(6, "0")}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setSelectedTransaction(null)
+                                        }
+                                        className="px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition"
+                                    >
+                                        {t("actions.close", "Close")}
+                                    </button>
+                                </div>
+
+                                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t("owner.general.id", "ID")}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {selectedTransaction.id || "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t("fields.status", "Status")}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.status || "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t("fields.time", "Time")}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {formatDateTime(
+                                                selectedTransaction.time,
+                                                localeTag,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.entry_time",
+                                                "Entry Time",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {formatDateTime(
+                                                selectedTransaction.entry_time,
+                                                localeTag,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.exit_time",
+                                                "Exit Time",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {formatDateTime(
+                                                selectedTransaction.exit_time,
+                                                localeTag,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t("fields.amount", "Amount")}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {formatCurrencyIDR(
+                                                selectedTransaction.total,
+                                                localeTag,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t("fields.location", "Location")}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.location ||
+                                                "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.parking_area",
+                                                "Parking Area",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.parking_area ||
+                                                "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "fields.license_plate",
+                                                "License Plate",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium tabular-nums">
+                                            {selectedTransaction.plate || "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "fields.vehicle_type",
+                                                "Vehicle Type",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.vehicle || "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.user_name",
+                                                "User",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.user_name ||
+                                                "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.rfid_uid",
+                                                "RFID UID",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.rfid_uid ||
+                                                "-"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3 sm:col-span-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {t(
+                                                "owner.transactions.detail.rfid_owner",
+                                                "RFID Owner",
+                                            )}
+                                        </p>
+                                        <p className="mt-1 font-medium">
+                                            {selectedTransaction.user_name ||
+                                                "-"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </section>
 
                 <section className="space-y-6">
