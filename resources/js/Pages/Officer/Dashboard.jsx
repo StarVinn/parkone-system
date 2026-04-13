@@ -326,10 +326,10 @@ export default function Dashboard({
                                     }
                                     className="inline-flex text-[#1E5EFF] hover:underline font-semibold"
                                 >
-                                    Buka halaman scan RFID untuk IN
+                                    Buka halaman scan RFID untuk IN & OUT
                                 </Link>
                             </div>
-                            <div>
+                            {/* <div>
                                 <span className="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                     RFID
                                 </span>
@@ -348,7 +348,7 @@ export default function Dashboard({
                                 >
                                     Buka halaman scan RFID untuk OUT
                                 </Link>
-                            </div>
+                            </div> */}
                         </div>
                         {!entryReady && entryBlockers.length > 0 && (
                             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
