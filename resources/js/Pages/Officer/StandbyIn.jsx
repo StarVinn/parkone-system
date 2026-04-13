@@ -884,15 +884,8 @@ export default function StandbyIn({
                                 </label>
                                 <input
                                     value={visitorData.license_plate}
-                                    onChange={(event) =>
-                                        setVisitorData(
-                                            "license_plate",
-                                            formatLicensePlate(
-                                                event.target.value,
-                                            ),
-                                        )
-                                    }
-                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1026] text-slate-900 dark:text-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#1E5EFF]/30"
+                                    readOnly
+                                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white px-3 py-2.5 outline-none"
                                     required
                                 />
                                 {visitorErrors.license_plate && (
