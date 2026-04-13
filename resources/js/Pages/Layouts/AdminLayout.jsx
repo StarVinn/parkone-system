@@ -36,6 +36,26 @@ export default function AdminLayout({ children }) {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    useEffect(() => {
+        // Close account dropdown on page navigation.
+        setDropdownOpen(false);
+
+        // Collapse nav groups when the current page is not inside any group.
+        const hasActiveGroup = navItems
+            .filter((item) => item?.type === "group")
+            .some((item) =>
+                Array.isArray(item.children)
+                    ? item.children.some((child) =>
+                          isPathActive(child?.href, true),
+                      )
+                    : false,
+            );
+
+        if (!hasActiveGroup) {
+            setNavGroupOpen({});
+        }
+    }, [currentPath]);
+
     const handleLogout = () => {
         post("/logout");
     };
@@ -210,7 +230,7 @@ export default function AdminLayout({ children }) {
                 className={`fixed top-20 left-0 z-30 h-[calc(100vh-5rem)] w-64
             bg-slate-100 dark:bg-[#111633]
             border-r border-slate-200 dark:border-white/5
-            p-6 transform transition-transform duration-300
+            p-6 transform transition-transform duration-300 flex flex-col overflow-hidden
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
                 <img
@@ -226,7 +246,7 @@ export default function AdminLayout({ children }) {
                     PARKONE
                 </h2>
 
-                <nav className="space-y-3 text-sm">
+                <nav className="space-y-3 text-sm flex-1 overflow-y-auto pr-1 overscroll-contain">
                     {navItems.filter(canSeeItem).map((item) => {
                         if (item.type === "group") {
                             const isGroupActive = Array.isArray(item.children)
