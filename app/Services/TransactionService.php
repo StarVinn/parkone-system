@@ -415,6 +415,18 @@ class TransactionService
         }
     }
 
+    public function previewExitCharge(Transaction $transaction, ?Carbon $at = null): array
+    {
+        $exitTime = $at ?? now();
+        $hours = $this->calculateHours($transaction->entry_time, $exitTime);
+
+        return [
+            'hours' => $hours,
+            'total_fee' => $this->calculateFeeFromTransaction($transaction, $hours),
+            'exit_time' => $exitTime->toDateTimeString(),
+        ];
+    }
+
     public function formatPlate(string $plate): string
     {
         $cleaned = preg_replace('/[^A-Z0-9]/', '', strtoupper($plate));

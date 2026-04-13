@@ -42,13 +42,6 @@ class AuthService
             ]);
         }
 
-        if ($user->role === 'user' && !$user->primaryRfidCard()->exists()) {
-            Auth::logout();
-            throw ValidationException::withMessages([
-                'email' => 'RFID belum terdaftar. Silakan hubungi admin.',
-            ]);
-        }
-
         ActivityLog::create([
             'user_id' => $user->id,
             'activity' => 'User login (web)',
