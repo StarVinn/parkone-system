@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'google' => [
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+        'street_view_enabled' => env('GOOGLE_STREET_VIEW_ENABLED', false),
+    ],
+
 ];
