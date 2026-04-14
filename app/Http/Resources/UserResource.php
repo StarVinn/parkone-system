@@ -13,6 +13,7 @@ class UserResource extends JsonApiResource
         'email',
         'role',
         'profile_photo',
+        'profile_photo_url',
         'rfid_uid',
         'is_active',
         'status',
