@@ -1874,7 +1874,7 @@ export default function Dashboard({
                                 />
                             </div>
 
-                            <div className="mt-4 flex items-center justify-end gap-2">
+                            {/* <div className="mt-4 flex items-center justify-end gap-2">
                                 <button
                                     type="button"
                                     disabled
@@ -1897,7 +1897,7 @@ export default function Dashboard({
                                         "Download CSV",
                                     )}
                                 </button>
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
