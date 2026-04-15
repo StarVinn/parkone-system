@@ -16,6 +16,12 @@ class ParkingLocationSeeder extends Seeder
                 'longitude' => '106.86988652309114',
                 'description' => 'Area parkir lingkungan SMK Taruna Bhakti Depok',
             ],
+            [
+                'name' => 'Mall Cibinong City Mall',
+                'latitude' => '-6.48437971089858',
+                'longitude' => '106.84235686724132',
+                'description' => 'Jl. Tegar Beriman No.1, Pakansari, Kec. Cibinong, Kabupaten Bogor, Jawa Barat 16914',
+            ],
         ];
 
         foreach ($locations as $location) {

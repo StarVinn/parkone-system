@@ -26,6 +26,20 @@ class ParkingRateSeeder extends Seeder
                 'rate_per_hour' => null,
                 'flat_rate' => 5000,
             ],
+            [
+                'location_name' => 'Mall Cibinong City Mall',
+                'vehicle_type_name' => 'Mobil',
+                'rate_type' => 'hourly',
+                'rate_per_hour' => 5000,
+                'flat_rate' => null,
+            ],
+            [
+                'location_name' => 'Mall Cibinong City Mall',
+                'vehicle_type_name' => 'Motor',
+                'rate_type' => 'hourly',
+                'rate_per_hour' => 4000,
+                'flat_rate' => null,
+            ],
         ];
 
         foreach ($rates as $rate) {

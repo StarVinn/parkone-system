@@ -23,6 +23,24 @@ class ParkingAreaSeeder extends Seeder
                 'capacity' => 120,
                 'ticket_penalty' => 10000,
             ],
+            [
+                'location_name' => 'Mall Cibinong City Mall',
+                'name' => 'Ramp CCM 1',
+                'capacity' => 200,
+                'ticket_penalty' => 15000,
+            ],
+            [
+                'location_name' => 'Mall Cibinong City Mall',
+                'name' => 'Ramp CCM 2',
+                'capacity' => 100,
+                'ticket_penalty' => 15000,
+            ],
+            [
+                'location_name' => 'Mall Cibinong City Mall',
+                'name' => 'Parkiran Motor',
+                'capacity' => 100,
+                'ticket_penalty' => 10000,
+            ],
         ];
 
         foreach ($areas as $area) {
