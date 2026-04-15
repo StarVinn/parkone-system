@@ -1756,42 +1756,6 @@ export default function Dashboard({
                                             {selectedTransaction.vehicle || "-"}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {t(
-                                                "owner.transactions.detail.user_name",
-                                                "User",
-                                            )}
-                                        </p>
-                                        <p className="mt-1 font-medium">
-                                            {selectedTransaction.user_name ||
-                                                "-"}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {t(
-                                                "owner.transactions.detail.rfid_uid",
-                                                "RFID UID",
-                                            )}
-                                        </p>
-                                        <p className="mt-1 font-medium">
-                                            {selectedTransaction.rfid_uid ||
-                                                "-"}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-3 sm:col-span-2">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {t(
-                                                "owner.transactions.detail.rfid_owner",
-                                                "RFID Owner",
-                                            )}
-                                        </p>
-                                        <p className="mt-1 font-medium">
-                                            {selectedTransaction.user_name ||
-                                                "-"}
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
                         </div>
