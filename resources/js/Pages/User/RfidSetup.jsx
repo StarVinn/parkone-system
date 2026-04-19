@@ -1,11 +1,39 @@
 import { Head, useForm, usePage } from "@inertiajs/react";
 import logo from "../../Assets/Images/logo-parkone.png";
 
-export default function RfidSetup({ profile }) {
+const formatLicensePlate = (value) => {
+    const cleaned = String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+
+    if (!cleaned) {
+        return "";
+    }
+
+    const match = cleaned.match(/^([A-Z]{0,2})([0-9]{0,4})([A-Z]{0,3})(.*)$/);
+    if (!match) {
+        return cleaned;
+    }
+
+    const [, prefix, number, suffix, rest] = match;
+    const formatted = [prefix, number, suffix].filter(Boolean).join(" ");
+
+    return rest ? `${formatted} ${rest}`.trim() : formatted;
+};
+
+export default function RfidSetup({
+    profile,
+    initialVehicle = null,
+    vehicleTypes = [],
+}) {
     const { flash } = usePage().props;
 
     const { data, setData, post, processing, errors } = useForm({
         rfid_uid: "",
+        license_plate: formatLicensePlate(initialVehicle?.license_plate || ""),
+        vehicle_type_id: initialVehicle?.vehicle_type_id
+            ? String(initialVehicle.vehicle_type_id)
+            : "",
     });
 
     const submit = (event) => {
@@ -142,6 +170,14 @@ export default function RfidSetup({ profile }) {
                     </div>
 
                     <form onSubmit={submit} className="space-y-5">
+                        {vehicleTypes.length === 0 && (
+                            <div className="rounded-lg bg-amber-100 p-3 text-sm text-amber-800">
+                                Tipe kendaraan belum tersedia. Silakan hubungi
+                                admin untuk menambahkan tipe kendaraan terlebih
+                                dahulu.
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Nomor RFID
@@ -164,9 +200,69 @@ export default function RfidSetup({ profile }) {
                             )}
                         </div>
 
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Plat Nomor
+                            </label>
+                            <input
+                                type="text"
+                                value={data.license_plate}
+                                onChange={(event) =>
+                                    setData(
+                                        "license_plate",
+                                        formatLicensePlate(event.target.value),
+                                    )
+                                }
+                                placeholder="Contoh: AD 45 ID"
+                                autoComplete="off"
+                                pattern="[A-Za-z]{1,2}\s?[0-9]{1,4}\s?[A-Za-z]{0,3}"
+                                title="Format plat: 1-2 huruf depan, 1-4 angka, opsional 0-3 huruf belakang. Contoh: AD 45 ID"
+                                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            />
+                            <p className="mt-1 text-xs text-slate-500">
+                                Format: 1-2 huruf depan, 1-4 angka, opsional 0-3
+                                huruf belakang. Contoh: AD 45 ID.
+                            </p>
+                            {errors.license_plate && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.license_plate}
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Tipe Kendaraan
+                            </label>
+                            <select
+                                value={data.vehicle_type_id}
+                                onChange={(event) =>
+                                    setData(
+                                        "vehicle_type_id",
+                                        event.target.value,
+                                    )
+                                }
+                                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            >
+                                <option value="">Pilih tipe kendaraan</option>
+                                {vehicleTypes.map((type) => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.vehicle_type_id && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.vehicle_type_id}
+                                </p>
+                            )}
+                        </div>
+
                         <button
                             type="submit"
-                            disabled={processing}
+                            disabled={processing || vehicleTypes.length === 0}
                             className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {processing ? "Processing..." : "Hubungkan RFID"}

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\RfidCard;
 use App\Models\Transaction;
+use App\Models\Vehicle;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -108,11 +110,26 @@ class UserDashboardController extends Controller
     public function showRfidSetup(Request $request)
     {
         $user = $request->user();
-        $user->loadMissing(['primaryRfidCard:id,user_id,uid']);
+        $user->loadMissing([
+            'primaryRfidCard:id,user_id,uid',
+            'vehicles:id,user_id,license_plate,vehicle_type_id',
+        ]);
 
         if ($user->primaryRfidCard) {
             return redirect()->route('user.dashboard');
         }
+
+        $latestVehicle = $user->vehicles->sortByDesc('id')->first();
+        $vehicleTypes = VehicleType::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (VehicleType $type) => [
+                'id' => (int) $type->id,
+                'name' => (string) $type->name,
+            ])
+            ->values()
+            ->all();
 
         return inertia('User/RfidSetup', [
             'profile' => [
@@ -120,6 +137,11 @@ class UserDashboardController extends Controller
                 'email' => (string) $user->email,
                 'role' => (string) $user->role,
             ],
+            'initialVehicle' => $latestVehicle ? [
+                'license_plate' => (string) $latestVehicle->license_plate,
+                'vehicle_type_id' => (int) $latestVehicle->vehicle_type_id,
+            ] : null,
+            'vehicleTypes' => $vehicleTypes,
         ]);
     }
 
@@ -127,22 +149,41 @@ class UserDashboardController extends Controller
     {
         $validated = $request->validate([
             'rfid_uid' => ['required', 'string', 'max:255'],
+            'license_plate' => ['required', 'string', 'max:20', 'regex:/^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{0,3}$/i'],
+            'vehicle_type_id' => ['required', 'integer', 'exists:vehicle_types,id'],
         ], [
             'rfid_uid.required' => 'RFID wajib diisi.',
             'rfid_uid.string' => 'RFID harus berupa teks.',
             'rfid_uid.max' => 'RFID maksimal 255 karakter.',
+            'license_plate.required' => 'Plat nomor wajib diisi.',
+            'license_plate.string' => 'Plat nomor harus berupa teks.',
+            'license_plate.max' => 'Plat nomor maksimal 20 karakter.',
+            'license_plate.regex' => 'Format plat tidak valid. Contoh yang benar: AD 45 ID.',
+            'vehicle_type_id.required' => 'Tipe kendaraan wajib dipilih.',
+            'vehicle_type_id.integer' => 'Tipe kendaraan tidak valid.',
+            'vehicle_type_id.exists' => 'Tipe kendaraan tidak ditemukan.',
         ]);
 
         $uid = strtoupper(trim((string) $validated['rfid_uid']));
+        $licensePlate = $this->normalizeLicensePlate((string) $validated['license_plate']);
+        $licensePlateCanonical = $this->canonicalizeLicensePlate($licensePlate);
+        $vehicleTypeId = (int) $validated['vehicle_type_id'];
+
         if ($uid === '') {
             throw ValidationException::withMessages([
                 'rfid_uid' => 'RFID wajib diisi.',
             ]);
         }
 
+        if ($licensePlate === '') {
+            throw ValidationException::withMessages([
+                'license_plate' => 'Plat nomor wajib diisi.',
+            ]);
+        }
+
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $uid) {
+        DB::transaction(function () use ($user, $uid, $licensePlate, $licensePlateCanonical, $vehicleTypeId) {
             $existingCard = RfidCard::query()
                 ->whereRaw('UPPER(uid) = ?', [$uid])
                 ->lockForUpdate()
@@ -154,6 +195,38 @@ class UserDashboardController extends Controller
                 ]);
             }
 
+            $existingVehicle = Vehicle::query()
+                ->withTrashed()
+                ->whereRaw('REPLACE(UPPER(license_plate), " ", "") = ?', [$licensePlateCanonical])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingVehicle && (int) $existingVehicle->user_id > 0 && (int) $existingVehicle->user_id !== (int) $user->id) {
+                throw ValidationException::withMessages([
+                    'license_plate' => 'Plat nomor ini sudah terhubung ke akun lain.',
+                ]);
+            }
+
+            if ($existingVehicle) {
+                if ($existingVehicle->trashed()) {
+                    $existingVehicle->restore();
+                }
+
+                $existingVehicle->forceFill([
+                    'user_id' => $user->id,
+                    'license_plate' => $licensePlate,
+                    'vehicle_type_id' => $vehicleTypeId,
+                ])->save();
+
+                $vehicle = $existingVehicle;
+            } else {
+                $vehicle = Vehicle::create([
+                    'user_id' => $user->id,
+                    'license_plate' => $licensePlate,
+                    'vehicle_type_id' => $vehicleTypeId,
+                ]);
+            }
+
             RfidCard::query()
                 ->where('user_id', $user->id)
                 ->where('is_active', true)
@@ -162,24 +235,59 @@ class UserDashboardController extends Controller
             if ($existingCard) {
                 $existingCard->forceFill([
                     'user_id' => $user->id,
+                    'vehicle_id' => $vehicle->id,
                     'is_active' => true,
                 ])->save();
             } else {
-                RfidCard::create([
-                    'user_id' => $user->id,
-                    'uid' => $uid,
-                    'is_active' => true,
-                ]);
+                $existingCardByVehicle = RfidCard::query()
+                    ->where('vehicle_id', $vehicle->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingCardByVehicle) {
+                    $existingCardByVehicle->forceFill([
+                        'user_id' => $user->id,
+                        'uid' => $uid,
+                        'is_active' => true,
+                    ])->save();
+                } else {
+                    RfidCard::create([
+                        'user_id' => $user->id,
+                        'vehicle_id' => $vehicle->id,
+                        'uid' => $uid,
+                        'is_active' => true,
+                    ]);
+                }
             }
 
             ActivityLog::create([
                 'user_id' => $user->id,
-                'activity' => 'Bind RFID on user onboarding: ' . $uid,
+                'activity' => 'Bind RFID on user onboarding: ' . $uid . ' (' . $licensePlate . ')',
                 'activity_time' => now(),
             ]);
         });
 
         return redirect()->route('user.dashboard')
             ->with('success', 'RFID berhasil dihubungkan ke akun Anda.');
+    }
+
+    private function normalizeLicensePlate(string $value): string
+    {
+        $compact = $this->canonicalizeLicensePlate($value);
+
+        if ($compact === '') {
+            return '';
+        }
+
+        if (preg_match('/^([A-Z]{1,2})([0-9]{1,4})([A-Z]{0,3})$/', $compact, $matches)) {
+            return trim($matches[1] . ' ' . $matches[2] . ' ' . $matches[3]);
+        }
+
+        return $compact;
+    }
+
+    private function canonicalizeLicensePlate(string $value): string
+    {
+        return strtoupper(preg_replace('/[^A-Z0-9]/i', '', $value) ?? '');
     }
 }
