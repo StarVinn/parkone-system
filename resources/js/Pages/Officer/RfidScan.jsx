@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import logo from "../../Assets/Images/logo-parkone.png";
 
 export default function RfidScan({ selectedParkingArea = null, scope = {} }) {
+    const EXIT_LOCK_SECONDS = 10;
+
     const inputRef = useRef(null);
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -34,6 +36,20 @@ export default function RfidScan({ selectedParkingArea = null, scope = {} }) {
     const setStatus = (message, tone = "info") => {
         setStatusMessage(String(message || ""));
         setStatusTone(tone);
+    };
+
+    const getEntryElapsedSeconds = (transaction) => {
+        const rawEntryTime = String(transaction?.entry_time || "").trim();
+        if (!rawEntryTime) {
+            return null;
+        }
+
+        const parsed = new Date(rawEntryTime.replace(" ", "T"));
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
+
+        return Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 1000));
     };
 
     const clearExitRedirect = () => {
@@ -324,6 +340,27 @@ export default function RfidScan({ selectedParkingArea = null, scope = {} }) {
 
             if (payload.active_transaction) {
                 setActiveTransaction(payload.active_transaction);
+                const elapsedSeconds = getEntryElapsedSeconds(
+                    payload.active_transaction,
+                );
+
+                if (
+                    elapsedSeconds !== null &&
+                    elapsedSeconds < EXIT_LOCK_SECONDS
+                ) {
+                    const remainingSeconds = EXIT_LOCK_SECONDS - elapsedSeconds;
+                    setRfidError(
+                        `Kartu baru dipakai masuk. Tunggu ${remainingSeconds} detik sebelum scan keluar.`,
+                    );
+                    setStatus(
+                        `Transaksi masuk masih baru. Coba scan keluar lagi dalam ${remainingSeconds} detik.`,
+                        "warning",
+                    );
+                    clearExitRedirect();
+                    lastSubmittedUidRef.current = "";
+                    return;
+                }
+
                 setStatus(
                     "Transaksi aktif ditemukan. Lanjut ke konfirmasi pembayaran.",
                     "warning",
