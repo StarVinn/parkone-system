@@ -266,6 +266,9 @@ class TransactionService
                 'parking_rate_version_number_snapshot' => $parkingRate->version_number,
                 'rate_type_snapshot' => $parkingRate->rate_type,
                 'rate_per_hour_snapshot' => $parkingRate->rate_per_hour,
+                'first_hour_rate_snapshot' => $parkingRate->first_hour_rate,
+                'next_hour_rate_snapshot' => $parkingRate->next_hour_rate,
+                'grace_minutes_snapshot' => $parkingRate->grace_minutes,
                 'flat_rate_snapshot' => $parkingRate->flat_rate,
                 'entry_time' => now(),
                 'entry_vehicle_photo_path' => $photoPath,
@@ -361,8 +364,12 @@ class TransactionService
                 }
 
                 $exitTime = now();
-                $hours = $this->calculateHours($transaction->entry_time, $exitTime);
-                $totalFee = $this->calculateFeeFromTransaction($transaction, $hours);
+                $entryTime = $transaction->entry_time instanceof Carbon
+                    ? $transaction->entry_time
+                    : Carbon::parse($transaction->entry_time);
+                $seconds = max(0, $entryTime->diffInSeconds($exitTime));
+                $hours = $this->calculateHours($entryTime, $exitTime);
+                $totalFee = $this->calculateFeeFromTransaction($transaction, $seconds);
 
                 $transaction->update([
                     'exit_time' => $exitTime,
@@ -418,11 +425,15 @@ class TransactionService
     public function previewExitCharge(Transaction $transaction, ?Carbon $at = null): array
     {
         $exitTime = $at ?? now();
-        $hours = $this->calculateHours($transaction->entry_time, $exitTime);
+        $entryTime = $transaction->entry_time instanceof Carbon
+            ? $transaction->entry_time
+            : Carbon::parse($transaction->entry_time);
+        $seconds = max(0, $entryTime->diffInSeconds($exitTime));
+        $hours = $this->calculateHours($entryTime, $exitTime);
 
         return [
             'hours' => $hours,
-            'total_fee' => $this->calculateFeeFromTransaction($transaction, $hours),
+            'total_fee' => $this->calculateFeeFromTransaction($transaction, $seconds),
             'exit_time' => $exitTime->toDateTimeString(),
         ];
     }
@@ -478,18 +489,36 @@ class TransactionService
 
     private function calculateFee(ParkingRate $rate, float $hours): float
     {
+        $seconds = (int) max(0, round($hours * 3600));
+        $graceMinutes = max(0, (int) ($rate->grace_minutes ?? 0));
+
         if ($rate->rate_type === 'flat') {
-            return (float) ($rate->flat_rate ?? 0);
+            return $this->calculateFlatFeeWithGrace(
+                $seconds,
+                $graceMinutes,
+                (float) ($rate->flat_rate ?? 0),
+            );
         }
 
-        return (float) (($rate->rate_per_hour ?? 0) * $hours);
+        $firstHourRate = (float) ($rate->first_hour_rate ?? $rate->rate_per_hour ?? 0);
+        $nextHourRate = (float) ($rate->next_hour_rate ?? $rate->rate_per_hour ?? $firstHourRate);
+
+        return $this->calculateProgressiveHourlyFee(
+            $seconds,
+            $graceMinutes,
+            $firstHourRate,
+            $nextHourRate,
+        );
     }
 
-    private function calculateFeeFromTransaction(Transaction $transaction, float $hours): float
+    private function calculateFeeFromTransaction(Transaction $transaction, int $durationSeconds): float
     {
         $rateType = (string) ($transaction->rate_type_snapshot ?? '');
         $flatRate = (float) ($transaction->flat_rate_snapshot ?? 0);
         $ratePerHour = (float) ($transaction->rate_per_hour_snapshot ?? 0);
+        $firstHourRateSnapshot = (float) ($transaction->first_hour_rate_snapshot ?? 0);
+        $nextHourRateSnapshot = (float) ($transaction->next_hour_rate_snapshot ?? 0);
+        $graceMinutesSnapshot = max(0, (int) ($transaction->grace_minutes_snapshot ?? 0));
 
         if ($rateType === '') {
             if (!$transaction->relationLoaded('parkingRate') || !$transaction->parkingRate) {
@@ -500,14 +529,85 @@ class TransactionService
                 return 0.0;
             }
 
-            return $this->calculateFee($transaction->parkingRate, $hours);
+            $rate = $transaction->parkingRate;
+            if ($rate->rate_type === 'flat') {
+                return $this->calculateFlatFeeWithGrace(
+                    $durationSeconds,
+                    max(0, (int) ($rate->grace_minutes ?? 0)),
+                    (float) ($rate->flat_rate ?? 0),
+                );
+            }
+
+            $graceMinutes = max(0, (int) ($rate->grace_minutes ?? 0));
+            $firstHourRate = (float) ($rate->first_hour_rate ?? $rate->rate_per_hour ?? 0);
+            $nextHourRate = (float) ($rate->next_hour_rate ?? $rate->rate_per_hour ?? $firstHourRate);
+
+            return $this->calculateProgressiveHourlyFee(
+                $durationSeconds,
+                $graceMinutes,
+                $firstHourRate,
+                $nextHourRate,
+            );
         }
 
         if ($rateType === 'flat') {
-            return $flatRate;
+            return $this->calculateFlatFeeWithGrace(
+                $durationSeconds,
+                $graceMinutesSnapshot,
+                $flatRate,
+            );
         }
 
-        return $ratePerHour * $hours;
+        $firstHourRate = $firstHourRateSnapshot > 0 ? $firstHourRateSnapshot : $ratePerHour;
+        $nextHourRate = $nextHourRateSnapshot > 0
+            ? $nextHourRateSnapshot
+            : ($ratePerHour > 0 ? $ratePerHour : $firstHourRate);
+
+        return $this->calculateProgressiveHourlyFee(
+            $durationSeconds,
+            $graceMinutesSnapshot,
+            $firstHourRate,
+            $nextHourRate,
+        );
+    }
+
+    private function calculateFlatFeeWithGrace(
+        int $durationSeconds,
+        int $graceMinutes,
+        float $flatRate,
+    ): float {
+        $seconds = max(0, $durationSeconds);
+        $graceSeconds = max(0, $graceMinutes) * 60;
+
+        if ($seconds <= $graceSeconds) {
+            return 0.0;
+        }
+
+        return (float) max(0, $flatRate);
+    }
+
+    private function calculateProgressiveHourlyFee(
+        int $durationSeconds,
+        int $graceMinutes,
+        float $firstHourRate,
+        float $nextHourRate,
+    ): float {
+        $seconds = max(0, $durationSeconds);
+        $graceSeconds = max(0, $graceMinutes) * 60;
+
+        if ($seconds <= $graceSeconds) {
+            return 0.0;
+        }
+
+        $billableSeconds = $seconds - $graceSeconds;
+        if ($billableSeconds <= 3600) {
+            return (float) max(0, $firstHourRate);
+        }
+
+        $remainingSeconds = max(0, $billableSeconds - 3600);
+        $extraHours = (int) ceil($remainingSeconds / 3600);
+
+        return (float) max(0, $firstHourRate) + ((float) max(0, $nextHourRate) * $extraHours);
     }
 
     private function bindRfidCardToVehicle(RfidCard $rfidCard, Vehicle $vehicle, bool $strict = true): void
