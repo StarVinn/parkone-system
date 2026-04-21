@@ -95,11 +95,26 @@ export default function Receipt({
         );
     }
 
+    const timestampOptions = {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+    };
     const entryDate = transaction.entry_time
-        ? new Date(transaction.entry_time).toLocaleString("id-ID")
+        ? new Date(transaction.entry_time).toLocaleString(
+              "id-ID",
+              timestampOptions,
+          )
         : "-";
     const exitDate = transaction.exit_time
-        ? new Date(transaction.exit_time).toLocaleString("id-ID")
+        ? new Date(transaction.exit_time).toLocaleString(
+              "id-ID",
+              timestampOptions,
+          )
         : "-";
     const ticketNumber = `PKO/${transaction.id.toString().padStart(6, "0")}`;
     const operatorName = auth?.user?.name || "-";
@@ -275,29 +290,27 @@ export default function Receipt({
                                         "-",
                                 )}
                             </p>
+                            <p>
+                                {padLine(
+                                    tr(
+                                        "officer.receipt.label_entry",
+                                        "MASUK",
+                                        "ENTRY",
+                                    ),
+                                    entryDate,
+                                )}
+                            </p>
                             {isExit ? (
-                                <>
-                                    <p>
-                                        {padLine(
-                                            tr(
-                                                "officer.receipt.label_entry",
-                                                "MASUK",
-                                                "ENTRY",
-                                            ),
-                                            entryDate,
-                                        )}
-                                    </p>
-                                    <p>
-                                        {padLine(
-                                            tr(
-                                                "officer.receipt.label_exit",
-                                                "KELUAR",
-                                                "EXIT",
-                                            ),
-                                            exitDate,
-                                        )}
-                                    </p>
-                                </>
+                                <p>
+                                    {padLine(
+                                        tr(
+                                            "officer.receipt.label_exit",
+                                            "KELUAR",
+                                            "EXIT",
+                                        ),
+                                        exitDate,
+                                    )}
+                                </p>
                             ) : null}
                             <p>
                                 {padLine(

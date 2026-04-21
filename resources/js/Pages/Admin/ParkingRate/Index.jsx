@@ -51,6 +51,9 @@ export default function Index({
         location_id: "",
         rate_type: "hourly",
         rate_per_hour: "",
+        first_hour_rate: "",
+        next_hour_rate: "",
+        grace_minutes: "0",
         flat_rate: "",
     });
     const [errors, setErrors] = useState({});
@@ -58,7 +61,7 @@ export default function Index({
 
     const isHourly = formData.rate_type === "hourly";
     const currentRateValue = isHourly
-        ? formData.rate_per_hour
+        ? formData.first_hour_rate
         : formData.flat_rate;
 
     const resetForm = () => {
@@ -67,6 +70,9 @@ export default function Index({
             location_id: "",
             rate_type: "hourly",
             rate_per_hour: "",
+            first_hour_rate: "",
+            next_hour_rate: "",
+            grace_minutes: "0",
             flat_rate: "",
         });
         setErrors({});
@@ -84,6 +90,11 @@ export default function Index({
             location_id: item.location_id || "",
             rate_type: item.rate_type || "hourly",
             rate_per_hour: item.rate_per_hour?.toString() || "",
+            first_hour_rate:
+                (item.first_hour_rate ?? item.rate_per_hour)?.toString() || "",
+            next_hour_rate:
+                (item.next_hour_rate ?? item.rate_per_hour)?.toString() || "",
+            grace_minutes: (item.grace_minutes ?? 0).toString(),
             flat_rate: item.flat_rate?.toString() || "",
         });
         setEditingItem(item);
@@ -100,7 +111,11 @@ export default function Index({
         const numericValue = getNumericValue(e.target.value);
 
         if (isHourly) {
-            setFormData((prev) => ({ ...prev, rate_per_hour: numericValue }));
+            setFormData((prev) => ({
+                ...prev,
+                rate_per_hour: numericValue,
+                first_hour_rate: numericValue,
+            }));
             return;
         }
 
@@ -116,6 +131,12 @@ export default function Index({
         const submitData = {
             ...formData,
             rate_per_hour: formData.rate_per_hour || null,
+            first_hour_rate: formData.first_hour_rate || null,
+            next_hour_rate: formData.next_hour_rate || null,
+            grace_minutes:
+                formData.grace_minutes === ""
+                    ? 0
+                    : Number(formData.grace_minutes),
             flat_rate: formData.flat_rate || null,
         };
 
@@ -210,10 +231,7 @@ export default function Index({
                             >
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            {t(
-                                "actions.back_to_overview",
-                                "Back to Overview",
-                            )}
+                            {t("actions.back_to_overview", "Back to Overview")}
                         </Link>
                     )}
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">
@@ -263,7 +281,22 @@ export default function Index({
                                     {t("fields.rate_type", "Rate Type")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    {t("fields.amount", "Amount")}
+                                    {t(
+                                        "admin.parking_rates.table.first_hour",
+                                        "Jam Pertama",
+                                    )}
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    {t(
+                                        "admin.parking_rates.table.next_hour",
+                                        "Jam Berikutnya",
+                                    )}
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    {t(
+                                        "admin.parking_rates.table.grace",
+                                        "Grace (menit)",
+                                    )}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
                                     {t("fields.action", "Action")}
@@ -274,7 +307,7 @@ export default function Index({
                             {rows.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan="5"
+                                        colSpan="7"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
                                         {t(
@@ -287,12 +320,21 @@ export default function Index({
                                 rows.map((item) => {
                                     const isRateHourly =
                                         item.rate_type === "hourly";
-                                    const amount = isRateHourly
-                                        ? `${formatCurrency(item.rate_per_hour)} ${t(
-                                              "admin.parking_rates.per_hour_suffix",
-                                              "/ jam",
-                                          )}`
-                                        : formatCurrency(item.flat_rate);
+                                    const firstHourAmount = isRateHourly
+                                        ? formatCurrency(
+                                              item.first_hour_rate ??
+                                                  item.rate_per_hour,
+                                          )
+                                        : "-";
+                                    const nextHourAmount = isRateHourly
+                                        ? formatCurrency(
+                                              item.next_hour_rate ??
+                                                  item.rate_per_hour,
+                                          )
+                                        : "-";
+                                    const graceMinutes = Number(
+                                        item.grace_minutes || 0,
+                                    );
                                     const rateTypeLabel =
                                         item.rate_type === "hourly"
                                             ? t("rate_types.hourly", "Hourly")
@@ -320,7 +362,13 @@ export default function Index({
                                                 {rateTypeLabel}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                                {amount}
+                                                {firstHourAmount}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                                {nextHourAmount}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                                {graceMinutes}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-3">
@@ -427,7 +475,10 @@ export default function Index({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-                                        {t("fields.vehicle_type", "Vehicle Type")}
+                                        {t(
+                                            "fields.vehicle_type",
+                                            "Vehicle Type",
+                                        )}
                                     </label>
                                     <select
                                         value={formData.vehicle_type_id}
@@ -596,6 +647,124 @@ export default function Index({
                                         <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
                                             {errors.rate_per_hour ||
                                                 errors.flat_rate}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {isHourly ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                            {t(
+                                                "admin.parking_rates.fields.first_hour_rate",
+                                                "Tarif Jam Pertama",
+                                            )}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatRupiahInput(
+                                                formData.first_hour_rate,
+                                            )}
+                                            onChange={(event) => {
+                                                const numeric = getNumericValue(
+                                                    event.target.value,
+                                                );
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    first_hour_rate: numeric,
+                                                    rate_per_hour: numeric,
+                                                }));
+                                            }}
+                                            className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                bg-slate-50 dark:bg-[#0B1026]
+                                                text-slate-900 dark:text-white
+                                                ${
+                                                    errors.first_hour_rate
+                                                        ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                        : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                }`}
+                                        />
+                                        {errors.first_hour_rate && (
+                                            <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                {errors.first_hour_rate}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                            {t(
+                                                "admin.parking_rates.fields.next_hour_rate",
+                                                "Tarif Jam Berikutnya",
+                                            )}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatRupiahInput(
+                                                formData.next_hour_rate,
+                                            )}
+                                            onChange={(event) => {
+                                                const numeric = getNumericValue(
+                                                    event.target.value,
+                                                );
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    next_hour_rate: numeric,
+                                                }));
+                                            }}
+                                            className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                                bg-slate-50 dark:bg-[#0B1026]
+                                                text-slate-900 dark:text-white
+                                                ${
+                                                    errors.next_hour_rate
+                                                        ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                        : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                                }`}
+                                        />
+                                        {errors.next_hour_rate && (
+                                            <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                                {errors.next_hour_rate}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                        {t(
+                                            "admin.parking_rates.fields.grace_minutes",
+                                            "Grace Period (menit)",
+                                        )}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="120"
+                                        value={formData.grace_minutes}
+                                        onChange={(event) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                grace_minutes:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                        className={`w-full px-4 py-3 rounded-xl border transition-all outline-none
+                                            bg-slate-50 dark:bg-[#0B1026]
+                                            text-slate-900 dark:text-white
+                                            ${
+                                                errors.grace_minutes
+                                                    ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                    : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                            }`}
+                                    />
+                                    {errors.grace_minutes && (
+                                        <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                            {errors.grace_minutes}
                                         </p>
                                     )}
                                 </div>

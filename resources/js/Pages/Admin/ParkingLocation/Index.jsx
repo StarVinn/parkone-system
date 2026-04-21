@@ -5,7 +5,7 @@ import { useState } from "react";
 import MapPicker from "./MapPicker";
 import useI18n from "../../../hooks/useI18n";
 
-export default function Index({ parkingLocations = [] }) {
+export default function Index({ parkingLocations = [], owners = [] }) {
     const page = usePage();
     const { flash } = page.props;
     const showBackToOverview = (page.url || "").includes("from=overview");
@@ -30,6 +30,7 @@ export default function Index({ parkingLocations = [] }) {
     // Form state
     const [formData, setFormData] = useState({
         name: "",
+        owner_id: "",
         latitude: "",
         longitude: "",
         description: "",
@@ -40,6 +41,7 @@ export default function Index({ parkingLocations = [] }) {
     const resetForm = () => {
         setFormData({
             name: "",
+            owner_id: "",
             latitude: "",
             longitude: "",
             description: "",
@@ -56,6 +58,7 @@ export default function Index({ parkingLocations = [] }) {
     const openEditModal = (item) => {
         setFormData({
             name: item.name || "",
+            owner_id: item.owner_id ? String(item.owner_id) : "",
             latitude: item.latitude || "",
             longitude: item.longitude || "",
             description: item.description || "",
@@ -217,6 +220,9 @@ export default function Index({ parkingLocations = [] }) {
                                     Longitude
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    {t("fields.owner", "Owner")}
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     {t("fields.description", "Description")}
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
@@ -228,7 +234,7 @@ export default function Index({ parkingLocations = [] }) {
                             {rows.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan="5"
+                                        colSpan="6"
                                         className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic"
                                     >
                                         {t(
@@ -253,6 +259,9 @@ export default function Index({ parkingLocations = [] }) {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                             {item.longitude}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                            {item.owner?.name || "-"}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                             {item.description || "-"}
@@ -416,6 +425,46 @@ export default function Index({ parkingLocations = [] }) {
                                 {errors.name && (
                                     <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
                                         {errors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                    {t("fields.owner", "Owner")}
+                                </label>
+                                <select
+                                    value={formData.owner_id}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            owner_id: e.target.value,
+                                        }))
+                                    }
+                                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none cursor-pointer
+                                        bg-slate-50 dark:bg-[#0B1026]
+                                        text-slate-900 dark:text-white
+                                        ${
+                                            errors.owner_id
+                                                ? "border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                : "border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#1FD1A5]/50 focus:border-[#1FD1A5]"
+                                        }`}
+                                >
+                                    <option value="">
+                                        {t(
+                                            "admin.parking_locations.fields.owner_placeholder",
+                                            "Pilih owner",
+                                        )}
+                                    </option>
+                                    {owners.map((owner) => (
+                                        <option key={owner.id} value={owner.id}>
+                                            {owner.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.owner_id && (
+                                    <p className="text-red-500 text-xs mt-1 ml-1 animate-pulse">
+                                        {errors.owner_id}
                                     </p>
                                 )}
                             </div>

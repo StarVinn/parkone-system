@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { WhenVisible, router } from "@inertiajs/react";
+import { WhenVisible } from "@inertiajs/react";
 import {
     BarElement,
     CategoryScale,
@@ -143,7 +143,6 @@ function StatCard({ title, value, hint, icon: Icon, accentClass }) {
 export default function Dashboard({
     todaySummary,
     charts,
-    parkingLocations,
     topLocations,
     alerts,
     recentTransactions,
@@ -153,22 +152,15 @@ export default function Dashboard({
     const localeTag = locale === "en" ? "en-US" : "id-ID";
 
     const [rangeDays, setRangeDays] = useState(7);
-    const [selectedLocationId, setSelectedLocationId] = useState("");
-    const [hasUserInteractedLocation, setHasUserInteractedLocation] =
-        useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [txFilters, setTxFilters] = useState({
         query: "",
-        locationId: "",
         payment: "",
         from: "",
         to: "",
     });
 
     const summary = todaySummary || {};
-
-    const locationsLoaded = parkingLocations !== undefined;
-    const locations = Array.isArray(parkingLocations) ? parkingLocations : [];
 
     const alertsLoaded = alerts !== undefined;
     const alertRows = Array.isArray(alerts) ? alerts : [];
@@ -181,22 +173,10 @@ export default function Dashboard({
         ? recentTransactions
         : [];
 
-    const selectedLocationFromList = useMemo(() => {
-        if (!selectedLocationId) return null;
-
-        return (
-            locations.find(
-                (location) =>
-                    String(location.id) === String(selectedLocationId),
-            ) || null
-        );
-    }, [locations, selectedLocationId]);
-
-    const mapLocation = locationDetail || selectedLocationFromList;
+    const mapLocation = locationDetail || null;
     const mapLat = mapLocation?.latitude ?? null;
     const mapLng = mapLocation?.longitude ?? null;
-    const hasMapSelection =
-        Boolean(selectedLocationId) || Boolean(locationDetail?.id);
+    const hasMapSelection = Boolean(locationDetail?.id);
 
     const mapEmbedSrc = useMemo(
         () => buildOsmEmbedSrc(mapLat, mapLng),
@@ -289,56 +269,6 @@ export default function Dashboard({
                 .reduce((acc, value) => acc + Number(value || 0), 0),
         [chartRevenueAll],
     );
-
-    const loadLocationDetail = (locationId) => {
-        const value = String(locationId || "");
-        setHasUserInteractedLocation(true);
-        setSelectedLocationId(value);
-
-        if (!value) {
-            router.get(
-                "/owner",
-                {},
-                {
-                    only: ["locationDetail"],
-                    preserveScroll: true,
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-            return;
-        }
-
-        router.get(
-            "/owner",
-            { location_id: value },
-            {
-                only: ["locationDetail"],
-                preserveScroll: true,
-                preserveState: true,
-                replace: true,
-            },
-        );
-    };
-
-    useEffect(() => {
-        if (hasUserInteractedLocation) return;
-        if (!locationDetail?.id) return;
-
-        const nextId = String(locationDetail.id);
-        if (String(selectedLocationId || "") === nextId) return;
-
-        setSelectedLocationId(nextId);
-    }, [hasUserInteractedLocation, locationDetail?.id, selectedLocationId]);
-
-    const effectiveSelectedLocationId = useMemo(() => {
-        if (selectedLocationId) return String(selectedLocationId);
-        if (!hasUserInteractedLocation && locationDetail?.id) {
-            return String(locationDetail.id);
-        }
-
-        return "";
-    }, [hasUserInteractedLocation, locationDetail?.id, selectedLocationId]);
 
     const revenueChartData = useMemo(
         () => ({
@@ -455,9 +385,6 @@ export default function Dashboard({
                 String(tx.plate || "")
                     .toLowerCase()
                     .includes(q);
-            const matchesLocation =
-                !txFilters.locationId ||
-                String(tx.location || "") === String(txFilters.locationId);
             const matchesPayment =
                 !txFilters.payment ||
                 String(tx.payment || "") === String(txFilters.payment);
@@ -466,49 +393,98 @@ export default function Dashboard({
             const matchesFrom =
                 !txFilters.from || txDate >= String(txFilters.from);
             const matchesTo = !txFilters.to || txDate <= String(txFilters.to);
-            return (
-                matchesQuery &&
-                matchesLocation &&
-                matchesPayment &&
-                matchesFrom &&
-                matchesTo
-            );
+            return matchesQuery && matchesPayment && matchesFrom && matchesTo;
         });
     }, [transactions, txFilters]);
 
-    const handleExportCsv = () => {
+    const handleExportExcel = async () => {
         if (!transactionsLoaded) return;
 
         const headers = [
             t("owner.transactions.csv.id", "id"),
-            t("owner.transactions.csv.time", "time"),
             t("owner.transactions.csv.location", "location"),
+            t("owner.transactions.csv.parking_area", "parking area"),
+            t("owner.transactions.csv.entry_time", "entry time"),
+            t("owner.transactions.csv.exit_time", "exit time"),
             t("owner.transactions.csv.plate", "plate"),
             t("owner.transactions.csv.vehicle", "vehicle"),
             t("owner.transactions.csv.total", "total"),
             t("owner.transactions.csv.status", "status"),
         ];
-        const lines = [
-            headers.join(","),
-            ...filteredTransactions.map((tx) =>
-                headers
-                    .map(
-                        (key) =>
-                            `"${String(tx[key] ?? "").replaceAll('"', '""')}"`,
-                    )
-                    .join(","),
-            ),
+
+        const { utils, writeFile } = await import("xlsx");
+        const exportAt = new Date();
+        const exportLabel = formatDateTime(exportAt.toISOString(), localeTag);
+        const systemName = "PARKONE";
+        const emptyRow = new Array(headers.length).fill("");
+
+        const sheetRows = [
+            [systemName, ...emptyRow.slice(1)],
+            [
+                t("owner.transactions.excel.exported_at", "Diekspor pada"),
+                exportLabel,
+                ...emptyRow.slice(2),
+            ],
+            [...emptyRow],
+            headers,
+            ...filteredTransactions.map((tx) => [
+                String(tx.id ?? ""),
+                String(tx.location ?? ""),
+                String(tx.parking_area ?? tx.area ?? ""),
+                String(tx.entry_time ?? tx.time ?? ""),
+                String(tx.exit_time ?? ""),
+                String(tx.plate ?? ""),
+                String(tx.vehicle ?? ""),
+                Number(tx.total ?? 0),
+                String(tx.status ?? ""),
+            ]),
         ];
 
-        const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `${t("owner.transactions.csv.filename_prefix", "transactions")}-${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
+        const worksheet = utils.aoa_to_sheet(sheetRows);
+
+        // Layout: merge system name over 3 columns; leave one blank row before table.
+        worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+
+        // Basic styling (may be ignored depending on the xlsx build, but safe to set).
+        if (worksheet.A1) {
+            worksheet.A1.s = {
+                font: { bold: true, sz: 16 },
+                alignment: { vertical: "center", horizontal: "left" },
+            };
+        }
+
+        const headerRowIndex = 3; // 0-based (row 4 in Excel)
+        headers.forEach((_, colIndex) => {
+            const cellAddress = utils.encode_cell({
+                r: headerRowIndex,
+                c: colIndex,
+            });
+            const cell = worksheet[cellAddress];
+            if (!cell) return;
+            cell.s = {
+                ...(cell.s || {}),
+                font: { ...(cell.s?.font || {}), bold: true },
+            };
+        });
+
+        worksheet["!rows"] = [{ hpt: 24 }];
+
+        const columnWidths = headers.map((_, colIndex) => {
+            const maxLength = sheetRows.slice(3).reduce((acc, row) => {
+                const raw = row[colIndex] ?? "";
+                return Math.max(acc, String(raw).length);
+            }, 10);
+
+            return { wch: Math.min(Math.max(maxLength + 2, 12), 48) };
+        });
+        worksheet["!cols"] = columnWidths;
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "Transactions");
+        writeFile(
+            workbook,
+            `${t("owner.transactions.csv.filename_prefix", "transactions")}-${exportAt.toISOString().slice(0, 10)}.xlsx`,
+        );
     };
 
     useEffect(() => {
@@ -770,13 +746,13 @@ export default function Dashboard({
                             <p className="text-sm font-semibold font-['Poppins']">
                                 {t(
                                     "owner.dashboard.top_locations.title",
-                                    "Top Locations",
+                                    "Top Areas",
                                 )}
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
                                 {t(
                                     "owner.dashboard.top_locations.subtitle",
-                                    "Based on occupancy and revenue",
+                                    "Based on visits and revenue",
                                 )}
                             </p>
 
@@ -785,15 +761,12 @@ export default function Dashboard({
                                     <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                         <tr>
                                             <th className="text-left px-3 py-2 font-medium">
-                                                {t(
-                                                    "fields.location",
-                                                    "Location",
-                                                )}
+                                                {t("fields.area", "Area")}
                                             </th>
                                             <th className="text-right px-3 py-2 font-medium">
                                                 {t(
-                                                    "owner.dashboard.stats.occupancy",
-                                                    "Occupancy",
+                                                    "owner.dashboard.top_locations.visits",
+                                                    "Visits",
                                                 )}
                                             </th>
                                             <th className="text-right px-3 py-2 font-medium">
@@ -845,13 +818,16 @@ export default function Dashboard({
                                                         <div className="font-medium">
                                                             {row.name}
                                                         </div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-300">
+                                                            {row.location_name ||
+                                                                "-"}
+                                                        </div>
                                                     </td>
                                                     <td className="px-3 py-2 text-right tabular-nums">
                                                         {Number(
-                                                            row.occupancy_percent ||
+                                                            row.visits_count ||
                                                                 0,
                                                         )}
-                                                        %
                                                     </td>
                                                     <td className="px-3 py-2 text-right tabular-nums">
                                                         {formatCurrencyIDR(
@@ -875,152 +851,10 @@ export default function Dashboard({
                         title={t("owner.locations.title", "Parking Locations")}
                         subtitle={t(
                             "owner.locations.subtitle",
-                            "List of locations, capacity, current occupancy, and area/rate details.",
+                            "Area/rate details for your assigned location.",
                         )}
                         icon={MapPinned}
                     />
-
-                    <WhenVisible data="parkingLocations" fallback={null}>
-                        {null}
-                    </WhenVisible>
-
-                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-semibold font-['Poppins']">
-                                    {t(
-                                        "owner.locations.list.title",
-                                        "Location List",
-                                    )}
-                                </p>
-                                <p className="text-xs text-slate-600 dark:text-slate-300">
-                                    {t(
-                                        "owner.locations.list.subtitle",
-                                        "Quick action: view details and edit (placeholder)",
-                                    )}
-                                </p>
-                            </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-300">
-                                {t("owner.locations.list.total", "Total")}:{" "}
-                                <span className="font-medium text-slate-800 dark:text-white">
-                                    {locationsLoaded ? locations.length : "-"}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[900px] w-full text-sm">
-                                <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
-                                    <tr>
-                                        <th className="text-left px-5 py-3 font-medium">
-                                            {t("fields.location", "Location")}
-                                        </th>
-                                        <th className="text-right px-5 py-3 font-medium">
-                                            {t("fields.capacity", "Capacity")}
-                                        </th>
-                                        <th className="text-right px-5 py-3 font-medium">
-                                            {t("fields.occupied", "Occupied")}
-                                        </th>
-                                        <th className="text-right px-5 py-3 font-medium">
-                                            {t(
-                                                "owner.dashboard.stats.occupancy",
-                                                "Occupancy",
-                                            )}
-                                        </th>
-                                        <th className="text-left px-5 py-3 font-medium">
-                                            {t(
-                                                "owner.locations.fields.coordinates",
-                                                "Coordinates",
-                                            )}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {!locationsLoaded ? (
-                                        <tr className="border-t border-slate-200 dark:border-white/10">
-                                            <td
-                                                colSpan={6}
-                                                className="px-5 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
-                                            >
-                                                {t(
-                                                    "owner.locations.states.loading",
-                                                    "Loading locations...",
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ) : locations.length === 0 ? (
-                                        <tr className="border-t border-slate-200 dark:border-white/10">
-                                            <td
-                                                colSpan={6}
-                                                className="px-5 py-8 text-center text-sm text-slate-600 dark:text-slate-300"
-                                            >
-                                                {t(
-                                                    "owner.locations.states.empty",
-                                                    "No locations yet.",
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        locations.map((location) => {
-                                            const capacity = Number(
-                                                location.capacity || 0,
-                                            );
-                                            const occupied = Number(
-                                                location.occupied || 0,
-                                            );
-                                            const occupancy =
-                                                capacity > 0
-                                                    ? Math.round(
-                                                          (occupied /
-                                                              capacity) *
-                                                              100,
-                                                      )
-                                                    : 0;
-
-                                            return (
-                                                <tr
-                                                    key={location.id}
-                                                    className="border-t border-slate-200 dark:border-white/10"
-                                                >
-                                                    <td className="px-5 py-3">
-                                                        <div className="font-medium">
-                                                            {location.name}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-300">
-                                                            {t(
-                                                                "owner.general.id",
-                                                                "ID",
-                                                            )}
-                                                            : {location.id}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3 text-right tabular-nums">
-                                                        {capacity.toLocaleString(
-                                                            localeTag,
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3 text-right tabular-nums">
-                                                        {occupied.toLocaleString(
-                                                            localeTag,
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3 text-right tabular-nums">
-                                                        {occupancy}%
-                                                    </td>
-                                                    <td className="px-5 py-3 text-slate-700 dark:text-slate-200">
-                                                        <div className="text-xs tabular-nums">
-                                                            {location.latitude},{" "}
-                                                            {location.longitude}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
@@ -1037,39 +871,12 @@ export default function Dashboard({
                                 )}
                             </p>
 
-                            <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
-                                <label className="text-xs text-slate-600 dark:text-slate-300">
-                                    {t(
-                                        "owner.locations.filters.pick_location",
-                                        "Select location",
+                            <div className="mt-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-darkbg-secondary px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                {locationDetail?.name ||
+                                    t(
+                                        "owner.locations.states.unassigned",
+                                        "No location is assigned to this owner yet.",
                                     )}
-                                </label>
-                                <select
-                                    value={effectiveSelectedLocationId}
-                                    onChange={(event) =>
-                                        loadLocationDetail(event.target.value)
-                                    }
-                                    className="w-full md:w-96 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-darkbg-secondary outline-none"
-                                    disabled={
-                                        !locationsLoaded ||
-                                        locations.length === 0
-                                    }
-                                >
-                                    <option value="">
-                                        {t(
-                                            "owner.locations.filters.pick_location_placeholder",
-                                            "Select location...",
-                                        )}
-                                    </option>
-                                    {locations.map((location) => (
-                                        <option
-                                            key={location.id}
-                                            value={location.id}
-                                        >
-                                            {location.name}
-                                        </option>
-                                    ))}
-                                </select>
                             </div>
 
                             {locationDetail ? (
@@ -1161,8 +968,8 @@ export default function Dashboard({
                                                 "Rates",
                                             )}
                                         </p>
-                                        <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
-                                            <table className="w-full text-sm">
+                                        <div className="mt-2 overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/10">
+                                            <table className="min-w-[760px] w-full text-sm">
                                                 <thead className="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300">
                                                     <tr>
                                                         <th className="text-left px-3 py-2 font-medium">
@@ -1179,14 +986,26 @@ export default function Dashboard({
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
                                                             {t(
-                                                                "owner.locations.detail.rates.per_hour",
-                                                                "Per Hour",
+                                                                "owner.locations.detail.rates.first_hour",
+                                                                "Jam Pertama",
                                                             )}
                                                         </th>
                                                         <th className="text-right px-3 py-2 font-medium">
                                                             {t(
-                                                                "owner.locations.detail.rates.flat",
-                                                                "Flat",
+                                                                "owner.locations.detail.rates.next_hour",
+                                                                "Jam Berikutnya",
+                                                            )}
+                                                        </th>
+                                                        <th className="text-right px-3 py-2 font-medium">
+                                                            {t(
+                                                                "owner.locations.detail.rates.grace",
+                                                                "Periode Tidak Bayar",
+                                                            )}
+                                                        </th>
+                                                        <th className="text-right px-3 py-2 font-medium">
+                                                            {t(
+                                                                "owner.locations.detail.rates.cost",
+                                                                "Cost",
                                                             )}
                                                         </th>
                                                     </tr>
@@ -1209,14 +1028,34 @@ export default function Dashboard({
                                                                 {rate.rate_type}
                                                             </td>
                                                             <td className="px-3 py-2 text-right tabular-nums">
-                                                                {formatCurrencyIDR(
-                                                                    rate.rate_per_hour,
+                                                                {rate.rate_type ===
+                                                                "hourly"
+                                                                    ? formatCurrencyIDR(
+                                                                          rate.first_hour_rate,
+                                                                      )
+                                                                    : "-"}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right tabular-nums">
+                                                                {rate.rate_type ===
+                                                                "hourly"
+                                                                    ? formatCurrencyIDR(
+                                                                          rate.next_hour_rate,
+                                                                      )
+                                                                    : "-"}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right tabular-nums">
+                                                                {Number(
+                                                                    rate.grace_minutes ||
+                                                                        0,
                                                                 )}
                                                             </td>
                                                             <td className="px-3 py-2 text-right tabular-nums">
-                                                                {formatCurrencyIDR(
-                                                                    rate.flat_rate,
-                                                                )}
+                                                                {rate.rate_type ===
+                                                                "flat"
+                                                                    ? formatCurrencyIDR(
+                                                                          rate.flat_rate,
+                                                                      )
+                                                                    : "-"}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -1228,8 +1067,8 @@ export default function Dashboard({
                             ) : (
                                 <div className="mt-5 text-sm text-slate-600 dark:text-slate-300">
                                     {t(
-                                        "owner.locations.detail.empty",
-                                        "Select a location to load area and rate details.",
+                                        "owner.locations.states.unassigned",
+                                        "No location is assigned to this owner yet.",
                                     )}
                                 </div>
                             )}
@@ -1249,8 +1088,8 @@ export default function Dashboard({
                             {!hasMapSelection ? (
                                 <div className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 h-56 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm">
                                     {t(
-                                        "owner.map.states.select_location",
-                                        "Select a location to view the map.",
+                                        "owner.locations.states.unassigned",
+                                        "No location is assigned to this owner yet.",
                                     )}
                                 </div>
                             ) : !mapLocation ? (
@@ -1350,7 +1189,7 @@ export default function Dashboard({
 
                     <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-darkbg-card p-5 shadow-sm">
                         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 flex-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
                                 <div className="lg:col-span-2">
                                     <label className="text-xs text-slate-600 dark:text-slate-300">
                                         {t(
@@ -1378,36 +1217,6 @@ export default function Dashboard({
                                             className="w-full bg-transparent outline-none text-sm"
                                         />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs text-slate-600 dark:text-slate-300">
-                                        {t("fields.location", "Location")}
-                                    </label>
-                                    <select
-                                        value={txFilters.locationId}
-                                        onChange={(event) =>
-                                            setTxFilters((prev) => ({
-                                                ...prev,
-                                                locationId: event.target.value,
-                                            }))
-                                        }
-                                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-darkbg-secondary outline-none text-sm"
-                                    >
-                                        <option value="">
-                                            {t("statuses.all", "All")}
-                                        </option>
-                                        {!locationsLoaded
-                                            ? null
-                                            : locations.map((location) => (
-                                                  <option
-                                                      key={location.id}
-                                                      value={location.name}
-                                                  >
-                                                      {location.name}
-                                                  </option>
-                                              ))}
-                                    </select>
                                 </div>
 
                                 <div>
@@ -1461,7 +1270,7 @@ export default function Dashboard({
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={handleExportCsv}
+                                    onClick={handleExportExcel}
                                     disabled={
                                         !transactionsLoaded ||
                                         filteredTransactions.length === 0
@@ -1470,8 +1279,8 @@ export default function Dashboard({
                                 >
                                     <Download size={16} />
                                     {t(
-                                        "owner.transactions.actions.export_csv",
-                                        "Export CSV",
+                                        "owner.transactions.actions.export_excel",
+                                        "Export Excel",
                                     )}
                                 </button>
                             </div>

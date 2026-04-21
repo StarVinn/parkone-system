@@ -17,6 +17,9 @@ class ParkingRateSeeder extends Seeder
                 'vehicle_type_name' => 'Motor',
                 'rate_type' => 'flat',
                 'rate_per_hour' => null,
+                'first_hour_rate' => null,
+                'next_hour_rate' => null,
+                'grace_minutes' => 5,
                 'flat_rate' => 2000,
             ],
             [
@@ -24,6 +27,9 @@ class ParkingRateSeeder extends Seeder
                 'vehicle_type_name' => 'Mobil',
                 'rate_type' => 'flat',
                 'rate_per_hour' => null,
+                'first_hour_rate' => null,
+                'next_hour_rate' => null,
+                'grace_minutes' => 5,
                 'flat_rate' => 5000,
             ],
             [
@@ -31,6 +37,9 @@ class ParkingRateSeeder extends Seeder
                 'vehicle_type_name' => 'Mobil',
                 'rate_type' => 'hourly',
                 'rate_per_hour' => 5000,
+                'first_hour_rate' => 5000,
+                'next_hour_rate' => 5000,
+                'grace_minutes' => 5,
                 'flat_rate' => null,
             ],
             [
@@ -38,6 +47,9 @@ class ParkingRateSeeder extends Seeder
                 'vehicle_type_name' => 'Motor',
                 'rate_type' => 'hourly',
                 'rate_per_hour' => 4000,
+                'first_hour_rate' => 4000,
+                'next_hour_rate' => 4000,
+                'grace_minutes' => 5,
                 'flat_rate' => null,
             ],
         ];
@@ -62,6 +74,9 @@ class ParkingRateSeeder extends Seeder
                 [
                     'rate_type' => $rate['rate_type'],
                     'rate_per_hour' => $rate['rate_per_hour'],
+                    'first_hour_rate' => $rate['first_hour_rate'] ?? $rate['rate_per_hour'],
+                    'next_hour_rate' => $rate['next_hour_rate'] ?? $rate['rate_per_hour'],
+                    'grace_minutes' => $rate['grace_minutes'] ?? 0,
                     'flat_rate' => $rate['flat_rate'],
                 ]
             );
