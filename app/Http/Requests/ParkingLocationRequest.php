@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ParkingLocationRequest extends FormRequest
@@ -23,6 +24,24 @@ class ParkingLocationRequest extends FormRequest
     {
         return [
             'name' => 'required|string|min:2|max:255',
+            'owner_id' => [
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $ownerExists = User::query()
+                        ->whereKey((int) $value)
+                        ->where('role', 'owner')
+                        ->exists();
+
+                    if (! $ownerExists) {
+                        $fail('Owner yang dipilih tidak valid.');
+                    }
+                },
+            ],
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'description' => 'nullable|string|max:1000',
@@ -37,6 +56,8 @@ class ParkingLocationRequest extends FormRequest
                 'name.string' => 'Nama harus berupa teks.',
                 'name.min' => 'Nama minimal 2 karakter.',
                 'name.max' => 'Nama maksimal 255 karakter.',
+
+                'owner_id.integer' => 'Owner tidak valid.',
 
                 'latitude.required' => 'Latitude wajib diisi.',
                 'latitude.numeric' => 'Latitude harus berupa angka.',

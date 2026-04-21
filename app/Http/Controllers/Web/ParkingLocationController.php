@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ParkingLocationRequest;
 use App\Models\ParkingLocation;
+use App\Models\User;
 use App\Services\ParkingLocationService;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Response;
@@ -16,7 +17,16 @@ class ParkingLocationController extends Controller
         abort_if(Auth::user()->role !== 'admin', 403, 'Akses ditolak.');
         
         return inertia('Admin/ParkingLocation/Index', [
-            'parkingLocations' => ParkingLocation::latest()->paginate(15)->withQueryString(),
+            'parkingLocations' => ParkingLocation::query()
+                ->with('owner:id,name,email')
+                ->latest()
+                ->paginate(15)
+                ->withQueryString(),
+            'owners' => User::query()
+                ->where('role', 'owner')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']),
         ]);
     }
 

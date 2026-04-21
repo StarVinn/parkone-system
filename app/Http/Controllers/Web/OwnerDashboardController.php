@@ -16,12 +16,17 @@ class OwnerDashboardController extends Controller
     public function index(Request $request)
     {
         $today = now()->startOfDay();
+        $ownerLocationIds = $this->ownerLocationIds($request);
+        $selectedLocationId = $this->resolveSelectedLocationId(
+            (int) $request->query('location_id', 0),
+            $ownerLocationIds,
+        );
 
-        $completedTodayQuery = Transaction::query()
+        $completedTodayQuery = $this->scopedTransactionQuery($ownerLocationIds)
             ->where('status', 'completed')
             ->where('exit_time', '>=', $today);
 
-        $vehicleInToday = Transaction::query()
+        $vehicleInToday = $this->scopedTransactionQuery($ownerLocationIds)
             ->where('entry_time', '>=', $today)
             ->count();
 
@@ -30,6 +35,11 @@ class OwnerDashboardController extends Controller
         $revenueToday = (float) (clone $completedTodayQuery)->sum('total_fee');
 
         $areaTotals = ParkingArea::query()
+            ->when(
+                !empty($ownerLocationIds),
+                fn ($query) => $query->whereIn('parking_location_id', $ownerLocationIds),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
             ->selectRaw('COALESCE(SUM(capacity), 0) as capacity_total, COALESCE(SUM(occupied), 0) as occupied_total')
             ->first();
 
@@ -39,9 +49,7 @@ class OwnerDashboardController extends Controller
             ? (int) round(($occupiedTotal / $capacityTotal) * 100)
             : 0;
 
-        $charts = $this->buildCharts($occupancyPercent);
-
-        $selectedLocationId = (int) $request->query('location_id', 0);
+        $charts = $this->buildCharts($occupancyPercent, $ownerLocationIds);
 
         return inertia('Owner/Dashboard', [
             'todaySummary' => [
@@ -54,21 +62,58 @@ class OwnerDashboardController extends Controller
             'charts' => $charts,
 
             // Lazy props (queried only when requested via partial reload)
-            'parkingLocations' => Inertia::lazy(fn () => $this->getParkingLocations()),
-            'topLocations' => Inertia::lazy(fn () => $this->getTopLocations()),
-            'alerts' => Inertia::lazy(fn () => $this->getAlerts()),
-            'recentTransactions' => Inertia::lazy(fn () => $this->getRecentTransactions()),
-            'locationDetail' => Inertia::lazy(fn () => $this->getLocationDetail($selectedLocationId)),
+            'topLocations' => Inertia::lazy(fn () => $this->getTopLocations($ownerLocationIds)),
+            'alerts' => Inertia::lazy(fn () => $this->getAlerts($ownerLocationIds)),
+            'recentTransactions' => Inertia::lazy(fn () => $this->getRecentTransactions($ownerLocationIds)),
+            'locationDetail' => $this->getLocationDetail($selectedLocationId, $ownerLocationIds),
         ]);
     }
 
-    private function buildCharts(int $occupancyPercent): array
+    private function ownerLocationIds(Request $request): array
+    {
+        $ownerId = (int) ($request->user()?->id ?? 0);
+        if ($ownerId <= 0) {
+            return [];
+        }
+
+        return ParkingLocation::query()
+            ->where('owner_id', $ownerId)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    private function resolveSelectedLocationId(int $requestedId, array $ownerLocationIds): int
+    {
+        if (!empty($ownerLocationIds) && in_array($requestedId, $ownerLocationIds, true)) {
+            return $requestedId;
+        }
+
+        return (int) ($ownerLocationIds[0] ?? 0);
+    }
+
+    private function scopedTransactionQuery(array $ownerLocationIds)
+    {
+        return Transaction::query()
+            ->whereHas('parkingArea', function ($query) use ($ownerLocationIds) {
+                if (empty($ownerLocationIds)) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->whereIn('parking_location_id', $ownerLocationIds);
+            });
+    }
+
+    private function buildCharts(int $occupancyPercent, array $ownerLocationIds): array
     {
         $days = 30;
         $from = now()->subDays($days - 1)->startOfDay();
         $to = now()->endOfDay();
 
-        $rawRevenue = Transaction::query()
+        $rawRevenue = $this->scopedTransactionQuery($ownerLocationIds)
             ->where('status', 'completed')
             ->whereBetween('exit_time', [$from, $to])
             ->selectRaw('DATE(exit_time) as day, COALESCE(SUM(total_fee), 0) as total')
@@ -94,9 +139,10 @@ class OwnerDashboardController extends Controller
         ];
     }
 
-    private function getParkingLocations(): array
+    private function getParkingLocations(array $ownerLocationIds): array
     {
         return ParkingLocation::query()
+            ->whereIn('id', $ownerLocationIds)
             ->select('id', 'name', 'latitude', 'longitude', 'description')
             ->withSum('areas as capacity_total', 'capacity')
             ->withSum('areas as occupied_total', 'occupied')
@@ -115,53 +161,51 @@ class OwnerDashboardController extends Controller
             ->all();
     }
 
-    private function getTopLocations(): array
+    private function getTopLocations(array $ownerLocationIds): array
     {
-        $from = now()->subDays(6)->startOfDay();
+        if (empty($ownerLocationIds)) {
+            return [];
+        }
 
-        $areaStatsSubquery = ParkingArea::query()
-            ->select('parking_location_id')
-            ->selectRaw('COALESCE(SUM(capacity), 0) as capacity_total')
-            ->selectRaw('COALESCE(SUM(occupied), 0) as occupied_total')
-            ->groupBy('parking_location_id');
+        $from = now()->subDays(6)->startOfDay();
 
         $rows = Transaction::query()
             ->join('parking_areas', 'transactions.parking_area_id', '=', 'parking_areas.id')
             ->join('parking_locations', 'parking_areas.parking_location_id', '=', 'parking_locations.id')
-            ->leftJoinSub($areaStatsSubquery, 'area_stats', function ($join) {
-                $join->on('parking_locations.id', '=', 'area_stats.parking_location_id');
-            })
+            ->whereIn('parking_locations.id', $ownerLocationIds)
             ->where('transactions.status', 'completed')
             ->where('transactions.exit_time', '>=', $from)
-            ->select('parking_locations.id', 'parking_locations.name')
+            ->select('parking_areas.id', 'parking_areas.name as area_name', 'parking_locations.name as location_name')
+            ->selectRaw('COUNT(transactions.id) as visits_count')
             ->selectRaw('COALESCE(SUM(transactions.total_fee), 0) as revenue')
-            ->selectRaw('COALESCE(area_stats.capacity_total, 0) as capacity_total')
-            ->selectRaw('COALESCE(area_stats.occupied_total, 0) as occupied_total')
-            ->groupBy('parking_locations.id', 'parking_locations.name', 'area_stats.capacity_total', 'area_stats.occupied_total')
+            ->groupBy('parking_areas.id', 'parking_areas.name', 'parking_locations.name')
+            ->orderByDesc('visits_count')
             ->orderByDesc('revenue')
             ->limit(5)
             ->get();
 
         return $rows->map(function ($row) {
-            $capacity = (int) ($row->capacity_total ?? 0);
-            $occupied = (int) ($row->occupied_total ?? 0);
-            $occupancy = $capacity > 0 ? (int) round(($occupied / $capacity) * 100) : 0;
-
             return [
                 'id' => (int) $row->id,
-                'name' => (string) $row->name,
-                'occupancy_percent' => $occupancy,
+                'name' => (string) $row->area_name,
+                'location_name' => (string) $row->location_name,
+                'visits_count' => (int) ($row->visits_count ?? 0),
                 'revenue' => (float) ($row->revenue ?? 0),
             ];
         })->all();
     }
 
-    private function getAlerts(): array
+    private function getAlerts(array $ownerLocationIds): array
     {
+        if (empty($ownerLocationIds)) {
+            return [];
+        }
+
         $alerts = [];
 
         $fullAreas = ParkingArea::query()
             ->with('location:id,name')
+            ->whereIn('parking_location_id', $ownerLocationIds)
             ->where('capacity', '>', 0)
             ->whereRaw('(occupied / capacity) >= 0.95')
             ->orderByRaw('(occupied / capacity) desc')
@@ -189,6 +233,7 @@ class OwnerDashboardController extends Controller
 
         $invalidAreas = ParkingArea::query()
             ->with('location:id,name')
+            ->whereIn('parking_location_id', $ownerLocationIds)
             ->where(function ($query) {
                 $query->where('capacity', '<=', 0)
                     ->orWhere('occupied', '<', 0)
@@ -215,9 +260,9 @@ class OwnerDashboardController extends Controller
         return array_slice($alerts, 0, 10);
     }
 
-    private function getRecentTransactions(): array
+    private function getRecentTransactions(array $ownerLocationIds): array
     {
-        return Transaction::query()
+        return $this->scopedTransactionQuery($ownerLocationIds)
             ->with([
                 'user:id,name',
                 'vehicle:id,license_plate,vehicle_type_id',
@@ -284,9 +329,9 @@ class OwnerDashboardController extends Controller
             ->all();
     }
 
-    private function getLocationDetail(int $locationId): ?array
+    private function getLocationDetail(int $locationId, array $ownerLocationIds): ?array
     {
-        if ($locationId <= 0) {
+        if ($locationId <= 0 || !in_array($locationId, $ownerLocationIds, true)) {
             return null;
         }
 
@@ -299,7 +344,17 @@ class OwnerDashboardController extends Controller
                     ->limit(60),
                 'rates' => fn ($query) => $query
                     ->with('vehicleType:id,name')
-                    ->select('id', 'location_id', 'vehicle_type_id', 'rate_type', 'rate_per_hour', 'flat_rate')
+                    ->select(
+                        'id',
+                        'location_id',
+                        'vehicle_type_id',
+                        'rate_type',
+                        'rate_per_hour',
+                        'first_hour_rate',
+                        'next_hour_rate',
+                        'grace_minutes',
+                        'flat_rate',
+                    )
                     ->orderBy('vehicle_type_id')
                     ->limit(60),
             ])
@@ -321,6 +376,9 @@ class OwnerDashboardController extends Controller
             'vehicle_type' => (string) ($rate->vehicleType?->name ?? '-'),
             'rate_type' => (string) $rate->rate_type,
             'rate_per_hour' => (float) ($rate->rate_per_hour ?? 0),
+            'first_hour_rate' => (float) ($rate->first_hour_rate ?? $rate->rate_per_hour ?? 0),
+            'next_hour_rate' => (float) ($rate->next_hour_rate ?? $rate->rate_per_hour ?? 0),
+            'grace_minutes' => (int) ($rate->grace_minutes ?? 0),
             'flat_rate' => (float) ($rate->flat_rate ?? 0),
         ])->all();
 

@@ -81,7 +81,10 @@ class MobileController extends Controller
             'version_number' => (int) $rate->version_number,
             'is_current' => (bool) $rate->is_current,
             'rate_type' => $rate->rate_type,
-            'rate_per_hour' => $rate->rate_per_hour,
+            'rate_per_hour' => $rate->first_hour_rate ?? $rate->rate_per_hour,
+            'first_hour_rate' => $rate->first_hour_rate ?? $rate->rate_per_hour,
+            'next_hour_rate' => $rate->next_hour_rate ?? $rate->rate_per_hour,
+            'grace_minutes' => (int) ($rate->grace_minutes ?? 0),
             'flat_rate' => $rate->flat_rate,
         ];
     }
