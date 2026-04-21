@@ -11,10 +11,20 @@ class ParkingLocation extends Model
 
     protected $fillable = [
         'name',
+        'owner_id',
         'latitude',
         'longitude',
         'description',
     ];
+
+    protected $casts = [
+        'owner_id' => 'integer',
+    ];
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 
     public function areas()
     {

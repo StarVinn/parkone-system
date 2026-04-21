@@ -17,11 +17,17 @@ class ParkingRate extends Model
         'is_current',
         'rate_type',
         'rate_per_hour',
+        'first_hour_rate',
+        'next_hour_rate',
+        'grace_minutes',
         'flat_rate',
     ];
 
     protected $casts = [
         'rate_per_hour' => 'float',
+        'first_hour_rate' => 'float',
+        'next_hour_rate' => 'float',
+        'grace_minutes' => 'integer',
         'flat_rate' => 'float',
         'version_number' => 'integer',
         'is_current' => 'boolean',

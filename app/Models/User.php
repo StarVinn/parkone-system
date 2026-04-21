@@ -71,6 +71,11 @@ class User extends Authenticatable
         return $this->hasMany(Vehicle::class, 'user_id');
     }
 
+    public function ownedParkingLocations()
+    {
+        return $this->hasMany(ParkingLocation::class, 'owner_id');
+    }
+
     public function primaryRfidCard()
     {
         return $this->hasOne(RfidCard::class)
