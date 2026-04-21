@@ -188,7 +188,7 @@ class AdminAccountController extends Controller
 
         $data = $request->validated();
         $newEmail = trim((string) ($data['email'] ?? ''));
-        $newRfid = trim((string) ($data['rfid_uid'] ?? ''));
+        $newRfid = strtoupper(trim((string) ($data['rfid_uid'] ?? '')));
 
         $emailChanged = $newEmail !== '' && $newEmail !== $user->email;
         $rfidChanged = $request->has('rfid_uid') && $newRfid !== '';
@@ -213,10 +213,15 @@ class AdminAccountController extends Controller
                     ->where('is_active', true)
                     ->update(['is_active' => false]);
 
-                $card = RfidCard::where('uid', $newRfid)->first();
+                $card = RfidCard::query()
+                    ->whereRaw('UPPER(uid) = ?', [$newRfid])
+                    ->lockForUpdate()
+                    ->first();
+
                 if ($card) {
                     $card->forceFill([
                         'user_id' => $user->id,
+                        'uid' => $newRfid,
                         'is_active' => true,
                     ])->save();
                 } else {

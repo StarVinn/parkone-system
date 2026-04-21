@@ -15,10 +15,6 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
     public function rules(): array
     {
         $userId = $this->route('user')?->id;
-        $rfidUidRule = Rule::unique('rfid_cards', 'uid');
-        if ($userId) {
-            $rfidUidRule = $rfidUidRule->where(fn($query) => $query->where('user_id', '<>', $userId));
-        }
 
         return [
             'email' => [
@@ -32,7 +28,6 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                $rfidUidRule,
             ],
         ];
     }
@@ -44,7 +39,6 @@ class AdminUpdateAccountIdentityRequest extends FormRequest
             'email.max' => 'Email maksimal 255 karakter.',
             'email.unique' => 'Email sudah digunakan.',
             'rfid_uid.max' => 'RFID UID maksimal 255 karakter.',
-            'rfid_uid.unique' => 'RFID UID sudah digunakan.',
         ];
     }
 }
